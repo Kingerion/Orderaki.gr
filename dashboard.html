@@ -193,3 +193,226 @@ tr:hover td{background:#fdf9f7}
 .chat-unread-badge{position:absolute;top:8px;right:10px;min-width:16px;height:16px;background:var(--red);border-radius:20px;font-size:9px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .chat-main{flex:1;display:flex;flex-direction:column;min-width:0}
 .chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:78%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.45;word-break:break-word}
+.msg.admin{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.msg.driver{background:var(--surface2);color:var(--dark);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
+.msg-time{font-size:10px;opacity:.6;margin-top:3px;display:block;text-align:right}
+.msg.driver .msg-time{text-align:left}
+.chat-input-row{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+.chat-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:13px;color:var(--dark);outline:none;transition:border-color .15s;resize:none}
+.chat-input:focus{border-color:var(--accent)}
+.chat-send-btn{width:38px;height:38px;background:var(--accent);border:none;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:#fff;flex-shrink:0}
+.chat-send-btn:hover{background:#e63600}
+.chat-send-btn .material-icons-round{font-size:18px}
+.chat-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--muted)}
+.chat-empty .material-icons-round{font-size:36px;opacity:.3}
+.chat-empty-text{font-size:13px;font-weight:600}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(26,26,26,.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:20px;width:500px;max-width:95vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(20px);transition:transform .25s;border:1px solid var(--border)}
+.overlay.open .modal{transform:translateY(0)}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.modal-title{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.fgroup{margin-bottom:14px}
+.flabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block}
+.finput{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--dark);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.finput:focus{border-color:var(--accent)}
+.finput::placeholder{color:var(--muted)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-ft{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);min-width:260px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast .material-icons-round{font-size:18px;color:var(--accent)}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px;color:var(--muted);gap:10px}
+.empty .material-icons-round{font-size:40px;opacity:.3}
+.empty-text{font-size:13px;font-weight:600}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:10px}
+@keyframes rowIn{from{background:#fff3f0}to{background:transparent}}
+.row-new td{animation:rowIn 2s ease}
+
+/* REJECTED REASON */
+.rejected-reason{font-size:11px;color:var(--red);margin-top:2px;font-style:italic}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">⚡</div>
+    <div>
+      <div class="logo-title">2Fast Delivery</div>
+      <div class="logo-sub">Admin Panel</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Κύριο</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">dashboard</span> Dispatch</div>
+    <div class="nav-item active" onclick="navTo(this)"><span class="material-icons-round">receipt_long</span> Παραγγελίες <span class="nav-badge" id="navCount">0</span></div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">two_wheeler</span> Οδηγοί <span class="nav-badge green" id="navDrivers">0</span></div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">map</span> Χάρτης</div>
+    <div class="nav-label">Αναφορές</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">bar_chart</span> Αναλύσεις</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">star_border</span> Αξιολογήσεις</div>
+    <div class="nav-label">Σύστημα</div>
+    <div class="nav-item" onclick="openChat()"><span class="material-icons-round">chat</span> Chat Οδηγών <span class="nav-badge blue" id="navUnread" style="display:none">!</span></div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">settings</span> Ρυθμίσεις</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-row">
+      <div class="user-av">A</div>
+      <div><div class="user-name">Admin</div><div class="user-role">2Fast Delivery</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">Παραγγελίες</div>
+    <div class="live-pill"><div class="live-dot"></div> LIVE</div>
+
+    <!-- AUTO-DISPATCH TOGGLE -->
+    <div class="auto-dispatch-wrap on" id="adWrap" onclick="toggleAutoDispatch()" title="Αυτόματη ανάθεση παραγγελιών σε διαθέσιμο οδηγό">
+      <span class="material-icons-round" style="font-size:16px;color:var(--green)" id="adIcon">smart_toy</span>
+      <div>
+        <div class="ad-label" id="adLabel">Auto-Dispatch: ON</div>
+      </div>
+      <div class="toggle-switch on" id="adToggle"></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="filterTab('all',this)">Όλες</div>
+      <div class="tab" onclick="filterTab('new',this)">Νέες</div>
+      <div class="tab" onclick="filterTab('assigned',this)">Ανατεθ.</div>
+      <div class="tab" onclick="filterTab('picked',this)">Σε Διαδρ.</div>
+      <div class="tab" onclick="filterTab('delivered',this)">Παραδόθ.</div>
+      <div class="tab" onclick="filterTab('rejected',this)">Απορρίφθ.</div>
+    </div>
+    <div class="topbar-actions">
+      <div class="icon-btn notif-wrap" title="Ειδοποιήσεις"><span class="material-icons-round">notifications_none</span><div class="notif-dot"></div></div>
+      <div class="icon-btn" title="Chat Οδηγών" onclick="openChat()">
+        <span class="material-icons-round">chat</span>
+        <div class="notif-dot" id="chatDot" style="display:none"></div>
+      </div>
+      <button class="btn btn-outline" onclick="openModal()"><span class="material-icons-round">add</span> Νέα Παραγγελία</button>
+      <button class="btn btn-primary" onclick="window.open('driver-app.html','_blank')"><span class="material-icons-round">open_in_new</span> Driver App</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-top">
+          <div><div class="stat-label">Νέες</div><div class="stat-value" id="sNew" style="color:var(--blue)">0</div><div class="stat-sub">αναμένουν</div></div>
+          <div class="stat-icon" style="background:rgba(59,130,246,.1)"><span class="material-icons-round" style="color:var(--blue)">pending_actions</span></div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-top">
+          <div><div class="stat-label">Σε Διαδρομή</div><div class="stat-value" id="sActive" style="color:var(--accent2)">0</div><div class="stat-sub">ενεργές</div></div>
+          <div class="stat-icon" style="background:rgba(255,109,0,.1)"><span class="material-icons-round" style="color:var(--accent2)">two_wheeler</span></div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-top">
+          <div><div class="stat-label">Παραδόθηκαν</div><div class="stat-value" id="sDelivered" style="color:var(--green)">0</div><div class="stat-sub">σήμερα</div></div>
+          <div class="stat-icon" style="background:rgba(0,179,126,.1)"><span class="material-icons-round" style="color:var(--green)">check_circle_outline</span></div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-top">
+          <div><div class="stat-label">Online Οδηγοί</div><div class="stat-value" id="sDrivers" style="color:var(--accent)">0</div><div class="stat-sub">διαθέσιμοι</div></div>
+          <div class="stat-icon" style="background:rgba(255,61,0,.1)"><span class="material-icons-round" style="color:var(--accent)">person_pin_circle</span></div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-top">
+          <div><div class="stat-label">Σύνολο</div><div class="stat-value" id="sTotal">0</div><div class="stat-sub">σήμερα</div></div>
+          <div class="stat-icon" style="background:rgba(0,0,0,.05)"><span class="material-icons-round" style="color:var(--muted)">receipt_long</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid-main" style="flex:1;min-height:0">
+      <!-- TABLE -->
+      <div class="panel">
+        <div class="panel-hd">
+          <div class="panel-title">Παραγγελίες</div>
+          <div class="count-badge" id="tableCount">0</div>
+          <div class="search-wrap">
+            <span class="material-icons-round">search</span>
+            <input type="text" placeholder="Αναζήτηση..." oninput="searchOrders(this.value)">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Πελάτης</th><th>Παράδοση</th><th>Οδηγός</th><th>Ώρα</th><th>Κατάσταση</th><th>Ενέργειες</th></tr></thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+          <div class="empty" id="emptyState" style="display:none">
+            <span class="material-icons-round">inbox</span>
+            <div class="empty-text">Δεν υπάρχουν παραγγελίες</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="right-col">
+        <!-- DRIVERS -->
+        <div class="panel" style="flex:0 0 auto">
+          <div class="panel-hd">
+            <div class="panel-title">Οδηγοί</div>
+            <div class="count-badge" style="background:rgba(0,179,126,.1);color:var(--green)" id="driverCount">0 Online</div>
+          </div>
+          <div id="driversList"></div>
+        <div style="padding:10px 20px 6px;font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--text3);border-top:1px solid var(--border);margin-top:4px">
+          Αιτήματα Καταστημάτων <span id="pendingStoresBadge" style="display:none;background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;margin-left:4px">0</span>
+        </div>
+        <div id="pendingStoresList"><div style="padding:16px 20px;font-size:13px;color:var(--text3)">Δεν υπάρχουν αιτήματα</div></div>
+        <div style="padding:10px 20px 6px;font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--text3);border-top:1px solid var(--border);margin-top:4px">
+          Αιτήματα Οδηγών <span id="pendingBadge" style="display:none;background:var(--yellow);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;margin-left:4px">0</span>
+        </div>
+        <div id="pendingDriversList"><div style="padding:16px 20px;font-size:13px;color:var(--text3)">Δεν υπάρχουν αιτήματα</div></div>
+        </div>
+        <!-- MAP -->
+        <div class="panel" style="flex:1">
+          <div class="panel-hd">
+            <div class="panel-title">Χάρτης Live</div>
+            <div class="live-pill" style="margin-left:auto"><div class="live-dot"></div> LIVE</div>
+          </div>
+          <div class="map-box">
+            <div class="map-grid-bg"></div>
+            <span class="material-icons-round" style="font-size:32px;color:var(--accent);opacity:.4;position:relative">map</span>
+            <div class="map-label">Ενσωμάτωσε Google Maps API</div>
+            <button class="btn btn-outline" style="font-size:11px;padding:6px 14px;position:relative" onclick="window.open('https://www.google.com/maps','_blank')">
+              <span class="material-icons-round" style="font-size:13px">open_in_new</span> Άνοιγμα Maps
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ CHAT PANEL ═══════ -->
+<div class="chat-overlay" id="chatOverlay">
+  <div class="chat-panel">
+    <div class="chat-hd">
+      <span class="material-icons-round" style="color:var(--blue);font-size:20px">chat</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:800">Chat Οδηγών</div>
+        <div style="font-size:11px;color:var(--muted)" id="chatSubtitle">Επίλεξε οδηγό</div>
+      </div>
+      <button class="icon-btn" onclick="closeChat()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div
