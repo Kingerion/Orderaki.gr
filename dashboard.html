@@ -978,3 +978,104 @@ function submitNewOrder() {
   showToast('🚀 Παραγγελία '+order.id+' δημιουργήθηκε!');
   ['fName','fPhone','fAddress','fPickup','fCost','fNotes'].forEach(id=>document.getElementById(id).value='');
 }
+
+// ══════════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════════
+function filterTab(f,el){currentFilter=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderTable();}
+function searchOrders(q){searchQ=q.toLowerCase();renderTable();}
+function navTo(el){document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));el.classList.add('active');}
+function openModal(){document.getElementById('orderOverlay').classList.add('open');}
+function closeModal(){document.getElementById('orderOverlay').classList.remove('open');}
+document.getElementById('orderOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('chatOverlay').addEventListener('click',function(e){if(e.target===this)closeChat();});
+
+let toastT;
+function renderNotifications(items) {
+  const badge = document.getElementById('notifBadge');
+  const panel = document.getElementById('notifPanel');
+  if (!badge || !panel) return;
+  const count = items.length;
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'flex' : 'none';
+  if (!count) { panel.innerHTML = '<div style="text-align:center;padding:20px;color:#666;font-size:13px">Δεν υπάρχουν νέες ειδοποιήσεις</div>'; return; }
+  panel.innerHTML = items.map(n => `
+    <div style="background:#1e1e1e;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:800;color:${n.type==='new_driver'?'#ff4500':'#22c55e'};background:${n.type==='new_driver'?'rgba(255,69,0,.15)':'rgba(34,197,94,.12)'};padding:3px 10px;border-radius:20px">${n.type==='new_driver'?'🏍️ Νέος Οδηγός':'🏪 Νέο Κατάστημα'}</span>
+        <span style="font-size:11px;color:#666">${n.time?new Date(n.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}):''}</span>
+      </div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:2px">${n.name||'—'}</div>
+      <div style="font-size:12px;color:#888">${n.phone||''} ${n.email?'· '+n.email:''}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button onclick="n.type==='new_store'?approveStore('${n.storeId}','${n._key}'):approveDriver('${n.driverId}','${n._key}')" style="flex:1;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✅ Έγκριση</button>
+        <button onclick="rejectApplicant('${n.driverId||n.storeId}','${n._key}','${n.type}')" style="flex:1;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">❌ Απόρριψη</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+
+function toggleNotifPanel(){
+  const p=document.getElementById('notifPanelWrap');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+
+
+function approveStore(storeId, notifKey) {
+  if (!storeId) return;
+  if (window._db) {
+    window._update(window._ref(window._db,'stores/'+storeId),{status:'approved'});
+    window._update(window._ref(window._db,'notifications/'+notifKey),{read:true});
+  }
+  showToast('✅ Το κατάστημα εγκρίθηκε!');
+}
+
+function approveDriver(driverId, notifKey) {
+  if (!driverId) return;
+  if (window._db) {
+    window._update(window._ref(window._db,'drivers/'+driverId),{status:'approved',online:false,orders:0});
+    window._update(window._ref(window._db,'notifications/'+notifKey),{read:true});
+  }
+  showToast('✅ Ο οδηγός εγκρίθηκε!');
+}
+
+function rejectApplicant(id, notifKey, type) {
+  if (!id) return;
+  const path = type==='new_driver' ? 'drivers/'+id : 'stores/'+id;
+  if (window._db) {
+    window._update(window._ref(window._db, path),{status:'rejected'});
+    window._update(window._ref(window._db,'notifications/'+notifKey),{read:true});
+  }
+  showToast('❌ Απορρίφθηκε');
+}
+
+
+function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3500);}
+</script>
+
+<div id="notifPanelWrap" style="display:none;position:fixed;top:60px;right:16px;width:320px;max-height:70vh;overflow-y:auto;background:#1a1a1a;border:1px solid #333;border-radius:16px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.5);padding:16px">
+  <div style="font-size:14px;font-weight:800;margin-bottom:12px;color:#f5f5f5">📋 Εκκρεμείς Αιτήσεις</div>
+  <div id="notifPanel"><div style="text-align:center;padding:20px;color:#666;font-size:13px">Δεν υπάρχουν αιτήσεις</div></div>
+</div>
+  <script>
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    }
+    // Install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('installBtn');
+      if(btn) btn.style.display = 'flex';
+    });
+    window.installApp = function(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; const b=document.getElementById('installBtn'); if(b) b.style.display='none'; });
+      }
+    };
+  </script>
+</body>
+</html>
