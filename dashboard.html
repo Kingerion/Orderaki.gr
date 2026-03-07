@@ -576,12 +576,19 @@ window.renderPendingStores = function(all){
     </div>`).join('');
 };
 window.approveStore = function(uid){
-  if(!uid){showToast('❌ Σφάλμα: δεν βρέθηκε uid');return;}
-  if(!window._db){showToast('❌ Χωρίς Firebase σύνδεση');return;}
-  console.log('Approving store uid:', uid);
-  window._set(window._ref(window._db,'stores/'+uid+'/status'),'approved');
-  window._set(window._ref(window._db,'stores/'+uid+'/open'),true);
-  showToast('✅ Κατάστημα εγκρίθηκε!');
+  if(!uid){alert('❌ Σφάλμα: κενό uid'); return;}
+  if(!window._db){alert('❌ Χωρίς Firebase!'); return;}
+  console.log('[approveStore] uid=', uid);
+  // Use update to set status approved
+  window._update(window._ref(window._db,'stores/'+uid), {status:'approved', open:true})
+    .then(function(){
+      showToast('✅ Κατάστημα εγκρίθηκε!');
+      console.log('[approveStore] success');
+    })
+    .catch(function(e){
+      alert('❌ Firebase error: ' + e.message);
+      console.error('[approveStore] error:', e);
+    });
 };
 window.rejectStore = function(uid){
   if(!window._db){showToast('❌ Χωρίς Firebase');return;}
@@ -773,7 +780,7 @@ function renderDrivers() {
     return `<div class="driver-row">
       <div class="driver-av" style="background:${COLORS[i%COLORS.length]}18;color:${COLORS[i%COLORS.length]}">
         ${initials(d.name)}
-        <div class="online-dot" style="background:${d.online?'var(--green)':'var(--muted)'}"></div>
+        <div class="online-dot" style="background:${(d.online===true||d.online==='true')?'var(--green)':'var(--muted)'}"></div>
       </div>
       <div style="flex:1">
         <div class="d-name">${d.name}</div>
