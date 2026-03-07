@@ -580,3 +580,21 @@ function showToast(msg){document.getElementById('toastMsg').textContent=msg;cons
   <script>
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    }
+    // Install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('installBtn');
+      if(btn) btn.style.display = 'flex';
+    });
+    window.installApp = function(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; const b=document.getElementById('installBtn'); if(b) b.style.display='none'; });
+      }
+    };
+  </script>
+</body>
+</html>
