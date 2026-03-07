@@ -370,3 +370,154 @@ function checkDriverStatus(user){
     else{loadDriverApp();}
   });
 }
+
+function loadDriverApp(){
+  showScreen('app');
+  const n=driverData.name||'Οδηγός';
+  const init=n.charAt(0).toUpperCase();
+  document.getElementById('topAvatar').textContent=init;
+  document.getElementById('topName').textContent=n;
+  document.getElementById('profAvatar').textContent=init;
+  document.getElementById('profName').textContent=n;
+  document.getElementById('profEmail').textContent=driverData.email||'—';
+  document.getElementById('profPhone').textContent=driverData.phone||'—';
+  if(window._db){
+    // Listen to orders assigned to this driver
+    window._onValue(window._ref(window._db,'orders'),snap=>{
+      const all=snap.val()||{};
+      myOrders={};
+      for(const[k,v]of Object.entries(all)){
+        if(v.driver===driverData.uid||v.driverName===driverData.name){
+          if(['assigned','picked'].includes(v.status))myOrders[k]={...v,_key:k};
+        }
+      }
+      renderOrders();
+    });
+    // Chat
+    const dUid=window._currentUser?window._currentUser.uid:(window._driverUid||'demo');
+      window._onValue(window._ref(window._db,'chat/drivers/'+dUid),snap=>{
+      const d=snap.val();
+      myChat=d?Object.values(d):[];
+      renderChat();
+      const u=myChat.filter(m=>m.from==='admin'&&!m.read).length;
+      document.getElementById('chatBadge').style.display=u>0?'flex':'none';
+    });
+  }
+}
+
+function renderOrders(){
+  const keys=Object.keys(myOrders);
+  const badge=document.getElementById('navBadge');
+  badge.textContent=keys.length;badge.style.display=keys.length>0?'flex':'none';
+  if(!keys.length){document.getElementById('ordersList').innerHTML='<div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span><span style="font-size:13px">Οι παραγγελίες σου εμφανίζονται εδώ</span></div>';return;}
+  document.getElementById('ordersList').innerHTML=keys.map(k=>{
+    const o=myOrders[k];
+    const isAssigned=o.status==='assigned';
+    return`<div class="order-card ${isAssigned?'new-order':''}" id="oc_${k}">
+      <div class="order-card-hd">
+        <div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div>
+        <span class="status-pill ${isAssigned?'st-assigned':'st-picked'}">${isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span>
+      </div>
+      <div class="order-info-grid">
+        <div class="order-info-item"><div class="order-info-label">Πελάτης</div><div class="order-info-val">${o.customerName||'—'}</div></div>
+        <div class="order-info-item"><div class="order-info-label">Τηλέφωνο</div><div class="order-info-val">${o.phone||'—'}</div></div>
+      </div>
+      <div class="order-addr"><span class="material-icons-round">location_on</span><div class="order-addr-text">${o.address||'—'}</div></div>
+      <div class="order-total-row"><span class="order-total-label">Αντικαταβολή</span><span class="order-total-val">${o.payment==='cash'?fmtCur(o.total):'Πληρωμένο'}</span></div>
+      <div class="order-btns">
+        ${isAssigned
+          ?`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα</button><button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
+          :`<button class="btn-delivered" onclick="deliverOrder('${k}')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function pickupOrder(k){
+  if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'picked'});
+  else{myOrders[k].status='picked';renderOrders();}
+  showToast('📦 Παρέλαβες την παραγγελία!');
+}
+function deliverOrder(k){
+  const o=myOrders[k];if(!o)return;
+  if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'delivered'});
+  else{delete myOrders[k];renderOrders();}
+  // Update driver earnings
+  if(window._db&&driverData){
+    const earn=(driverData.earnings||0)+(o.total||0);
+    const dels=(driverData.orders||0)+1;
+    const dUid2 = window._currentUser ? window._currentUser.uid : (window._driverUid||'demo');
+    if(dUid2!=='demo') window._update(window._ref(window._db,'drivers/'+dUid2),{earnings:earn,orders:dels});
+  }
+  showToast('✅ Παράδοση ολοκληρώθηκε!');
+}
+function openReject(k){rejectingKey=k;document.getElementById('rejectSheet').classList.add('open');}
+function closeSheet(){document.getElementById('rejectSheet').classList.remove('open');rejectingKey=null;}
+function rejectOrder(reason){
+  if(!rejectingKey)return;
+  if(window._db)window._update(window._ref(window._db,'orders/'+rejectingKey),{status:'rejected',rejectionReason:reason,driver:'',driverName:''});
+  else{delete myOrders[rejectingKey];renderOrders();}
+  closeSheet();showToast('Παραγγελία απορρίφθηκε');
+}
+
+function toggleOnline(){
+  isOnline=!isOnline;
+  const t=document.getElementById('onlineToggle');
+  t.className='online-toggle'+(isOnline?' on':'');
+  document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline';
+  const dUid = window._currentUser ? window._currentUser.uid : (window._driverUid||'demo');
+  if(window._db && dUid!=='demo') window._update(window._ref(window._db,'drivers/'+dUid),{online:isOnline});
+}
+
+function renderChat(){
+  const area=document.getElementById('chatMsgs');
+  if(!myChat.length){area.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px">Καμία συνομιλία ακόμα</div>';return;}
+  area.innerHTML=myChat.map(m=>`<div><div class="msg ${m.from==='driver'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div></div>`).join('');
+  setTimeout(()=>{area.scrollTop=area.scrollHeight;},50);
+}
+function sendMsg(){
+  const input=document.getElementById('chatInput'),text=input.value.trim();
+  if(!text)return;input.value='';
+  const msg={from:'driver',text,time:Date.now(),read:false,driverName:driverData?.name||'Οδηγός'};
+  myChat.push(msg);
+  if(window._db){const uid=window._currentUser?window._currentUser.uid:(window._driverUid||'demo');const r=window._push(window._ref(window._db,'chat/drivers/'+uid));window._set(r,msg);}
+  renderChat();
+}
+
+function goPage(p){
+  ['orders','chat','earnings','profile'].forEach(x=>{
+    document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none';
+    document.getElementById('nav-'+x).classList.toggle('active',x===p);
+  });
+  if(p==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;});document.getElementById('chatBadge').style.display='none';renderChat();}
+}
+
+function doSignOut(){if(window._auth)window._signOut(window._auth);else showScreen('auth');}
+function initDemo(){showScreen('app');driverData={uid:'demo',name:'Demo Οδηγός',phone:'6934000001'};document.getElementById('topAvatar').textContent='D';document.getElementById('topName').textContent='Demo Οδηγός';}
+
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
+document.getElementById('rejectSheet').addEventListener('click',function(e){if(e.target===this)closeSheet();});
+</script>
+  <script>
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    }
+    // Install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('installBtn');
+      if(btn) btn.style.display = 'flex';
+    });
+    window.installApp = function(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; const b=document.getElementById('installBtn'); if(b) b.style.display='none'; });
+      }
+    };
+  </script>
+</body>
+</html>
