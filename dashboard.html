@@ -420,7 +420,7 @@ tr:hover td{background:#fdf9f7}
     <div class="chat-hd">
       <span class="material-icons-round" style="color:var(--blue);font-size:20px">chat</span>
       <div style="flex:1">
-        <div style="font-size:14px;font-weight:800">Chat Οδηγών</div>
+        <div style="font-size:14px;font-weight:800" id="chatMainTitle">Chat</div>
         <div style="font-size:11px;color:var(--muted)" id="chatSubtitle">Επίλεξε οδηγό</div>
       </div>
       <button class="icon-btn" onclick="closeChat()"><span class="material-icons-round">close</span></button>
@@ -855,8 +855,9 @@ function selectChat(key, label) {
   activeChatKey = key;
   const c = allChats[key];
   if(!c) return;
-  // Mark read
   if(c.msgs) c.msgs.forEach(m=>{if(m.from!=='admin')m.read=true;});
+  const titleEl = document.getElementById('chatMainTitle');
+  if(titleEl) titleEl.textContent = c.type==='store' ? 'Chat Καταστήματος' : 'Chat Οδηγού';
   document.getElementById('chatSubtitle').textContent = label;
   renderChatList();
   renderChatMessages(key);

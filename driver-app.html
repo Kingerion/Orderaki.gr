@@ -372,12 +372,24 @@ function checkDriverStatus(user){
   });
 }
 
-function loadDriverApp(){
+
+// Heartbeat — keep online status updated every 30s
+function startHeartbeat() {
+  const uid = window._currentUser ? window._currentUser.uid : null;
+  if(!uid || !window._db) return;
   // Set online immediately
-  if(window._db && window._currentUser) {
-    window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:true,lastSeen:Date.now()});
-  }
+  window._update(window._ref(window._db,'drivers/'+uid), {online:true, lastSeen:Date.now()});
+  // Then every 30 seconds
+  setInterval(()=>{
+    if(window._currentUser && window._db) {
+      window._update(window._ref(window._db,'drivers/'+window._currentUser.uid), {online:true, lastSeen:Date.now()});
+    }
+  }, 30000);
+}
+
+function loadDriverApp(){
   showScreen('app');
+  setTimeout(startHeartbeat, 1000);
   const n=driverData.name||'Οδηγός';
   const init=n.charAt(0).toUpperCase();
   document.getElementById('topAvatar').textContent=init;
@@ -393,7 +405,7 @@ function loadDriverApp(){
       myOrders={};
       for(const[k,v]of Object.entries(all)){
         if(v.driver===driverData.uid||v.driverName===driverData.name){
-          if(['assigned','picked'].includes(v.status))myOrders[k]={...v,_key:k};
+          if(['assigned','picked','pending_acceptance'].includes(v.status))myOrders[k]={...v,_key:k};
         }
       }
       renderOrders();
@@ -418,10 +430,15 @@ function renderOrders(){
   document.getElementById('ordersList').innerHTML=keys.map(k=>{
     const o=myOrders[k];
     const isAssigned=o.status==='assigned';
-    return`<div class="order-card ${isAssigned?'new-order':''}" id="oc_${k}">
+    const isPending=o.status==='pending_acceptance';
+    const isPicked=o.status==='picked';
+    // Calculate driver earnings
+    const earnings = calcDriverEarnings(o);
+    const earningsStr = earnings > 0 ? fmtCur(earnings) : '—';
+    return`<div class="order-card ${isAssigned||isPending?'new-order':''}" id="oc_${k}">
       <div class="order-card-hd">
         <div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div>
-        <span class="status-pill ${isAssigned?'st-assigned':'st-picked'}">${isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span>
+        <span class="status-pill ${isPending?'st-new':isAssigned?'st-assigned':'st-picked'}">${isPending?'Νέα!':isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span>
       </div>
       <div class="order-info-grid">
         <div class="order-info-item"><div class="order-info-label">Πελάτης</div><div class="order-info-val">${o.customerName||'—'}</div></div>
@@ -433,18 +450,45 @@ function renderOrders(){
       </div>
       <div class="order-addr" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 12px;margin:6px 0;gap:8px">
         <span class="material-icons-round" style="color:#22c55e;font-size:18px">location_on</span>
-        <div class="order-addr-text"><div style="font-size:10px;font-weight:800;color:#22c55e;text-transform:uppercase;margin-bottom:2px">Παράδοση σε</div>${o.address||'—'}</div>
+        <div class="order-addr-text"><div style="font-size:10px;font-weight:800;color:#22c55e;text-transform:uppercase;margin-bottom:2px">Παράδοση σε</div>${o.address||'—'}${o.floor?' · '+o.floor:''}${o.doorbell?' 🔔 '+o.doorbell:''}</div>
       </div>
       ${o.notes?`<div style="background:rgba(255,255,255,.05);border-radius:8px;padding:8px 12px;font-size:12px;color:#aaa;margin:4px 0">📝 ${o.notes}</div>`:''}
-      <div class="order-total-row"><span class="order-total-label">Αντικαταβολή</span><span class="order-total-val">${o.payment==='cash'?fmtCur(o.total):'Πληρωμένο'}</span></div>
+      <div style="display:flex;gap:12px;margin:8px 0">
+        <div style="flex:1;background:rgba(255,69,0,.1);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:#ff4500;font-weight:700;text-transform:uppercase">Αντικαταβολή</div>
+          <div style="font-size:16px;font-weight:800;color:#fff">${o.payment==='cash'?fmtCur(o.total):'Πληρωμένο'}</div>
+        </div>
+        <div style="flex:1;background:rgba(34,197,94,.1);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:#22c55e;font-weight:700;text-transform:uppercase">Κέρδος σου</div>
+          <div style="font-size:16px;font-weight:800;color:#22c55e">${earningsStr}</div>
+        </div>
+      </div>
       <div class="order-btns">
-        ${isAssigned
-          ?`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα</button><button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
+        ${isPending
+          ?`<button class="btn-delivered" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="acceptOrder('${k}')"><span class="material-icons-round">check_circle</span>Αποδοχή</button>
+            <button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
+          : isAssigned
+          ?`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα</button>
+            <button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
           :`<button class="btn-delivered" onclick="deliverOrder('${k}')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>`
         }
       </div>
     </div>`;
   }).join('');
+}
+
+
+function calcDriverEarnings(order) {
+  // 2.50€ for first 500m, then 0.30€/km after that
+  // We estimate distance from delivery cost set by store, or use 1km default
+  const distKm = order.distanceKm || 1.5; // default 1.5km if not set
+  if(distKm <= 0.5) return 2.50;
+  return 2.50 + (distKm - 0.5) * 0.30;
+}
+
+function acceptOrder(k) {
+  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'assigned'});
+  showToast('✅ Αποδέχτηκες την παραγγελία!');
 }
 
 function pickupOrder(k){

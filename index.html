@@ -281,15 +281,18 @@ footer{background:var(--text);color:rgba(255,255,255,.5);padding:56px 0 28px}
         <div style="border-left:2px solid var(--border);padding-left:32px"><div class="hero-stat-value">4.8★</div><div class="hero-stat-label">Βαθμολογία</div></div>
       </div>
     </div>
-    <div class="hero-visual" style="position:relative">
-      <div class="hero-float hero-float-1"><div style="width:32px;height:32px;border-radius:9px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:16px">🏍️</div><div><div style="font-size:12px;font-weight:800;color:var(--text)">Σε δρόμο!</div><div style="font-size:10px;color:var(--text3)">~12 λεπτά</div></div></div>
-      <div class="hero-float hero-float-2"><div style="width:32px;height:32px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:16px">✅</div><div><div style="font-size:12px;font-weight:800;color:var(--text)">Παραδόθηκε!</div><div style="font-size:10px;color:var(--text3)">Καλή απόλαυση 🎉</div></div></div>
-      <div class="hero-phone">
-        <div class="phone-topbar"><div class="phone-logo">orderaki</div><div style="font-size:11px;font-weight:700;color:var(--text3)">12:34</div></div>
-        <div class="phone-search"><span class="material-icons-round">search</span>Αναζήτηση...</div>
-        <div class="phone-cats"><div class="phone-cat active">🍔 Burger</div><div class="phone-cat">🍕 Pizza</div><div class="phone-cat">🌯 Souvlaki</div></div>
-        <div class="phone-card"><div class="phone-card-img" style="background:linear-gradient(135deg,#ffecd2,#fcb69f)">🍔<div class="phone-card-badge">25% OFF</div></div><div class="phone-card-body"><div class="phone-card-name">Burger House</div><div class="phone-card-meta"><span><span class="material-icons-round">star</span>4.8</span><span><span class="material-icons-round">schedule</span>20-25′</span><span><span class="material-icons-round">delivery_dining</span>€1.50</span></div></div></div>
-        <div class="phone-order-btn">Προσθήκη στο καλάθι →</div>
+    <div class="hero-visual" style="position:relative;display:flex;flex-direction:column;gap:16px;justify-content:center">
+      <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.08);display:flex;align-items:center;gap:16px">
+        <div style="width:56px;height:56px;background:#fff5f0;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px">🏍️</div>
+        <div><div style="font-size:16px;font-weight:800;color:var(--text)">Γρήγορη παράδοση</div><div style="font-size:13px;color:var(--text3)">Μέσος χρόνος 25-35 λεπτά</div></div>
+      </div>
+      <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.08);display:flex;align-items:center;gap:16px">
+        <div style="width:56px;height:56px;background:#f0fdf4;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px">🏪</div>
+        <div><div style="font-size:16px;font-weight:800;color:var(--text)">Τοπικά καταστήματα</div><div style="font-size:13px;color:var(--text3)">Υποστηρίζουμε την τοπική αγορά</div></div>
+      </div>
+      <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.08);display:flex;align-items:center;gap:16px">
+        <div style="width:56px;height:56px;background:#fffbeb;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px">⭐</div>
+        <div><div style="font-size:16px;font-weight:800;color:var(--text)">4.8★ Αξιολόγηση</div><div style="font-size:13px;color:var(--text3)">Χιλιάδες ευχαριστημένοι πελάτες</div></div>
       </div>
     </div>
   </div>
@@ -455,6 +458,17 @@ function openOrderModal(storeKey){
     },{onlyOnce:true});
   } else { renderModal(); }
   document.getElementById('orderModal').classList.add('open');
+  // Auto-fill saved profile
+  setTimeout(()=>{
+    const p = JSON.parse(localStorage.getItem('orderakiProfile')||'{}');
+    if(p.name) document.getElementById('oName').value=p.name;
+    if(p.phone) document.getElementById('oPhone').value=p.phone;
+    if(p.email) document.getElementById('oEmail').value=p.email;
+    if(p.address) document.getElementById('oAddress').value=p.address;
+    if(p.floor) document.getElementById('oFloor').value=p.floor;
+    if(p.doorbell) document.getElementById('oDoorbell').value=p.doorbell;
+    updateSummary();
+  }, 50);
   document.body.style.overflow='hidden';
 }
 
@@ -490,11 +504,16 @@ function renderModal(){
         <div class="order-section-title">Στοιχεία Παράδοσης</div>
         <div style="display:flex;flex-direction:column;gap:11px">
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Το όνομά σου"></div>
-            <div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="+30 69..." type="tel"></div>
+            <div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Το όνομά σου" oninput="saveProfile()"></div>
+            <div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="+30 69..." type="tel" oninput="saveProfile()"></div>
           </div>
-          <div class="form-group"><label class="form-label">Διεύθυνση Παράδοσης *</label><input class="form-input" id="oAddress" placeholder="π.χ. Πατησίων 42, Αθήνα"></div>
-          <div class="form-group"><label class="form-label">Σχόλια</label><input class="form-input" id="oNotes" placeholder="π.χ. 3ος όροφος, χωρίς κρεμμύδι..."></div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="oEmail" placeholder="email@example.com" type="email" oninput="saveProfile()"></div>
+          <div class="form-group"><label class="form-label">Διεύθυνση Παράδοσης *</label><input class="form-input" id="oAddress" placeholder="π.χ. Πατησίων 42, Αθήνα" oninput="saveProfile()"></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Όροφος</label><input class="form-input" id="oFloor" placeholder="π.χ. 3ος" oninput="saveProfile()"></div>
+            <div class="form-group"><label class="form-label">Κουδούνι</label><input class="form-input" id="oDoorbell" placeholder="π.χ. Παπαδόπουλος" oninput="saveProfile()"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Σχόλια παραγγελίας</label><input class="form-input" id="oNotes" placeholder="π.χ. χωρίς κρεμμύδι, extra σάλτσα..."></div>
         </div>
       </div>
       <div>
@@ -536,15 +555,31 @@ function updateSummary(){
 }
 function selectPay(t){selectedPay=t;['cash','card','online'].forEach(x=>document.getElementById('pay_'+x).classList.toggle('selected',x===t));}
 
+function saveProfile(){
+  const p={
+    name:document.getElementById('oName')?.value||'',
+    phone:document.getElementById('oPhone')?.value||'',
+    email:document.getElementById('oEmail')?.value||'',
+    address:document.getElementById('oAddress')?.value||'',
+    floor:document.getElementById('oFloor')?.value||'',
+    doorbell:document.getElementById('oDoorbell')?.value||''
+  };
+  localStorage.setItem('orderakiProfile', JSON.stringify(p));
+}
+
 function submitOrder(){
   const name=document.getElementById('oName')?.value.trim(),phone=document.getElementById('oPhone')?.value.trim(),address=document.getElementById('oAddress')?.value.trim();
+  const floor=document.getElementById('oFloor')?.value.trim()||'';
+  const doorbell=document.getElementById('oDoorbell')?.value.trim()||'';
+  const email=document.getElementById('oEmail')?.value.trim()||'';
   if(!name||!phone||!address){showToast('⚠️ Συμπλήρωσε όνομα, τηλέφωνο & διεύθυνση');return;}
   if(!Object.keys(cart).length){showToast('🛒 Πρόσθεσε τουλάχιστον ένα προϊόν');return;}
+  saveProfile();
   const items=Object.values(cart);const sub=items.reduce((s,{item,qty})=>s+item.price*qty,0);
   const order={
     id:'#ORD'+(1000+Math.floor(Math.random()*9000)),
     storeId:activeStore._key,storeName:activeStore.name,
-    customerName:name,phone,address,notes:document.getElementById('oNotes')?.value||'',
+    customerName:name,phone,email,address,floor,doorbell,notes:document.getElementById('oNotes')?.value||'',
     items:items.map(({item,qty})=>({name:item.name,emoji:item.emoji||'',price:item.price,qty})),
     subtotal:sub,deliveryCost:activeStore.deliveryCost||2,total:sub+(activeStore.deliveryCost||2),
     payment:selectedPay,status:'new',createdAt:Date.now()
