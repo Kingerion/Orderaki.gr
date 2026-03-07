@@ -280,4 +280,179 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
     </div>
 
-    <!-- PROFIL
+    <!-- PROFILE PAGE -->
+    <div class="page" id="pageProfile">
+      <div class="profile-header">
+        <div class="profile-av" id="profileAv">Ν</div>
+        <div class="profile-name" id="profileName">Νίκος</div>
+        <div class="profile-role">Οδηγός Delivery</div>
+      </div>
+      <div class="menu-item" onclick="showToast('⚙️ Ρυθμίσεις')"><span class="material-icons-round">settings</span>Ρυθμίσεις<span class="material-icons-round arrow">chevron_right</span></div>
+      <div class="menu-item" onclick="switchPage('chat',document.getElementById('nav-chat'))"><span class="material-icons-round">chat</span>Chat με Admin<span class="material-icons-round arrow">chevron_right</span></div>
+      <div class="menu-item danger" onclick="doLogout()"><span class="material-icons-round">logout</span>Αποσύνδεση</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="bnav-item active" id="nav-orders" onclick="switchPage('orders',this)">
+      <span class="material-icons-round">receipt_long</span><span class="label">Παραγγελίες</span>
+    </div>
+    <div class="bnav-item" id="nav-chat" onclick="switchPage('chat',this)">
+      <span class="material-icons-round">chat</span><span class="label">Chat</span>
+      <div class="bnav-unread" id="chatUnreadBadge" style="display:none">!</div>
+    </div>
+    <div class="bnav-item" id="nav-earnings" onclick="switchPage('earnings',this)">
+      <span class="material-icons-round">payments</span><span class="label">Κέρδη</span>
+    </div>
+    <div class="bnav-item" id="nav-profile" onclick="switchPage('profile',this)">
+      <span class="material-icons-round">person</span><span class="label">Προφίλ</span>
+    </div>
+  </div>
+</div>
+
+<!-- REJECT MODAL (bottom sheet) -->
+<div class="reject-overlay" id="rejectOverlay">
+  <div class="reject-sheet">
+    <div class="reject-title">❌ Απόρριψη Παραγγελίας</div>
+    <div class="reject-sub">Επίλεξε τον λόγο απόρριψης:</div>
+    <div class="reject-reason-btn" onclick="confirmReject('Δεν είμαι διαθέσιμος αυτή τη στιγμή')">
+      <span class="material-icons-round">block</span> Δεν είμαι διαθέσιμος
+    </div>
+    <div class="reject-reason-btn" onclick="confirmReject('Η διαδρομή είναι πολύ μακριά')">
+      <span class="material-icons-round">directions_off</span> Πολύ μακριά διαδρομή
+    </div>
+    <div class="reject-reason-btn" onclick="confirmReject('Πρόβλημα με το όχημά μου')">
+      <span class="material-icons-round">car_repair</span> Πρόβλημα οχήματος
+    </div>
+    <div class="reject-reason-btn" onclick="confirmReject('Δεν μπορώ να βρω τη διεύθυνση')">
+      <span class="material-icons-round">location_off</span> Δεν βρίσκω διεύθυνση
+    </div>
+    <input class="reject-custom-input" id="rejectCustom" placeholder="Άλλος λόγος (προαιρετικό)...">
+    <div class="reject-btns">
+      <button class="reject-cancel" onclick="closeRejectModal()">Ακύρωση</button>
+      <button class="reject-confirm" onclick="confirmReject(document.getElementById('rejectCustom').value||'Άλλος λόγος')">Απόρριψη</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="material-icons-round">check_circle</span><span id="toastMsg">OK</span></div>
+
+<script>
+// ══════════════════════════════════════════════
+// DEMO DATA
+// ══════════════════════════════════════════════
+const DEMO_ORDERS_DRV = {
+  'demo1':{ id:'#1001', customerName:'Γιώργης Παπαδόπουλος', phone:'6934021000', deliveryAddress:'Πατησίων 42, Αθήνα', pickupAddress:'Φαρμακείο Κέντρου', driver:'Νίκος Παπαδόπουλος', cost:5.00, notes:'3ος όροφος', status:'assigned', createdAt:Date.now()-3600000 },
+  'demo2':{ id:'#1002', customerName:'Ελένη Σταματίου', phone:'6945678901', deliveryAddress:'Λ. Βουλιαγμένης 88', pickupAddress:'Φαρμακείο Γλυφάδας', driver:'Νίκος Παπαδόπουλος', cost:6.50, notes:'', status:'picked', createdAt:Date.now()-7200000 },
+};
+const DEMO_CHAT_DRV = [
+  { from:'admin', text:'Γεια! Τα πάς καλά;', time:Date.now()-600000, read:true },
+  { from:'driver', text:'Ναι, πάω για παραλαβή!', time:Date.now()-540000, read:true },
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let driverName='', isOnline=true, myOrders={}, myChat=[], rejectOrderKey=null;
+const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}) : '';
+
+// ══════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════
+function doLogin(){
+  const name = document.getElementById('loginName').value.trim();
+  if(!name){showToast('⚠️ Βάλε το όνομά σου');return;}
+  driverName = name; window._driverName = name;
+  localStorage.setItem('driverName', name);
+  const ini = name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('headerAv').textContent = ini;
+  document.getElementById('headerName').textContent = name.split(' ')[0];
+  document.getElementById('profileAv').textContent = ini;
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').classList.add('visible');
+  if(window._db) updateDriverOnline(true);
+  loadOrders();
+  loadChat();
+}
+
+function doLogout(){
+  if(window._db) updateDriverOnline(false);
+  localStorage.removeItem('driverName');
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appScreen').classList.remove('visible');
+}
+
+const saved = localStorage.getItem('driverName');
+if(saved){ document.getElementById('loginName').value=saved; setTimeout(doLogin,100); }
+
+// ══════════════════════════════════════════════
+// ONLINE
+// ══════════════════════════════════════════════
+function toggleOnline(){
+  isOnline=!isOnline;
+  const btn=document.getElementById('onlineToggle');
+  btn.className='online-toggle '+(isOnline?'online':'offline');
+  document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline';
+  if(window._db) updateDriverOnline(isOnline);
+  showToast(isOnline?'✅ Online!':'⏸️ Offline');
+}
+function updateDriverOnline(online){
+  if(!window._db) return;
+  const drivers=window._allFirebaseDrivers||{};
+  for(const [k,d] of Object.entries(drivers)){if(d.name===driverName){window._update(window._ref(window._db,'drivers/'+k),{online});return;}}
+}
+
+// ══════════════════════════════════════════════
+// ORDERS
+// ══════════════════════════════════════════════
+function loadOrders(){
+  if(window._firebaseReady && window._allFirebaseOrders) filterDriverOrders(window._allFirebaseOrders, driverName);
+  else filterDriverOrders(DEMO_ORDERS_DRV, driverName);
+}
+
+window.filterDriverOrders = function(all, driver){
+  myOrders={};
+  for(const [k,o] of Object.entries(all)){
+    if((o.driver||'').toLowerCase().includes((driver||'').split(' ')[0].toLowerCase())){
+      myOrders[k]={...o,_key:k};
+    }
+  }
+  renderOrders();
+  calcEarnings();
+};
+
+function renderOrders(){
+  const area=document.getElementById('ordersArea');
+  const orders=Object.values(myOrders).sort((a,b)=>{const p={assigned:0,picked:1,new:2,delivered:3,rejected:4};return (p[a.status]||9)-(p[b.status]||9);});
+  if(!orders.length){area.innerHTML=`<div class="empty-state"><span class="material-icons-round">two_wheeler</span><div class="empty-title">Δεν υπάρχουν παραγγελίες</div><div class="empty-sub">Οι παραγγελίες σου εμφανίζονται εδώ</div></div>`;return;}
+  const statMap={new:['Νέα','st-new'],assigned:['Ανατέθηκε','st-assigned'],picked:['Παρέλαβες','st-picked'],delivered:['Παραδόθηκε','st-delivered'],rejected:['Απορρίφθηκε','st-rejected']};
+  area.innerHTML=orders.map(o=>{
+    const [sl,sc]=statMap[o.status]||['—','st-new'];
+    const cls=o.status==='delivered'?'delivered-order':o.status==='picked'?'picked-order':o.status==='rejected'?'rejected-card':'new-order';
+    const footer=o.status==='assigned'?`
+      <div class="card-footer">
+        <button class="cta-btn cta-maps" onclick="openMaps('${(o.pickupAddress||'').replace(/'/g,"\\'")}')"><span class="material-icons-round">directions</span>Maps</button>
+        <button class="cta-btn cta-pickup" onclick="updateStatus('${o._key}','picked')"><span class="material-icons-round">inventory_2</span>Παρέλαβα!</button>
+        <button class="cta-btn cta-reject" onclick="openRejectModal('${o._key}')"><span class="material-icons-round">close</span>Απόρριψη</button>
+      </div>`:
+    o.status==='picked'?`
+      <div class="card-footer">
+        <button class="cta-btn cta-maps" onclick="openMaps('${(o.deliveryAddress||'').replace(/'/g,"\\'")}')"><span class="material-icons-round">directions</span>Διαδρομή</button>
+        <button class="cta-btn cta-deliver" onclick="updateStatus('${o._key}','delivered')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>
+      </div>`:'';
+    return `<div class="order-card ${cls}">
+      <div class="card-header">
+        <span class="card-id">${o.id||o._key}</span>
+        <span class="card-status ${sc}">${sl}</span>
+        <span class="cost-badge">€${(o.cost||0).toFixed(2)}</span>
+        <span class="card-time">${fmtTime(o.createdAt)}</span>
+      </div>
+      <div class="card-body">
+        <div><div class="card-customer">${o.customerName||'—'}</div>
+        <div class="card-phone" onclick="window.open('tel:${o.phone}')" style="cursor:pointer;color:var(--blue)">📞 ${o.phone||''}</div></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${o.pickupAddress?`<div class="route-item"><div class="route-icon" style="background:rgba(59,130,246,.1)"><span class="material-icons-round" style="color:var(--blue)">store</span></div><div><div class="route-label">Παραλαβή Από</div><div class="route-addr">${o.pickupAddress}</div></div></div>`:''}
+          <div class="route-item"><div class="route-icon" style="background:rgba(255,61,0,.1)"><span class="material-icons-round" style="color:var(--accent)">location_on</span></div><div><div class="route-label">Παράδοση Σε</div><div class="route-addr">${o.deliveryAddress||'—'}</div></div></div>
