@@ -593,8 +593,13 @@ function pickupOrder(k){
 function deliverOrder(k){
   closeCustomerChat();
   const o = myOrders[k];
-  const earned = o ? calcDriverEarnings(o) : 0;
+  if(!o) return;
+  const earned = calcDriverEarnings(o);
   const uid = window._currentUser ? window._currentUser.uid : null;
+  // Update order status
+  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'delivered'});
+  else { delete myOrders[k]; renderOrders(); }
+  // Record earnings in Firebase
   if(window._db && uid) {
     const dRef = window._ref(window._db,'drivers/'+uid);
     window._onValue(dRef, snap => {
@@ -603,19 +608,8 @@ function deliverOrder(k){
       const newOrders = (parseInt(d.orders)||0) + 1;
       const todayEarnings = (parseFloat(d.earningsToday)||0) + earned;
       window._update(dRef, {earnings: newEarnings, earningsToday: todayEarnings, orders: newOrders, lastDelivery: Date.now()});
-      // Update UI immediately
       updateEarningsUI(newEarnings, todayEarnings, newOrders);
     }, {onlyOnce: true});
-  }
-  const o=myOrders[k];if(!o)return;
-  if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'delivered'});
-  else{delete myOrders[k];renderOrders();}
-  // Update driver earnings
-  if(window._db&&driverData){
-    const earn=(driverData.earnings||0)+(o.total||0);
-    const dels=(driverData.orders||0)+1;
-    const dUid2 = window._currentUser ? window._currentUser.uid : (window._driverUid||'demo');
-    if(dUid2!=='demo') window._update(window._ref(window._db,'drivers/'+dUid2),{earnings:earn,orders:dels});
   }
   showToast('✅ Παράδοση ολοκληρώθηκε!');
 }
