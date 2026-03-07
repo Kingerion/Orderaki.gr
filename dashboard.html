@@ -292,9 +292,9 @@ tr:hover td{background:#fdf9f7}
     <div class="auto-dispatch-wrap on" id="adWrap" onclick="toggleAutoDispatch()" title="Αυτόματη ανάθεση παραγγελιών σε διαθέσιμο οδηγό">
       <span class="material-icons-round" style="font-size:16px;color:var(--green)" id="adIcon">smart_toy</span>
       <div>
-        <div class="ad-label" id="adLabel">Auto-Dispatch: <span id="adLabel">ON</span></div>
+        <div class="ad-label" id="adLabel">Auto-Dispatch: ON</div>
       </div>
-      <div class="toggle-switch on" id="adToggle"></div>
+      <div class="toggle-switch on" id="adToggle" title="Αυτόματη ανάθεση παραγγελιών σε οδηγούς"></div>
     </div>
 
     <div class="tabs">
@@ -656,7 +656,7 @@ function updateAutoDispatchUI() {
   if (autoDispatch) {
     wrap.className = 'auto-dispatch-wrap on';
     toggle.className = 'toggle-switch on';
-    label.textContent = 'Auto-Dispatch: <span id="adLabel">ON</span>';
+    label.textContent = 'Auto-Dispatch: ON';
     icon.style.color = 'var(--green)';
   } else {
     wrap.className = 'auto-dispatch-wrap';
@@ -981,6 +981,31 @@ function setStatus(key, status) {
   }
   else { if(allOrders[key]){allOrders[key].status=status;renderTable();updateStats(allOrders);} }
   showToast('📦 Status: '+{picked:'Παρέλαβε',delivered:'Παραδόθηκε'}[status]);
+}
+
+function reassignAfterReject(key, rejectedDriverName) {
+  const order = allOrders[key];
+  if(!order || !window._db) return;
+  // Find other approved drivers (not the one who rejected)
+  const others = Object.entries(allDrivers)
+    .filter(([uid,d]) => (!d.status||d.status==='approved') && d.name !== rejectedDriverName)
+    .sort((a,b) => (b[1].online?1:0)-(a[1].online?1:0));
+  if(others.length > 0) {
+    const [uid, next] = others[0];
+    window._update(window._ref(window._db,'orders/'+key),{driver:uid, driverName:next.name, status:'assigned', rejectionReason:''});
+    showToast('🔄 Ανατέθηκε στον ' + next.name);
+  } else {
+    // No other drivers — send back to same driver
+    const same = Object.entries(allDrivers).find(([uid,d])=>d.name===rejectedDriverName);
+    if(same) {
+      const [uid, d] = same;
+      window._update(window._ref(window._db,'orders/'+key),{driver:uid, driverName:d.name, status:'assigned', rejectionReason:''});
+      showToast('⚠️ Μόνο ένας οδηγός — ξαναστάλθηκε στον ' + d.name);
+    } else {
+      window._update(window._ref(window._db,'orders/'+key),{driver:'', driverName:'', status:'new', rejectionReason:''});
+      showToast('⚠️ Επέστρεψε στη λίστα');
+    }
+  }
 }
 
 function reassignOrder(key) {

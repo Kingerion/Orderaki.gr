@@ -390,6 +390,13 @@ function startHeartbeat() {
 function loadDriverApp(){
   showScreen('app');
   setTimeout(startHeartbeat, 1000);
+  // Load earnings from Firebase
+  if(window._db && window._currentUser) {
+    window._onValue(window._ref(window._db,'drivers/'+window._currentUser.uid), snap=>{
+      const d = snap.val()||{};
+      updateEarningsUI(d.earnings||0, d.earningsToday||0, d.orders||0);
+    });
+  }
   const n=driverData.name||'Οδηγός';
   const init=n.charAt(0).toUpperCase();
   document.getElementById('topAvatar').textContent=init;
@@ -446,7 +453,7 @@ function renderOrders(){
       </div>
       <div class="order-addr" style="background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);border-radius:10px;padding:10px 12px;margin:6px 0;gap:8px">
         <span class="material-icons-round" style="color:#ff9800;font-size:18px">storefront</span>
-        <div class="order-addr-text"><div style="font-size:10px;font-weight:800;color:#ff9800;text-transform:uppercase;margin-bottom:2px">Παραλαβή από</div>${o.storeName||'Κατάστημα'}</div>
+        <div class="order-addr-text"><div style="font-size:10px;font-weight:800;color:#ff9800;text-transform:uppercase;margin-bottom:2px">Παραλαβή από</div><div style="font-weight:700">${o.storeName||'Κατάστημα'}</div>${o.storeAddress?'<div style="font-size:12px;color:#aaa;margin-top:2px">📍 '+o.storeAddress+'</div>':''}</div>
       </div>
       <div class="order-addr" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 12px;margin:6px 0;gap:8px">
         <span class="material-icons-round" style="color:#22c55e;font-size:18px">location_on</span>
@@ -478,30 +485,91 @@ function renderOrders(){
 }
 
 
+let activeCustomerOrderKey = null;
+let customerChatMsgs = [];
+
 function openCustomerChat(orderKey) {
   const o = myOrders[orderKey];
   if(!o) return;
+  activeCustomerOrderKey = orderKey;
   switchNav('chat');
-  setTimeout(()=>{
-    const chatWrap = document.getElementById('chatWrap');
-    if(chatWrap) {
-      chatWrap.innerHTML = `
-        <div style="background:var(--surface2);border-radius:16px;padding:16px;margin-bottom:12px">
-          <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;margin-bottom:8px">Επικοινωνία με Πελάτη</div>
-          <div style="font-size:15px;font-weight:700">${o.customerName||'Πελάτης'}</div>
-          <div style="font-size:13px;color:var(--text3)">${o.phone||'—'}</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:4px">📍 ${o.address||''}${o.floor?' · '+o.floor:''}${o.doorbell?' 🔔 '+o.doorbell:''}</div>
-          <a href="tel:${o.phone||''}" style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:var(--accent);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">
-            <span class="material-icons-round" style="font-size:16px">call</span> Κάλεσε Πελάτη
-          </a>
-        </div>`;
-    }
-  }, 100);
+  setTimeout(()=>renderCustomerChat(o), 100);
+}
+
+function renderCustomerChat(o) {
+  const chatWrap = document.getElementById('chatWrap');
+  if(!chatWrap) return;
+  const msgs = customerChatMsgs;
+  chatWrap.innerHTML = `
+    <div style="display:flex;flex-direction:column;height:100%">
+      <div style="background:var(--surface2);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
+        <div style="width:42px;height:42px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px">${(o.customerName||'Π')[0].toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:14px">${o.customerName||'Πελάτης'}</div>
+          <div style="font-size:12px;color:var(--text3)">📍 ${o.address||''}${o.floor?' · '+o.floor:''}${o.doorbell?' 🔔 '+o.doorbell:''}</div>
+        </div>
+        <a href="tel:${o.phone||''}" style="background:rgba(34,197,94,.15);color:#22c55e;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:4px">
+          <span class="material-icons-round" style="font-size:14px">call</span>Κλήση
+        </a>
+      </div>
+      <div id="customerChatMsgs" style="flex:1;overflow-y:auto;padding:0 4px;min-height:120px;display:flex;flex-direction:column;gap:8px">
+        ${msgs.length===0?'<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">Ξεκίνα τη συνομιλία...</div>':
+          msgs.map(m=>`<div style="display:flex;justify-content:${m.from==='driver'?'flex-end':'flex-start'}">
+            <div style="max-width:75%;background:${m.from==='driver'?'var(--accent)':'var(--surface2)'};color:${m.from==='driver'?'#fff':'var(--text)'};border-radius:14px;padding:10px 14px;font-size:14px">${m.text}<div style="font-size:10px;opacity:.6;margin-top:4px;text-align:right">${new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'})}</div></div>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="customerChatInput" style="flex:1;background:var(--surface2);border:none;border-radius:12px;padding:13px 16px;color:var(--text);font-size:14px;font-family:inherit" placeholder="Μήνυμα...">
+        <button onclick="sendCustomerMsg('${activeCustomerOrderKey}')" style="background:var(--accent);border:none;border-radius:12px;width:48px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">
+          <span class="material-icons-round">send</span>
+        </button>
+      </div>
+    </div>`;
+  // Listen for new messages
+  if(window._db && activeCustomerOrderKey) {
+    window._onValue(window._ref(window._db,'chat/customer/'+activeCustomerOrderKey), snap=>{
+      customerChatMsgs = snap.val() ? Object.values(snap.val()) : [];
+      const chatO = myOrders[activeCustomerOrderKey];
+      if(chatO) renderCustomerChat(chatO);
+    });
+  }
+}
+
+function sendCustomerMsg(orderKey) {
+  const inp = document.getElementById('customerChatInput');
+  if(!inp||!inp.value.trim()) return;
+  const msg = {from:'driver', text:inp.value.trim(), time:Date.now(), driverName:driverData?.name||''};
+  inp.value = '';
+  customerChatMsgs.push(msg);
+  if(window._db) {
+    window._set(window._push(window._ref(window._db,'chat/customer/'+orderKey)), msg);
+  }
+  const o = myOrders[orderKey];
+  if(o) renderCustomerChat(o);
 }
 
 function closeCustomerChat() {
+  activeCustomerOrderKey = null;
+  customerChatMsgs = [];
   const chatWrap = document.getElementById('chatWrap');
   if(chatWrap) chatWrap.innerHTML = '<div class="chat-empty"><span class="material-icons-round">chat_bubble_outline</span><span>Δεν υπάρχουν μηνύματα</span></div>';
+}
+
+function updateEarningsUI(total, today, deliveries) {
+  const fmtE = v => '€' + parseFloat(v||0).toFixed(2);
+  const el = id => document.getElementById(id);
+  if(el('earnBigMonth')) el('earnBigMonth').textContent = fmtE(total);
+  if(el('earnStatToday')) el('earnStatToday').textContent = fmtE(today);
+  if(el('earnStatDeliveries')) el('earnStatDeliveries').textContent = deliveries||0;
+  // Week = total for now (no weekly tracking yet)
+  if(el('earnStatWeek')) el('earnStatWeek').textContent = fmtE(total);
+  // Avg per delivery
+  const avg = deliveries > 0 ? (total/deliveries) : 0;
+  if(el('earnStatAvg')) el('earnStatAvg').textContent = fmtE(avg);
+  // Top bar
+  if(el('topEarnings')) el('topEarnings').textContent = fmtE(today);
+  if(el('topDeliveries')) el('topDeliveries').textContent = deliveries||0;
+  if(el('topWeek')) el('topWeek').textContent = fmtE(total);
 }
 
 function calcDriverEarnings(order) {
@@ -524,6 +592,21 @@ function pickupOrder(k){
 }
 function deliverOrder(k){
   closeCustomerChat();
+  const o = myOrders[k];
+  const earned = o ? calcDriverEarnings(o) : 0;
+  const uid = window._currentUser ? window._currentUser.uid : null;
+  if(window._db && uid) {
+    const dRef = window._ref(window._db,'drivers/'+uid);
+    window._onValue(dRef, snap => {
+      const d = snap.val()||{};
+      const newEarnings = (parseFloat(d.earnings)||0) + earned;
+      const newOrders = (parseInt(d.orders)||0) + 1;
+      const todayEarnings = (parseFloat(d.earningsToday)||0) + earned;
+      window._update(dRef, {earnings: newEarnings, earningsToday: todayEarnings, orders: newOrders, lastDelivery: Date.now()});
+      // Update UI immediately
+      updateEarningsUI(newEarnings, todayEarnings, newOrders);
+    }, {onlyOnce: true});
+  }
   const o=myOrders[k];if(!o)return;
   if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'delivered'});
   else{delete myOrders[k];renderOrders();}
