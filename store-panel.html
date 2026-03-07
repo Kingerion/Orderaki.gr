@@ -192,4 +192,331 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     </div>
     <div id="authError" class="auth-error"></div>
     <div class="auth-tabs">
-      <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Σύνδεση
+      <div class="auth-tab active" 
+id="tabLogin" onclick="switchAuthTab('login')">Σύνδεση</div>
+      <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Εγγραφή Νέου Καταστήματος</div>
+    </div>
+    <div id="loginForm">
+      <div class="auth-title">Καλωσόρισες πίσω</div>
+      <div class="auth-sub">Συνδέσου για να διαχειριστείς το κατάστημά σου</div>
+      <div class="f-group"><label class="f-label">Email</label><input class="f-input" id="lEmail" type="email" placeholder="store@example.com"></div>
+      <div class="f-group"><label class="f-label">Κωδικός</label><input class="f-input" id="lPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="auth-btn" onclick="doLogin()">Σύνδεση →</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="auth-title">Εγγραφή Καταστήματος</div>
+      <div class="auth-sub">Δημιούργησε λογαριασμό για το κατάστημά σου</div>
+      <div class="f-group"><label class="f-label">Όνομα Καταστήματος</label><input class="f-input" id="rName" placeholder="π.χ. Pizza Napoli"></div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Κατηγορία</label>
+          <select class="f-input f-select" id="rCat">
+            <option value="burger">🍔 Burger</option><option value="pizza">🍕 Pizza</option>
+            <option value="souvlaki">🌯 Souvlaki</option><option value="sushi">🍣 Sushi</option>
+            <option value="coffee">☕ Καφές</option><option value="desserts">🍰 Γλυκά</option>
+            <option value="greek">🥗 Ελληνική Κουζίνα</option>
+          </select>
+        </div>
+        <div class="f-group"><label class="f-label">Min. Παραγγελία (€)</label><input class="f-input" id="rMin" type="number" placeholder="10" value="10"></div>
+      </div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Email</label><input class="f-input" id="rEmail" type="email" placeholder="store@example.com"></div>
+        <div class="f-group"><label class="f-label">Κωδικός (min 6)</label><input class="f-input" id="rPass" type="password" placeholder="••••••••"></div>
+      </div>
+      <button class="auth-btn" onclick="doRegister()">Δημιουργία Λογαριασμού →</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="appScreen">
+  <div class="topbar">
+    <a href="orderaki.html" class="top-logo">Order<span>aki</span></a>
+    <div class="top-divider"></div>
+    <div class="top-store-name" id="topStoreName">Φόρτωση...</div>
+    <div class="status-toggle open" id="statusToggle" onclick="toggleStoreStatus()">
+      <div class="status-dot"></div>
+      <span class="status-label" id="statusLabel">Ανοιχτό</span>
+    </div>
+    <div class="top-actions">
+      <div class="icon-btn notif-wrap" onclick="goToPage('orders',document.querySelector('[data-page=orders]'))">
+        <span class="material-icons-round">notifications_none</span>
+        <div class="notif-badge" id="newOrderBadge"></div>
+      </div>
+      <div class="icon-btn notif-wrap" onclick="goToPage('chat',document.querySelector('[data-page=chat]'))">
+        <span class="material-icons-round">chat</span>
+        <div class="notif-badge" id="chatBadge"></div>
+      </div>
+      <div class="icon-btn" onclick="confirmLogout()"><span class="material-icons-round">logout</span></div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="sidebar">
+      <div class="s-label">Κύριο</div>
+      <div class="s-item active" data-page="overview" onclick="goToPage('overview',this)"><span class="material-icons-round">dashboard</span>Επισκόπηση</div>
+      <div class="s-item" data-page="orders" onclick="goToPage('orders',this)"><span class="material-icons-round">receipt_long</span>Παραγγελίες<span class="s-badge" id="sideOrderBadge">0</span></div>
+      <div class="s-item" data-page="menu" onclick="goToPage('menu',this)"><span class="material-icons-round">restaurant_menu</span>Μενού</div>
+      <div class="s-label">Άλλα</div>
+      <div class="s-item" data-page="settings" onclick="goToPage('settings',this)"><span class="material-icons-round">store</span>Κατάστημα</div>
+      <div class="s-item" data-page="chat" onclick="goToPage('chat',this)"><span class="material-icons-round">chat</span>Chat Admin<span class="s-badge" id="sideChatBadge">!</span></div>
+    </div>
+    <div class="main">
+      <div class="page active" id="page-overview">
+        <div class="page-title">Επισκόπηση</div>
+        <div class="page-sub" id="overviewDate">Σήμερα</div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-val" id="st-new" style="color:var(--blue)">0</div><div class="stat-label">Νέες</div></div>
+          <div class="stat-card"><div class="stat-val" id="st-active" style="color:var(--accent)">0</div><div class="stat-label">Ενεργές</div></div>
+          <div class="stat-card"><div class="stat-val" id="st-done" style="color:var(--green)">0</div><div class="stat-label">Παραδόθηκαν</div></div>
+          <div class="stat-card"><div class="stat-val" id="st-rev" style="color:var(--text)">€0</div><div class="stat-label">Έσοδα</div></div>
+        </div>
+        <div class="panel"><div class="panel-hd"><div class="panel-title">Τελευταίες Παραγγελίες</div></div><div id="recentOrders"></div></div>
+      </div>
+      <div class="page" id="page-orders">
+        <div class="page-title">Παραγγελίες</div>
+        <div class="page-sub">Διαχείριση παραγγελιών του καταστήματός σου</div>
+        <div class="panel">
+          <div class="panel-hd"><div class="panel-title">Όλες</div><div class="count-pill" id="ordersCount">0</div></div>
+          <div style="display:grid;grid-template-columns:110px 1fr 130px 90px 110px 130px;gap:12px;padding:9px 20px;background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3)"><div>#</div><div>Πελάτης</div><div>Προϊόντα</div><div>Σύνολο</div><div>Κατάσταση</div><div>Ενέργεια</div></div>
+          <div id="ordersList"></div>
+        </div>
+      </div>
+      <div class="page" id="page-menu">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="page-title">Μενού</div>
+          <button class="save-btn" style="font-size:13px;padding:10px 18px" onclick="openAddItemModal()"><span class="material-icons-round">add</span>Νέο Προϊόν</button>
+        </div>
+        <div class="page-sub">Πρόσθεσε ή επεξεργάσου τα προϊόντα σου</div>
+        <div class="menu-grid" id="menuGrid"></div>
+      </div>
+      <div class="page" id="page-settings">
+        <div class="page-title">Κατάστημα</div>
+        <div class="page-sub">Επεξεργασία προφίλ και ρυθμίσεων</div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">store</span>Βασικές Πληροφορίες</div>
+          <div class="f-row" style="margin-bottom:12px">
+            <div class="f-group"><label class="f-label">Όνομα</label><input class="f-input" id="sName" placeholder="Burger House"></div>
+            <div class="f-group"><label class="f-label">Κατηγορία</label>
+              <select class="f-input f-select" id="sCat">
+                <option value="burger">🍔 Burger</option><option value="pizza">🍕 Pizza</option>
+                <option value="souvlaki">🌯 Souvlaki</option><option value="sushi">🍣 Sushi</option>
+                <option value="coffee">☕ Καφές</option><option value="desserts">🍰 Γλυκά</option>
+                <option value="greek">🥗 Ελληνική</option>
+              </select>
+            </div>
+          </div>
+          <div class="f-row" style="margin-bottom:12px">
+            <div class="f-group"><label class="f-label">Κόστος Παράδοσης (€)</label><input class="f-input" id="sDelivery" type="number" placeholder="2.00"></div>
+            <div class="f-group"><label class="f-label">Min. Παραγγελία (€)</label><input class="f-input" id="sMin" type="number" placeholder="10"></div>
+          </div>
+          <div class="f-group" style="margin-bottom:14px"><label class="f-label">Περιγραφή</label><textarea class="f-input" id="sDesc" rows="2" placeholder="Σύντομη περιγραφή..."></textarea></div>
+          <div class="f-group" style="margin-bottom:16px"><label class="f-label">Εικονίδιο</label>
+            <div class="emoji-grid" id="emojiGrid">
+              <div class="emoji-opt selected" data-e="🍔" onclick="selectEmoji(this)">🍔</div>
+              <div class="emoji-opt" data-e="🍕" onclick="selectEmoji(this)">🍕</div>
+              <div class="emoji-opt" data-e="🌯" onclick="selectEmoji(this)">🌯</div>
+              <div class="emoji-opt" data-e="🍣" onclick="selectEmoji(this)">🍣</div>
+              <div class="emoji-opt" data-e="☕" onclick="selectEmoji(this)">☕</div>
+              <div class="emoji-opt" data-e="🍰" onclick="selectEmoji(this)">🍰</div>
+              <div class="emoji-opt" data-e="🥗" onclick="selectEmoji(this)">🥗</div>
+              <div class="emoji-opt" data-e="🥡" onclick="selectEmoji(this)">🥡</div>
+              <div class="emoji-opt" data-e="🌮" onclick="selectEmoji(this)">🌮</div>
+              <div class="emoji-opt" data-e="🍜" onclick="selectEmoji(this)">🍜</div>
+              <div class="emoji-opt" data-e="🥩" onclick="selectEmoji(this)">🥩</div>
+              <div class="emoji-opt" data-e="🥪" onclick="selectEmoji(this)">🥪</div>
+            </div>
+          </div>
+          <button class="save-btn" onclick="saveStoreSettings()"><span class="material-icons-round">save</span>Αποθήκευση</button>
+        </div>
+      </div>
+      <div class="page" id="page-chat">
+        <div class="page-title">Chat με Admin</div>
+        <div class="page-sub">Επικοινωνία με την ομάδα Orderaki</div>
+        <div class="chat-box">
+          <div class="chat-msgs" id="chatMsgs"></div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chatInput" placeholder="Γράψε μήνυμα..." onkeydown="if(event.key==='Enter')sendChatMsg()">
+            <button class="chat-send" onclick="sendChatMsg()"><span class="material-icons-round">send</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="itemOverlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="itemModalTitle">Νέο Προϊόν</div>
+      <button class="close-btn" onclick="closeItemModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="f-row" style="margin-bottom:12px">
+      <div class="f-group"><label class="f-label">Εικονίδιο</label><input class="f-input" id="iEmoji" placeholder="🍔" style="font-size:22px;text-align:center"></div>
+      <div class="f-group"><label class="f-label">Τιμή (€) *</label><input class="f-input" id="iPrice" type="number" placeholder="9.50" step="0.50"></div>
+    </div>
+    <div class="f-group" style="margin-bottom:12px"><label class="f-label">Όνομα Προϊόντος *</label><input class="f-input" id="iName" placeholder="π.χ. Classic Burger"></div>
+    <div class="f-group" style="margin-bottom:20px"><label class="f-label">Περιγραφή</label><input class="f-input" id="iDesc" placeholder="π.χ. 200g μοσχάρι, τυρί, σαλάτα"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn-sm" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);padding:10px 16px" onclick="closeItemModal()">Ακύρωση</button>
+      <button class="save-btn" onclick="saveItem()" style="font-size:13px;padding:10px 18px"><span class="material-icons-round">save</span>Αποθήκευση</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="material-icons-round">check_circle</span><span id="toastMsg">OK</span></div>
+
+<script>
+const DEMO_STORE={name:'Burger House Demo',category:'burger',emoji:'🍔',deliveryCost:1.5,minOrder:10,description:'Demo κατάστημα',open:true};
+const DEMO_MENU={'i1':{name:'Classic Burger',emoji:'🍔',price:8.9,description:'200g μοσχάρι, τυρί, μαρούλι',available:true},'i2':{name:'Double Cheese',emoji:'🧀',price:11.5,description:'Διπλό τυρί',available:true},'i3':{name:'Πατάτες',emoji:'🍟',price:3.5,description:'Τραγανές',available:true}};
+const DEMO_ORDERS={'o1':{id:'#ORD1001',customerName:'Γιώργης Π.',phone:'6934000001',address:'Πατησίων 42',items:[{name:'Classic Burger',qty:1,price:8.9}],total:10.4,payment:'cash',status:'new',createdAt:Date.now()-900000},'o2':{id:'#ORD1002',customerName:'Ελένη Σ.',phone:'6934000002',address:'Βουλιαγμένης 88',items:[{name:'Double Cheese',qty:2,price:11.5}],total:25.5,payment:'card',status:'preparing',createdAt:Date.now()-3600000},'o3':{id:'#ORD1003',customerName:'Κώστας Δ.',phone:'6934000003',address:'Σόλωνος 25',items:[{name:'Classic Burger',qty:1,price:8.9}],total:10.4,payment:'cash',status:'delivered',createdAt:Date.now()-7200000}};
+const DEMO_CHAT=[{from:'admin',text:'Καλωσόρισες στο Orderaki! 👋',time:Date.now()-86400000,read:true},{from:'store',text:'Γεια! Πότε ξεκινάμε;',time:Date.now()-3600000,read:true}];
+
+let currentStore=null,storeId=null,myMenu={},myOrders={},myChat=[],editingItemId=null,selectedEmoji='🍔';
+const fmtTime=ts=>ts?new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}):'';
+
+function showAuthScreen(){document.getElementById('authScreen').style.display='flex';document.getElementById('appScreen').classList.remove('visible');}
+function switchAuthTab(t){document.getElementById('tabLogin').classList.toggle('active',t==='login');document.getElementById('tabRegister').classList.toggle('active',t==='register');document.getElementById('loginForm').style.display=t==='login'?'block':'none';document.getElementById('registerForm').style.display=t==='register'?'block':'none';}
+function showAuthError(msg){const el=document.getElementById('authError');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),4000);}
+
+function doLogin(){
+  const email=document.getElementById('lEmail').value.trim(),pass=document.getElementById('lPass').value;
+  if(!email||!pass){showAuthError('Συμπλήρωσε email και κωδικό');return;}
+  if(window._auth){window._signIn(window._auth,email,pass).catch(()=>showAuthError('Λανθασμένα στοιχεία'));}
+  else initDemoMode();
+}
+
+function doRegister(){
+  const name=document.getElementById('rName').value.trim(),email=document.getElementById('rEmail').value.trim(),pass=document.getElementById('rPass').value,cat=document.getElementById('rCat').value,min=parseFloat(document.getElementById('rMin').value)||10;
+  if(!name||!email||!pass){showAuthError('Συμπλήρωσε όλα τα πεδία');return;}
+  if(pass.length<6){showAuthError('Κωδικός min 6 χαρακτήρες');return;}
+  if(window._auth){
+    window._createUser(window._auth,email,pass).then(uc=>{
+      const uid=uc.user.uid;
+      const catE={burger:'🍔',pizza:'🍕',souvlaki:'🌯',sushi:'🍣',coffee:'☕',desserts:'🍰',greek:'🥗'};
+      window._set(window._ref(window._db,'stores/'+uid),{name,category:cat,emoji:catE[cat]||'🍴',deliveryCost:2,minOrder:min,description:'',open:false,rating:0,totalOrders:0,ownerId:uid,createdAt:Date.now(),status:'pending'});
+      // Notify admin
+      window._push(window._ref(window._db,'notifications'),{type:'new_store',storeId:uid,name,email,time:Date.now(),read:false});
+    }).catch(e=>showAuthError(e.message));
+  } else initDemoMode();
+}
+
+function confirmLogout(){if(window._auth)window._signOut(window._auth);else showAuthScreen();}
+
+function initStorePanel(user){
+  storeId=user.uid||'demo_store';
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('appScreen').classList.add('visible');
+  document.getElementById('overviewDate').textContent=new Date().toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long'});
+  if(window._db){
+    window._onValue(window._ref(window._db,'stores/'+storeId),snap=>{
+      const data=snap.val();
+      if(!data){
+        // Νέο κατάστημα χωρίς δεδομένα ακόμα — δείξε κενό dashboard
+        currentStore={name:user.email||'Νέο Κατάστημα',category:'burger',emoji:'🍴',deliveryCost:2,minOrder:10,description:'',open:false,storeId};
+        applyStoreData();
+        showToast('👋 Καλωσόρισες! Συμπλήρωσε τα στοιχεία του καταστήματός σου.');
+        // Auto-navigate to settings
+        goToPage('settings',document.querySelector('[data-page=settings]'));
+        return;
+      }
+      if(data.status==='pending'){document.getElementById('authScreen').style.display='none';document.getElementById('appScreen').classList.add('visible');let po=document.getElementById('pendingOverlay');if(!po){po=document.createElement('div');po.id='pendingOverlay';po.style.cssText='position:fixed;inset:0;background:#faf9f7;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;padding:32px;text-align:center';po.innerHTML='<div style="font-size:48px">⏳</div><div style="font-size:22px;font-weight:800">Αναμονή Έγκρισης</div><div style="font-size:14px;color:#888;max-width:280px;line-height:1.6">Η αίτησή σου εστάλη στον admin. Θα ειδοποιηθείς μόλις εγκριθείς.</div><button onclick="window._signOut(window._auth);location.reload()" style="background:#ff4500;color:#fff;border:none;border-radius:12px;padding:13px 28px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Αποσύνδεση</button>';document.body.appendChild(po);}return;}currentStore=data;currentStore.storeId=storeId;applyStoreData();
+    });
+    window._onValue(window._ref(window._db,'stores/'+storeId+'/menu'),snap=>{myMenu=snap.val()||{};renderMenu();});
+    window._onValue(window._ref(window._db,'orders'),snap=>{const all=snap.val()||{};myOrders={};for(const[k,v]of Object.entries(all)){if(v.storeId===storeId)myOrders[k]={...v,_key:k};}renderOrders();updateStats();});
+    window._onValue(window._ref(window._db,'chat/stores/'+storeId),snap=>{const arr=snap.val();myChat=arr?(Array.isArray(arr)?arr:Object.values(arr)):[];renderChat();const u=myChat.filter(m=>m.from==='admin'&&!m.read).length;document.getElementById('chatBadge').classList.toggle('show',u>0);document.getElementById('sideChatBadge').style.display=u>0?'inline-flex':'none';});
+  } else loadDemoData();
+}
+
+function initDemoMode(){initStorePanel({uid:'demo_store'});}
+
+function loadDemoData(){currentStore=DEMO_STORE;myMenu=DEMO_MENU;myOrders=DEMO_ORDERS;myChat=DEMO_CHAT;applyStoreData();renderMenu();renderOrders();updateStats();renderChat();}
+
+function applyStoreData(){
+  if(!currentStore)return;
+  document.getElementById('topStoreName').textContent=currentStore.name;
+  document.getElementById('statusLabel').textContent=currentStore.open?'Ανοιχτό':'Κλειστό';
+  document.getElementById('statusToggle').className='status-toggle'+(currentStore.open?' open':'');
+  document.getElementById('sName').value=currentStore.name||'';
+  document.getElementById('sCat').value=currentStore.category||'burger';
+  document.getElementById('sDelivery').value=currentStore.deliveryCost||2;
+  document.getElementById('sMin').value=currentStore.minOrder||10;
+  document.getElementById('sDesc').value=currentStore.description||'';
+  selectedEmoji=currentStore.emoji||'🍔';
+  document.querySelectorAll('.emoji-opt').forEach(el=>el.classList.toggle('selected',el.dataset.e===selectedEmoji));
+}
+
+function toggleStoreStatus(){
+  const n=!currentStore?.open;
+  if(window._db)window._update(window._ref(window._db,'stores/'+storeId),{open:n});
+  else{currentStore.open=n;applyStoreData();}
+  showToast(n?'✅ Κατάστημα: Ανοιχτό':'⏸️ Κατάστημα: Κλειστό');
+}
+
+function updateStats(){
+  const o=Object.values(myOrders);
+  document.getElementById('st-new').textContent=o.filter(x=>x.status==='new').length;
+  document.getElementById('st-active').textContent=o.filter(x=>['confirmed','preparing'].includes(x.status)).length;
+  document.getElementById('st-done').textContent=o.filter(x=>x.status==='delivered').length;
+  const rev=o.filter(x=>x.status==='delivered').reduce((s,x)=>s+(x.total||0),0);
+  document.getElementById('st-rev').textContent='€'+rev.toFixed(0);
+  const nc=o.filter(x=>x.status==='new').length;
+  const sb=document.getElementById('sideOrderBadge');
+  sb.style.display=nc>0?'inline-flex':'none';sb.textContent=nc;
+  document.getElementById('newOrderBadge').classList.toggle('show',nc>0);
+}
+
+const STATUS_MAP={new:['Νέα','st-new'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],cancelled:['Ακυρώθηκε','st-cancelled']};
+
+function renderOrders(){
+  const orders=Object.values(myOrders).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  document.getElementById('ordersCount').textContent=orders.length;
+  const html=orders.length?orders.map(o=>orderRowHTML(o)).join(''):'<div class="empty-state"><span class="material-icons-round">inbox</span>Δεν υπάρχουν παραγγελίες</div>';
+  document.getElementById('ordersList').innerHTML=html;
+  document.getElementById('recentOrders').innerHTML=orders.slice(0,5).map(o=>orderRowHTML(o)).join('')||'<div class="empty-state"><span class="material-icons-round">inbox</span>Καμία παραγγελία σήμερα</div>';
+}
+
+function orderRowHTML(o){
+  const[sl,sc]=STATUS_MAP[o.status]||['—','st-new'];
+  const itemsTxt=(o.items||[]).map(i=>`${i.name}×${i.qty}`).join(', ');
+  const actions=o.status==='new'
+    ?`<div class="order-actions"><button class="btn-sm btn-confirm" onclick="setOrderStatus('${o._key}','confirmed')"><span class="material-icons-round">check</span>Επιβεβαίωση</button><button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button></div>`
+    :o.status==='confirmed'
+    ?`<button class="btn-sm btn-confirm" onclick="setOrderStatus('${o._key}','preparing')"><span class="material-icons-round">restaurant</span>Ετοιμάζεται</button>`
+    :`<span style="font-size:11px;color:var(--text3)">${fmtTime(o.createdAt)}</span>`;
+  return`<div class="order-row"><div><span class="order-id">${o.id||o._key}</span></div><div><div style="font-size:13px;font-weight:700">${o.customerName||'—'}</div><div style="font-size:11px;color:var(--text3)">${o.phone||''}</div></div><div class="order-items-text">${itemsTxt}</div><div class="order-total">€${(o.total||0).toFixed(2)}</div><div><span class="order-status ${sc}">${sl}</span></div><div>${actions}</div></div>`;
+}
+
+function setOrderStatus(key,status){
+  if(window._db)window._update(window._ref(window._db,'orders/'+key),{status});
+  else{if(myOrders[key]){myOrders[key].status=status;renderOrders();updateStats();}}
+  if(status==='confirmed')showToast('✅ Παραγγελία επιβεβαιώθηκε!');
+}
+
+function renderMenu(){
+  const items=Object.entries(myMenu);
+  document.getElementById('menuGrid').innerHTML=items.map(([k,item])=>`
+    <div class="menu-card">
+      <div class="menu-card-emoji">${item.emoji||'🍴'}</div>
+      <div class="menu-card-name">${item.name}</div>
+      <div class="menu-card-desc">${item.description||''}</div>
+      <div class="menu-card-footer">
+        <div class="menu-card-price">€${(item.price||0).toFixed(2)}</div>
+        <div class="menu-card-actions">
+          <button class="menu-avail ${item.available?'available':'unavailable'}" onclick="toggleItemAvail('${k}')"><span class="material-icons-round">${item.available?'visibility':'visibility_off'}</span>${item.available?'Διαθέσιμο':'Κλειστό'}</button>
+          <div class="icon-btn" onclick="openEditItemModal('${k}')" style="width:30px;height:30px;border-radius:8px"><span class="material-icons-round" style="font-size:15px">edit</span></div>
+          <div class="icon-btn" onclick="deleteItem('${k}')" style="width:30px;height:30px;border-radius:8px;color:var(--red)"><span class="material-icons-round" style="font-size:15px">delete_outline</span></div>
+        </div>
+      </div>
+    </div>
+  `).join('')+`<div class="add-item-card" onclick="openAddItemModal()"><span class="material-icons-round">add_circle_outline</span><div class="add-item-label">Προσθήκη Προϊόντος</div></div>`;
+}
+
+function openAddItemModal(){editingItemId=null;document.getElementById('itemModalTitle').textContent='Νέο Προϊόν';['iEmoji','iName','iDesc','iPrice'].forEach(id=>document.getElementById(id).value='');document.getElementById('iEmoji').value='🍴';document.getElementById('itemOverlay').classList.add('open');}
+function openEditItemModal(key){const item=myMenu[key];if(!item)return;editingItemId=key;document.getElementById('itemModalTitle').textContent='Επεξεργασία';document.getElementById('iEmoji').value=item.emoji||'🍴';document.getElementById('iName').value=item.name||'';document.getElementById('iDesc').value=item.description||'';document.getElementById('iPrice').value=item.price||'';document.getElementById('itemOverlay').classList.add('open');}
+function closeItemModal(){document.getElementById('itemOverlay').classList.remove('open');}
+
+function saveItem(){
+  const name=document.getElementById('iName').value.trim(),price=parseFloat(document.getElementById('iPrice').value);
+  if(!name||isNaN(price)){showToast('⚠️ Συμπλήρωσε όνομα και τιμή');return;}
+  const item={name,emoji:document.getElementById('iEmoji').value||'🍴',price,description:document.getElementById('iDesc').value.trim(),available:true};
+  const path='stores/'+storeId+'/menu/';
+  if(window._db){if(editingItemId)window._update(window._ref(window._db,path+editingItemId),item);else{const nr=window._push(window._ref(window._db,path));window._set(nr,item);}}
+  else{const k=editingItemId||('i_'+Date.now());myMenu[k]=item;renderMenu();}
