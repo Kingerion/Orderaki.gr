@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orderaki — Παράγγειλε από το αγαπημένο σου</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,700;0,900;1,300;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+<!-- Firebase -->
+<script type="module">
+  const FIREBASE_CONFIG = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  if (FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
+    try {
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+      const { getDatabase, ref, push, set, onValue } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+      const app = initializeApp(FIREBASE_CONFIG);
+      const db = getDatabase(app);
+      const auth = getAuth(app);
+      window._db = db; window._ref = ref; window._push = push; window._set = set; window._onValue = onValue;
+      window._auth = auth; window._signIn = signInWithEmailAndPassword; window._signOut = signOut; window._onAuthStateChanged = onAuthStateChanged;
+      window._firebaseReady = true;
+      onAuthStateChanged(auth, user => { window._currentUser = user; if (user) showBusinessDashboard(user); });
+      onValue(ref(db,'stores'), s => { window._storesData = s.val()||{}; });
+    } catch(e) { window._firebaseReady = false; }
+  } else { window._firebaseReady = false; }
+</script>
+
+<style>
+/* ════════════════════════════════════════
+   VARIABLES & RESET
+════════════════════════════════════════ */
+:root {
+  --white: #ffffff;
+  --off-white: #faf9f7;
+  --cream: #f4f0e8;
+  --stone: #e8e2d9;
+  --text: #1a1714;
+  --text2: #5c5751;
+  --text3: #9c9590;
+  --accent: #ff4500;
+  --accent2: #ff6b35;
+  --accent-light: rgba(255,69,0,.08);
+  --accent-mid: rgba(255,69,0,.15);
+  --green: #16a34a;
+  --green-light: rgba(22,163,74,.1);
+  --border: rgba(26,23,20,.08);
+  --border2: rgba(26,23,20,.14);
+  --shadow-sm: 0 1px 4px rgba(26,23,20,.06);
+  --shadow: 0 4px 20px rgba(26,23,20,.08);
+  --shadow-lg: 0 12px 40px rgba(26,23,20,.12);
+  --shadow-xl: 0 24px 64px rgba(26,23,20,.14);
+  --r: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--white);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+img { display:block; max-width:100%; }
+button, input, select, textarea { font-family: inherit; }
+
+/* ════════════════════════════════════════
+   TYPOGRAPHY
+════════════════════════════════════════ */
+.display {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: -2px;
+}
+.display-lg { font-size: clamp(52px, 8vw, 96px); }
+.display-md { font-size: clamp(36px, 5vw, 58px); }
+.display-sm { font-size: clamp(28px, 4vw, 40px); }
+.serif { font-family: 'Fraunces', serif; }
+
+/* ════════════════════════════════════════
+   LAYOUT HELPERS
+════════════════════════════════════════ */
+.container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+section { padding: 100px 0; }
+
+/* ════════════════════════════════════════
+   NAV
+════════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  transition: box-shadow .3s;
+}
+nav.scrolled { box-shadow: var(--shadow); }
+.nav-inner {
+  max-width: 1180px; margin: 0 auto; padding: 0 24px;
+  height: 66px; display: flex; align-items: center; gap: 32px;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; flex-shrink: 0;
+}
+.nav-logo-mark {
+  width: 38px; height: 38px;
+  background: var(--accent);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 4px 14px rgba(255,69,0,.35);
+  transition: transform .2s;
+}
+.nav-logo:hover .nav-logo-mark { transform: rotate(-8deg) scale(1.05); }
+.nav-logo-text {
+  font-family: 'Fraunces', serif;
+  font-size: 22px; font-weight: 900;
+  color: var(--text); letter-spacing: -1px;
+}
+.nav-logo-text span { color: var(--accent); }
+.nav-links { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.nav-link {
+  padding: 8px 16px; border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  color: var(--text2); text-decoration: none;
+  transition: all .15s; white-space: nowrap;
+}
+.nav-link:hover { background: var(--off-white); color: var(--text); }
+.nav-cta {
+  background: var(--accent); color: #fff;
+  padding: 9px 20px; border-radius: 12px;
+  font-size: 14px; font-weight: 700;
+  text-decoration: none; transition: all .2s;
+  box-shadow: 0 4px 12px rgba(255,69,0,.3);
+  white-space: nowrap;
+}
+.nav-cta:hover { background: #e03d00; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,69,0,.35); }
+
+/* ════════════════════════════════════════
+   HERO
+════════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  background: var(--off-white);
+  display: flex; align-items: center;
+  padding-top: 66px;
+  position: relative; overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: .5;
+}
+.hero-blob-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(255,69,0,.12) 0%, transparent 70%);
+  top: -100px; right: -100px;
+}
+.hero-blob-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(255,107,53,.1) 0%, transparent 70%);
+  bottom: 0; left: 20%;
+}
+.hero-inner {
+  max-width: 1180px; margin: 0 auto; padding: 80px 24px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
+  align-items: center; position: relative; z-index: 1;
+}
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--white); border: 1.5px solid var(--border2);
+  padding: 8px 16px; border-radius: 20px;
+  font-size: 13px; font-weight: 700; color: var(--accent);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  animation: fadeSlideUp .8s both;
+}
+.hero-tag-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+.hero-title { margin-bottom: 24px; animation: fadeSlideUp .8s .1s both; }
+.hero-title em { font-style: italic; color: var(--accent); }
+.hero-sub {
+  font-size: 18px; color: var(--text2); line-height: 1.65;
+  margin-bottom: 40px; max-width: 480px; font-weight: 400;
+  animation: fadeSlideUp .8s .2s both;
+}
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; animation: fadeSlideUp .8s .3s both; }
+.btn-hero-primary {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--accent); color: #fff;
+  padding: 16px 28px; border-radius: 14px;
+  font-size: 16px; font-weight: 700; text-decoration: none;
+  box-shadow: 0 6px 24px rgba(255,69,0,.35);
+  transition: all .2s; border: none; cursor: pointer;
+}
+.btn-hero-primary:hover { background: #e03d00; transform: translateY(-2px); box-shadow: 0 10px 32px rgba(255,69,0,.4); }
+.btn-hero-secondary {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--white); color: var(--text);
+  padding: 16px 28px; border-radius: 14px;
+  font-size: 16px; font-weight: 700; text-decoration: none;
+  border: 1.5px solid var(--border2); transition: all .2s; cursor: pointer;
+}
+.btn-hero-secondary:hover { background: var(--cream); border-color: var(--border2); transform: translateY(-2px); }
+.hero-stats { display: flex; gap: 36px; margin-top: 52px; animation: fadeSlideUp .8s .4s both; }
+.hero-stat-value {
+  font-family: 'Fraunces', serif; font-size: 32px; font-weight: 900;
+  letter-spacing: -1.5px; color: var(--text);
+}
+.hero-stat-label { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+/* HERO VISUAL */
+.hero-visual { position: relative; animation: fadeSlideUp .8s .2s both; }
+.hero-phone {
+  background: var(--white);
+  border-radius: 32px;
+  box-shadow: var(--shadow-xl), 0 0 0 1px rgba(0,0,0,.06);
+  overflow: hidden; position: relative;
+  max-width: 340px; margin: 0 auto;
+}
+.phone-topbar {
+  background: var(--white); padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.phone-logo { font-family:'Fraunces',serif; font-size:18px; font-weight:900; color:var(--accent); }
+.phone-time { font-size: 12px; font-weight: 700; color: var(--text3); font-family:'Plus Jakarta Sans',sans-serif; }
+.phone-location {
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  border-bottom: 1px solid var(--border);
+}
+.phone-location .material-icons-round { font-size: 16px; color: var(--accent); }
+.phone-search {
+  margin: 14px 20px;
+  background: var(--off-white); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--text3);
+}
+.phone-search .material-icons-round { font-size:16px; }
+.phone-cats { display:flex; gap:8px; padding:0 20px 14px; overflow:hidden; }
+.phone-cat {
+  background: var(--off-white); border-radius: 20px;
+  padding: 7px 14px; font-size: 12px; font-weight: 700;
+  white-space: nowrap; color: var(--text2);
+  border: 1.5px solid var(--border);
+}
+.phone-cat.active { background: var(--accent); color: #fff; border-color: transparent; }
+.phone-rest-title { padding: 0 20px 10px; font-size: 13px; font-weight: 800; color: var(--text); }
+.phone-card {
+  margin: 0 20px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+}
+.phone-card-img {
+  height: 100px;
+  background: linear-gradient(135deg, #ffecd2, #fcb69f);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; position: relative;
+}
+.phone-card-badge {
+  position: absolute; top: 8px; left: 8px;
+  background: var(--accent); color: #fff;
+  padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 800;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.phone-card-body { padding: 12px 14px; }
+.phone-card-name { font-size: 14px; font-weight: 800; color: var(--text); }
+.phone-card-meta { display:flex; gap:12px; margin-top:5px; }
+.phone-card-meta span { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 3px; }
+.phone-card-meta .material-icons-round { font-size: 12px; }
+.phone-order-btn {
+  margin: 0 20px 20px;
+  background: var(--accent); color: #fff;
+  border-radius: 14px; padding: 14px;
+  text-align: center; font-size: 14px; font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255,69,0,.3);
+}
+
+/* Floating cards */
+.hero-float {
+  position: absolute; background: var(--white);
+  border-radius: 16px; padding: 12px 16px;
+  box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px;
+  font-size: 13px; font-weight: 700; white-space: nowrap;
+  border: 1px solid var(--border);
+}
+.hero-float-1 { top: 20px; left: -50px; animation: float1 4s ease-in-out infinite; }
+.hero-float-2 { bottom: 60px; right: -40px; animation: float2 4s ease-in-out infinite .5s; }
+@keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
+.float-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+@keyframes fadeSlideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* ════════════════════════════════════════
+   HOW IT WORKS
+════════════════════════════════════════ */
+.how { background: var(--white); }
+.section-label {
+  display: inline-block; font-size: 12px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 2px; color: var(--accent);
+  background: var(--accent-light); padding: 6px 14px; border-radius: 20px;
+  margin-bottom: 16px;
+}
+.section-title { margin-bottom: 12px; }
+.section-sub { font-size: 17px; color: var(--text2); max-width: 520px; line-height: 1.65; }
+.steps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 28px; margin-top: 60px; }
+.step-card {
+  background: var(--off-white); border-radius: var(--r-lg);
+  padding: 36px 32px; border: 1.5px solid var(--border);
+  transition: all .3s; cursor: default; position: relative; overflow: hidden;
+}
+.step-card::before {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle at top right, var(--accent-light), transparent 70%);
+  opacity: 0; transition: opacity .3s;
+}
+.step-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(255,69,0,.2); }
+.step-card:hover::before { opacity: 1; }
+.step-num {
+  font-family: 'Fraunces', serif; font-size: 56px; font-weight: 900;
+  color: rgba(255,69,0,.12); line-height: 1; margin-bottom: 20px;
+  letter-spacing: -3px;
+}
+.step-icon { width: 52px; height: 52px; background: var(--accent-light); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+.step-icon .material-icons-round { font-size: 26px; color: var(--accent); }
+.step-title { font-size: 20px; font-weight: 800; margin-bottom: 10px; letter-spacing: -.5px; }
+.step-text { font-size: 15px; color: var(--text2); line-height: 1.65; }
+
+/* ════════════════════════════════════════
+   CATEGORIES / STORES SECTION
+════════════════════════════════════════ */
+.categories { background: var(--off-white); }
+.cat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 50px; }
+.cat-item {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--r); padding: 24px 16px;
+  text-align: center; cursor: pointer; transition: all .2s;
+  text-decoration: none; color: var(--text);
+}
+.cat-item:hover { border-color: rgba(255,69,0,.4); background: var(--accent-light); transform: translateY(-3px); box-shadow: var(--shadow); }
+.cat-item:hover .cat-emoji { transform: scale(1.15) rotate(-5deg); }
+.cat-emoji { font-size: 36px; display: block; margin-bottom: 10px; transition: transform .2s; }
+.cat-name { font-size: 12px; font-weight: 700; color: var(--text2); }
+.stores-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 40px; }
+.store-card {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: var(--r-lg); overflow: hidden;
+  cursor: pointer; transition: all .25s; text-decoration: none; color: var(--text);
+}
+.store-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(255,69,0,.2); }
+.store-card-cover {
+  height: 130px; display: flex; align-items: center; justify-content: center;
+  font-size: 48px; position: relative;
+}
+.store-badge {
+  position: absolute; top: 12px; left: 12px;
+  background: var(--white); border-radius: 8px;
+  padding: 4px 10px; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; gap: 5px; box-shadow: var(--shadow-sm);
+}
+.store-badge.open { color: var(--green); }
+.store-badge.closed { color: var(--text3); }
+.store-badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+.store-badge.open .store-badge-dot { background: var(--green); }
+.store-badge.closed .store-badge-dot { background: var(--text3); }
+.store-body { padding: 16px 18px 18px; }
+.store-name { font-size: 17px; font-weight: 800; margin-bottom: 5px; }
+.store-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.store-meta span { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 4px; font-weight: 600; }
+.store-meta .material-icons-round { font-size: 13px; }
+.store-rating { color: var(--text) !important; }
+.store-rating .material-icons-round { color: #f59e0b !important; }
+.store-tag { background: var(--off-white); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; color: var(--text2) !important; }
+
+/* ════════════════════════════════════════
+   ORDER FORM MODAL
+════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(26,23,20,.5); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: var(--white); border-radius: var(--r-xl);
+  width: 100%; max-width: 680px; max-height: 90vh;
+  overflow-y: auto; box-shadow: var(--shadow-xl);
+  transform: translateY(30px) scale(.97);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  border: 1px solid var(--border);
+}
+.modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
+.modal-hd {
+  padding: 28px 32px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; gap: 16px; position: sticky; top: 0; background: var(--white); z-index: 1;
+}
+.modal-store-icon { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+.modal-store-name { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.modal-store-meta { font-size: 13px; color: var(--text3); margin-top: 3px; }
+.modal-close {
+  margin-left: auto; width: 38px; height: 38px; border-radius: 10px;
+  background: var(--off-white); border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; color: var(--text2); flex-shrink: 0;
+}
+.modal-close:hover { background: var(--stone); }
+.modal-close .material-icons-round { font-size: 18px; }
+.modal-body { padding: 28px 32px; display: flex; flex-direction: column; gap: 28px; }
+.order-section-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 16px; }
+.menu-items { display: flex; flex-direction: column; gap: 10px; }
+.menu-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--off-white); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 14px 16px; cursor: pointer; transition: all .15s;
+}
+.menu-item:hover { border-color: rgba(255,69,0,.3); background: var(--accent-light); }
+.menu-item.selected { border-color: var(--accent); background: var(--accent-light); }
+.menu-item-left { display: flex; align-items: center; gap: 12px; }
+.menu-item-emoji { font-size: 26px; }
+.menu-item-name { font-size: 15px; font-weight: 700; }
+.menu-item-desc { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.menu-item-price { font-family: 'Fraunces',serif; font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -1px; }
+.qty-control { display: flex; align-items: center; gap: 10px; }
+.qty-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1.5px solid var(--border2); background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; font-size: 18px; font-weight: 700; color: var(--text2);
+}
+.qty-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.qty-num { font-size: 15px; font-weight: 800; min-width: 20px; text-align: center; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: var(--text3); }
+.form-input {
+  width: 100%; background: var(--off-white); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 13px 16px;
+  font-size: 15px; color: var(--text); outline: none; transition: border-color .15s;
+}
+.form-input:focus { border-color: var(--accent); background: var(--white); }
+.form-input::placeholder { color: var(--text3); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pay-options { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.pay-opt {
+  border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 14px 10px; text-align: center; cursor: pointer; transition: all .15s;
+  font-size: 13px; font-weight: 700; color: var(--text2);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.pay-opt .material-icons-round { font-size: 22px; color: var(--text3); }
+.pay-opt:hover, .pay-opt.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.pay-opt.selected .material-icons-round { color: var(--accent); }
+.order-summary {
+  background: var(--off-white); border-radius: 16px;
+  padding: 20px; border: 1.5px solid var(--border);
+}
+.summary-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 14px; }
+.summary-row + .summary-row { border-top: 1px solid var(--border); }
+.summary-row.total { font-size: 17px; font-weight: 800; }
+.summary-row.total .summary-val { font-family: 'Fraunces',serif; color: var(--accent); font-size: 22px; letter-spacing: -1px; }
+.btn-order-submit {
+  width: 100%; background: var(--accent); color: #fff;
+  border: none; border-radius: 14px; padding: 17px;
+  font-size: 17px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 6px 24px rgba(255,69,0,.35); transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  letter-spacing: -.3px;
+}
+.btn-order-submit:hover { background: #e03d00; transform: translateY(-2px); box-shadow: 0 10px 32px rgba(255,69,0,.4); }
+.btn-order-submit .material-icons-round { font-size: 22px; }
+
+/* SUCCESS STATE */
+.order-success {
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; padding: 60px 32px; text-align: center; gap: 20px;
+}
+.success-icon { width: 80px; height: 80px; border-radius: 50%; background: var(--green-light); display: flex; align-items: center; justify-content: center; }
+.success-icon .material-icons-round { font-size: 40px; color: var(--green); }
+.success-title { font-size: 28px; font-weight: 900; font-family: 'Fraunces',serif; letter-spacing: -1px; }
+.success-sub { font-size: 16px; color: var(--text2); }
+.tracking-card {
+  background: var(--off-white); border: 1.5px solid var(--border);
+  border-radius: 16px; padding: 20px 24px; width: 100%;
+}
+.tracking-steps { display: flex; flex-direction: column; gap: 16px; margin-top: 12px; }
+.t-step { display: flex; align-items: center; gap: 14px; }
+.t-step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.t-step-dot.done { background: var(--green-light); }
+.t-step-dot.done .material-icons-round { font-size: 16px; color: var(--green); }
+.t-step-dot.active { background: var(--accent-light); }
+.t-step-dot.active .material-icons-round { font-size: 16px; color: var(--accent); }
+.t-step-dot.pending { background: var(--stone); }
+.t-step-dot.pending .material-icons-round { font-size: 16px; color: var(--text3); }
+.t-step-label { font-size: 14px; font-weight: 700; }
+.t-step-sub { font-size: 12px; color: var(--text3); }
+
+/* ════════════════════════════════════════
+   BUSINESS LOGIN
+════════════════════════════════════════ */
+.business { background: var(--cream); }
+.business-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.business-perks { display: flex; flex-direction: column; gap: 20px; margin-top: 36px; }
+.perk { display: flex; align-items: flex-start; gap: 16px; }
+.perk-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--white); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+.perk-icon .material-icons-round { font-size: 20px; color: var(--accent); }
+.perk-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+.perk-text { font-size: 14px; color: var(--text2); line-height: 1.55; }
+.login-card {
+  background: var(--white); border-radius: var(--r-xl);
+  padding: 40px; box-shadow: var(--shadow-xl); border: 1px solid var(--border);
+}
+.login-card-title { font-family: 'Fraunces',serif; font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 6px; }
+.login-card-sub { font-size: 14px; color: var(--text3); margin-bottom: 32px; }
+.login-form { display: flex; flex-direction: column; gap: 16px; }
+.login-btn {
+  width: 100%; background: var(--accent); color: #fff;
+  border: none; border-radius: 12px; padding: 15px;
+  font-size: 16px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 4px 18px rgba(255,69,0,.3); transition: all .2s; margin-top: 4px;
+}
+.login-btn:hover { background: #e03d00; transform: translateY(-1px); }
+.login-divider { text-align: center; font-size: 13px; color: var(--text3); margin: 4px 0; }
+.login-register {
+  width: 100%; background: var(--off-white); color: var(--text);
+  border: 1.5px solid var(--border2); border-radius: 12px; padding: 14px;
+  font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s;
+}
+.login-register:hover { background: var(--stone); }
+.login-error { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); color: #dc2626; border-radius: 10px; padding: 11px 14px; font-size: 13px; font-weight: 600; display: none; }
+.login-error.show { display: block; }
+
+/* BUSINESS DASHBOARD (post-login) */
+.biz-dashboard { display: none; }
+.biz-dashboard.show { display: block; }
+.biz-dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.biz-dash-title { font-size: 20px; font-weight: 800; }
+.biz-dash-sub { font-size: 13px; color: var(--text3); margin-top: 2px; }
+.biz-stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+.biz-stat { background: var(--off-white); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.biz-stat-val { font-family:'Fraunces',serif; font-size: 28px; font-weight: 900; letter-spacing: -1.5px; }
+.biz-stat-label { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
+.biz-orders { background: var(--off-white); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.biz-order-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.biz-order-id { font-family:'DM Mono',monospace; font-size: 11px; color: var(--accent); background: var(--accent-light); padding: 3px 7px; border-radius: 6px; font-weight: 700; }
+.biz-status { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.biz-s-new { background: rgba(59,130,246,.1); color: #2563eb; }
+.biz-s-prep { background: rgba(255,69,0,.1); color: var(--accent); }
+.biz-s-done { background: var(--green-light); color: var(--green); }
+.logout-btn { background: none; border: 1.5px solid var(--border2); border-radius: 10px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--text2); transition: all .15s; display: flex; align-items: center; gap: 6px; }
+.logout-btn:hover { background: var(--off-white); }
+
+/* ════════════════════════════════════════
+   FEATURES / WHY ORDERAKI
+════════════════════════════════════════ */
+.features { background: var(--white); }
+.features-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-top: 56px; }
+.feat { text-align: center; padding: 32px 20px; border-radius: var(--r-lg); border: 1.5px solid var(--border); transition: all .2s; }
+.feat:hover { border-color: rgba(255,69,0,.25); background: var(--off-white); transform: translateY(-4px); box-shadow: var(--shadow); }
+.feat-emoji { font-size: 40px; margin-bottom: 16px; }
+.feat-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+.feat-text { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+/* ════════════════════════════════════════
+   FOOTER
+════════════════════════════════════════ */
+footer {
+  background: var(--text); color: rgba(255,255,255,.55);
+  padding: 60px 0 32px;
+}
+.footer-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+.footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 48px; }
+.footer-brand-text {
+  font-family: 'Fraunces',serif; font-size: 26px; font-weight: 900;
+  color: #fff; letter-spacing: -1px; margin-bottom: 12px;
+}
+.footer-brand-text span { color: var(--accent); }
+.footer-desc { font-size: 14px; line-height: 1.7; max-width: 260px; }
+.footer-col-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,.8); margin-bottom: 16px; }
+.footer-link { display: block; font-size: 14px; padding: 5px 0; text-decoration: none; color: rgba(255,255,255,.5); transition: color .15s; }
+.footer-link:hover { color: #fff; }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,.08); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px; }
+.footer-badge { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.06); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.6); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: var(--text); color: #fff; border-radius: 14px;
+  padding: 14px 20px; display: flex; align-items: center; gap: 10px;
+  font-size: 14px; font-weight: 600; box-shadow: var(--shadow-xl);
+  transform: translateY(80px); opacity: 0;
+  transition: all .35s cubic-bezier(.34,1.56,.64,1); min-width: 260px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast .material-icons-round { font-size: 18px; color: var(--accent); }
+
+/* ════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .cat-grid { grid-template-columns: repeat(4,1fr); }
+  .stores-grid { grid-template-columns: repeat(2,1fr); }
+  .features-grid { grid-template-columns: repeat(2,1fr); }
+  .footer-top { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  section { padding: 70px 0; }
+  .hero-inner { grid-template-columns: 1fr; gap: 50px; padding: 60px 24px; }
+  .hero-visual { order: -1; }
+  .hero-float-1 { display: none; }
+  .hero-float-2 { right: -10px; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .cat-grid { grid-template-columns: repeat(3,1fr); }
+  .stores-grid { grid-template-columns: 1fr; }
+  .business-inner { grid-template-columns: 1fr; gap: 50px; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .nav-links .nav-link { display: none; }
+  .hero-stats { gap: 24px; }
+  .modal-box { border-radius: 24px 24px 0 0; max-height: 95vh; }
+  .modal-hd, .modal-body { padding: 20px 22px; }
+  .footer-top { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .biz-stat-row { grid-template-columns: 1fr 1fr; }
+  .pay-options { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .cat-grid { grid-template-columns: repeat(3,1fr); }
+  .hero-stats { flex-wrap: wrap; gap: 18px; }
+}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ NAV ═══════════ -->
+<nav id="mainNav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-mark">🍔</div>
+      <div class="nav-logo-text">Order<span>aki</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="#how" class="nav-link">Πώς λειτουργεί</a>
+      <a href="#stores" class="nav-link">Καταστήματα</a>
+      <a href="#business" class="nav-link">Για Επιχειρήσεις</a>
+      <a href="#order-now" class="nav-cta">Παράγγειλε τώρα →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero" id="hero">
+  <div class="hero-bg">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+  </div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-tag">
+        <div class="hero-tag-dot"></div>
+        Διαθέσιμο στην Αθήνα & Πειραιά
+      </div>
+      <h1 class="display display-lg hero-title">
+        Φαγητό<br>στην <em>πόρτα σου</em><br>σε 30′
+      </h1>
+      <p class="hero-sub">Παράγγελνε από εκατοντάδες καταστήματα. Γρήγορα, εύκολα, αξιόπιστα. Χωρίς κρυφές χρεώσεις.</p>
+      <div class="hero-actions">
+        <button class="btn-hero-primary" onclick="document.getElementById('stores').scrollIntoView({behavior:'smooth'})">
+          <span class="material-icons-round">restaurant</span> Δες τα καταστήματα
+        </button>
+        <button class="btn-hero-secondary" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">
+          Πώς λειτουργεί
+        </button>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-value">500+</div>
+          <div class="hero-stat-label">Καταστήματα</div>
+        </div>
+        <div style="border-left:2px solid var(--border);padding-left:36px">
+          <div class="hero-stat-value">28′</div>
+          <div class="hero-stat-label">Μέση παράδοση</div>
+        </div>
+        <div style="border-left:2px solid var(--border);padding-left:36px">
+          <div class="hero-stat-value">4.8★</div>
+          <div class="hero-stat-label">Βαθμολογία</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHONE MOCKUP -->
+    <div class="hero-visual">
+      <div class="hero-float hero-float-1">
+        <div class="float-icon" style="background:#fef3c7">🏍️</div>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--text)">Σε δρόμο!</div>
+          <div style="font-size:11px;color:var(--text3)">~12 λεπτά</div>
+        </div>
+      </div>
+      <div class="hero-float hero-float-2">
+        <div class="float-icon" style="background:#dcfce7">✅</div>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--text)">Παραδόθηκε!</div>
+          <div style="font-size:11px;color:var(--text3)">Καλή απόλαυση 🎉</div>
+        </div>
+      </div>
+      <div class="hero-phone">
+        <div class="phone-topbar">
+          <div class="phone-logo">orderaki</div>
+          <div class="phone-time">12:34</div>
+        </div>
+        <div class="phone-location">
+          <span class="material-icons-round">location_on</span>
+          Αθήνα, Κολωνάκι
+        </div>
+        <div class="phone-search">
+          <span class="material-icons-round">search</span>
+          Αναζήτηση...
+        </div>
+        <div class="phone-cats">
+          <div class="phone-cat active">🍔 Burger</div>
+          <div class="phone-cat">🍕 Pizza</div>
+          <div class="phone-cat">🌯 Souvlaki</div>
+        </div>
+        <div class="phone-rest-title">Κοντά σου</div>
+        <div class="phone-card">
+          <div class="phone-card-img">
+            🍔
+            <div class="phone-card-badge">25% OFF</div>
+          </div>
+          <div class="phone-card-body">
+            <div class="phone-card-name">Burger House</div>
+            <div class="phone-card-meta">
+              <span><span class="material-icons-round">star</span> 4.8</span>
+              <span><span class="material-icons-round">schedule</span> 20-25′</span>
+              <span><span class="material-icons-round">delivery_dining</span> €1.50</span>
+            </div>
+          </div>
+        </div>
+        <div class="phone-order-btn">Προσθήκη στο καλάθι →</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="how" id="how">
+  <div class="container">
+    <div class="section-label">Πώς λειτουργεί</div>
+    <h2 class="display display-md section-title">Παράγγειλε σε<br><em style="color:var(--accent)">3 απλά βήματα</em></h2>
+    <p class="section-sub">Από την επιλογή μέχρι την πόρτα σου — γρήγορο, απλό, αξιόπιστο.</p>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon"><span class="material-icons-round">store</span></div>
+        <div class="step-title">Επίλεξε κατάστημα</div>
+        <div class="step-text">Βρες το αγαπημένο σου από εκατοντάδες επιλογές — burger, pizza, souvlaki, σούσι και πολλά άλλα.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon"><span class="material-icons-round">shopping_cart</span></div>
+        <div class="step-title">Φτιάξε το καλάθι σου</div>
+        <div class="step-text">Διάλεξε τα προϊόντα που θέλεις, πρόσθεσε σχόλια και επέλεξε τρόπο πληρωμής.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon"><span class="material-icons-round">delivery_dining</span></div>
+        <div class="step-title">Παράδοση στην πόρτα σου</div>
+        <div class="step-text">Παρακολούθησε real-time την παραγγελία σου. Ο courier φτάνει σε 25-35 λεπτά κατά μέσο όρο.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CATEGORIES & STORES ═══════════ -->
+<section class="categories" id="stores">
+  <div class="container">
+    <div class="section-label">Παράγγελνε τώρα</div>
+    <h2 class="display display-md section-title">Τι <em style="color:var(--accent)">πεινάς</em> σήμερα;</h2>
+    <div class="cat-grid" id="catGrid">
+      <div class="cat-item" onclick="filterStores('burger')"><span class="cat-emoji">🍔</span><div class="cat-name">Burger</div></div>
+      <div class="cat-item" onclick="filterStores('pizza')"><span class="cat-emoji">🍕</span><div class="cat-name">Pizza</div></div>
+      <div class="cat-item" onclick="filterStores('souvlaki')"><span class="cat-emoji">🌯</span><div class="cat-name">Souvlaki</div></div>
+      <div class="cat-item" onclick="filterStores('sushi')"><span class="cat-emoji">🍣</span><div class="cat-name">Sushi</div></div>
+      <div class="cat-item" onclick="filterStores('coffee')"><span class="cat-emoji">☕</span><div class="cat-name">Καφές</div></div>
+      <div class="cat-item" onclick="filterStores('desserts')"><span class="cat-emoji">🍰</span><div class="cat-name">Γλυκά</div></div>
+    </div>
+    <div class="stores-grid" id="storesGrid" style="margin-top:48px">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FEATURES ═══════════ -->
+<section class="features" id="order-now">
+  <div class="container">
+    <div style="text-align:center;max-width:560px;margin:0 auto">
+      <div class="section-label">Γιατί Orderaki</div>
+      <h2 class="display display-md section-title">Φαγητό με <em style="color:var(--accent)">χαρά</em></h2>
+    </div>
+    <div class="features-grid">
+      <div class="feat"><div class="feat-emoji">⚡</div><div class="feat-title">Υπερ-γρήγορο</div><div class="feat-text">Μέση παράδοση 28 λεπτά. Live tracking σε κάθε βήμα.</div></div>
+      <div class="feat"><div class="feat-emoji">💸</div><div class="feat-title">Χωρίς κρυφές χρεώσεις</div><div class="feat-text">Βλέπεις το ακριβές κόστος πριν επιβεβαιώσεις. Τίποτα παραπάνω.</div></div>
+      <div class="feat"><div class="feat-emoji">🔒</div><div class="feat-title">Ασφαλής πληρωμή</div><div class="feat-text">Κάρτα, μετρητά ή αντικαταβολή. 100% ασφαλείς συναλλαγές.</div></div>
+      <div class="feat"><div class="feat-emoji">⭐</div><div class="feat-title">Επιλεγμένα καταστήματα</div><div class="feat-text">Μόνο καταστήματα με βαθμολογία 4+ ώστε να τρώτε πάντα καλά.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ BUSINESS LOGIN ═══════════ -->
+<section class="business" id="business">
+  <div class="container">
+    <div class="business-inner">
+      <div>
+        <div class="section-label">Για Επιχειρήσεις</div>
+        <h2 class="display display-md section-title">Αναπτύξτε την<br><em style="color:var(--accent)">επιχείρησή σας</em></h2>
+        <div class="business-perks">
+          <div class="perk">
+            <div class="perk-icon"><span class="material-icons-round">trending_up</span></div>
+            <div><div class="perk-title">Αύξηση πωλήσεων</div><div class="perk-text">Φτάστε χιλιάδες νέους πελάτες χωρίς επιπλέον κόστος μάρκετινγκ.</div></div>
+          </div>
+          <div class="perk">
+            <div class="perk-icon"><span class="material-icons-round">dashboard</span></div>
+            <div><div class="perk-title">Dashboard σε πραγματικό χρόνο</div><div class="perk-text">Παρακολουθήστε παραγγελίες, έσοδα και αναλύσεις από ένα σημείο.</div></div>
+          </div>
+          <div class="perk">
+            <div class="perk-icon"><span class="material-icons-round">support_agent</span></div>
+            <div><div class="perk-title">Υποστήριξη 7/24</div><div class="perk-text">Ομάδα υποστήριξης πάντα διαθέσιμη για εσάς και τους πελάτες σας.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGIN / DASHBOARD CARD -->
+      <div>
+        <!-- LOGIN FORM -->
+        <div class="login-card" id="loginCard">
+          <div class="login-card-title">Σύνδεση Καταστήματος</div>
+          <div class="login-card-sub">Διαχειριστείτε τις παραγγελίες σας</div>
+          <div class="login-form">
+            <div class="login-error" id="loginError">Λανθασμένα στοιχεία. Δοκίμασε ξανά.</div>
+            <div>
+              <div class="form-label" style="margin-bottom:6px">Email</div>
+              <input class="form-input" id="bizEmail" type="email" placeholder="store@example.com">
+            </div>
+            <div>
+              <div class="form-label" style="margin-bottom:6px">Κωδικός</div>
+              <input class="form-input" id="bizPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <button class="login-btn" onclick="doLogin()">Σύνδεση →</button>
+            <div class="login-divider">— ή —</div>
+            <button class="login-register" onclick="doRegister()">Εγγραφή νέου καταστήματος ✦</button>
+          </div>
+        </div>
+
+        <!-- BIZ DASHBOARD -->
+        <div class="login-card biz-dashboard" id="bizDashboard">
+          <div class="biz-dash-header">
+            <div>
+              <div class="biz-dash-title" id="bizDashTitle">Καλωσόρισες!</div>
+              <div class="biz-dash-sub">Dashboard Καταστήματος</div>
+            </div>
+            <button class="logout-btn" onclick="doLogout()">
+              <span class="material-icons-round" style="font-size:15px">logout</span> Έξοδος
+            </button>
+          </div>
+          <div class="biz-stat-row">
+            <div class="biz-stat"><div class="biz-stat-val" id="bsOrders">0</div><div class="biz-stat-label">Παραγγελίες</div></div>
+            <div class="biz-stat"><div class="biz-stat-val" id="bsRevenue">€0</div><div class="biz-stat-label">Έσοδα Σήμερα</div></div>
+            <div class="biz-stat"><div class="biz-stat-val" id="bsRating">—</div><div class="biz-stat-label">Βαθμολογία</div></div>
+          </div>
+          <div class="biz-orders">
+            <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">Live Παραγγελίες</div>
+            <div id="bizOrdersList">
+              <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Δεν υπάρχουν παραγγελίες ακόμα</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-text">Order<span>aki</span></div>
+        <p class="footer-desc">Το αγαπημένο delivery app της γειτονιάς σου. Φαγητό από τα καλύτερα καταστήματα, γρήγορα και αξιόπιστα.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Εταιρεία</div>
+        <a href="#" class="footer-link">Σχετικά με εμάς</a>
+        <a href="#" class="footer-link">Καριέρα</a>
+        <a href="#" class="footer-link">Blog</a>
+        <a href="#" class="footer-link">Τύπος</a>
+      </div>
+      <div>
+        <div class="footer-col-title">Υποστήριξη</div>
+        <a href="#" class="footer-link">Κέντρο βοήθειας</a>
+        <a href="#" class="footer-link">Επικοινωνία</a>
+        <a href="#" class="footer-link">Ακύρωση παραγγελίας</a>
+        <a href="#" class="footer-link">Γίνε courier</a>
+      </div>
+      <div>
+        <div class="footer-col-title">Νομικά</div>
+        <a href="#" class="footer-link">Όροι χρήσης</a>
+        <a href="#" class="footer-link">Πολιτική απορρήτου</a>
+        <a href="#" class="footer-link">Cookies</a>
+        <a href="#" class="footer-link">GDPR</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2025 Orderaki.gr — Με ❤️ από την Αθήνα</div>
+      <div class="footer-badge">🇬🇷 Made in Greece</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal-box" id="orderModalBox">
+    <!-- Filled by JS -->
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="material-icons-round">check_circle</span>
+  <span id="toastMsg">OK</span>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STORES DATA (demo — replace with Firebase)
+// ══════════════════════════════════════════════
+const STORES = [
+  {
+    id:'s1', name:'Burger House', emoji:'🍔', bg:'linear-gradient(135deg,#ffecd2,#fcb69f)',
+    cat:'burger', rating:4.8, time:'20-25', deliveryCost:1.5, minOrder:10,
+    open:true, tag:'Burger',
+    menu:[
+      {id:'m1',name:'Classic Smash Burger',emoji:'🍔',price:8.9,desc:'200g μοσχάρι, τυρί, μαρούλι, ντομάτα'},
+      {id:'m2',name:'Double Cheese',emoji:'🧀',price:11.5,desc:'Διπλό μοσχάρι, διπλό τυρί'},
+      {id:'m3',name:'Crispy Chicken',emoji:'🍗',price:9.5,desc:'Τραγανό κοτόπουλο, coleslaw, pickles'},
+      {id:'m4',name:'Τηγανητές Πατάτες',emoji:'🍟',price:3.5,desc:'Τραγανές, χοντρές'},
+      {id:'m5',name:'Milkshake',emoji:'🥤',price:4.5,desc:'Βανίλια, σοκολάτα ή φράουλα'},
+    ]
+  },
+  {
+    id:'s2', name:'Pizza Napoli',emoji:'🍕',bg:'linear-gradient(135deg,#ff9a9e,#fecfef)',
+    cat:'pizza',rating:4.7,time:'25-35',deliveryCost:2.0,minOrder:15,
+    open:true,tag:'Pizza',
+    menu:[
+      {id:'m1',name:'Margherita',emoji:'🍕',price:9.0,desc:'Σάλτσα ντομάτας, mozzarella, βασιλικός'},
+      {id:'m2',name:'Quattro Formaggi',emoji:'🧀',price:12.5,desc:'4 τυριά, τρούφα'},
+      {id:'m3',name:'Diavola',emoji:'🌶️',price:11.0,desc:'Σαλάμι πικάντε, jalapeños'},
+      {id:'m4',name:'Calzone',emoji:'🥙',price:11.5,desc:'Ζαμπόν, μανιτάρια, τυρί'},
+    ]
+  },
+  {
+    id:'s3', name:'Souvlaki Station',emoji:'🌯',bg:'linear-gradient(135deg,#a1c4fd,#c2e9fb)',
+    cat:'souvlaki',rating:4.9,time:'15-20',deliveryCost:1.0,minOrder:8,
+    open:true,tag:'Souvlaki',
+    menu:[
+      {id:'m1',name:'Πίτα Γύρος',emoji:'🌯',price:3.5,desc:'Χοιρινό ή κοτόπουλο, τζατζίκι, ντομάτα'},
+      {id:'m2',name:'Καλαμάκι Χοιρινό',emoji:'🍢',price:2.5,desc:'Φρέσκο χοιρινό στα κάρβουνα'},
+      {id:'m3',name:'Σπεσιάλ Πιάτο',emoji:'🍽️',price:9.5,desc:'3 καλαμάκια, πατάτες, τσατζίκι'},
+      {id:'m4',name:'Τζατζίκι',emoji:'🥒',price:2.0,desc:'Σπιτικό, με αγγούρι & σκόρδο'},
+    ]
+  },
+  {
+    id:'s4', name:'Sushi Kyoto',emoji:'🍣',bg:'linear-gradient(135deg,#d299c2,#fef9d7)',
+    cat:'sushi',rating:4.6,time:'30-40',deliveryCost:2.5,minOrder:20,
+    open:false,tag:'Sushi',
+    menu:[
+      {id:'m1',name:'Salmon Nigiri (2τμχ)',emoji:'🍣',price:6.0,desc:'Φρέσκος σολομός'},
+      {id:'m2',name:'California Roll (8τμχ)',emoji:'🎿',price:9.5,desc:'Καβούρι, αβοκάντο, αγγούρι'},
+      {id:'m3',name:'Dragon Roll (8τμχ)',emoji:'🐉',price:14.0,desc:'Γαρίδα τεμπούρα, αβοκάντο'},
+      {id:'m4',name:'Edamame',emoji:'🫛',price:4.5,desc:'Αλατισμένο, φρέσκο'},
+    ]
+  },
+  {
+    id:'s5', name:'Coffee Lab',emoji:'☕',bg:'linear-gradient(135deg,#c8a97e,#f5deb3)',
+    cat:'coffee',rating:4.8,time:'10-15',deliveryCost:0.5,minOrder:5,
+    open:true,tag:'Καφές',
+    menu:[
+      {id:'m1',name:'Freddo Espresso',emoji:'☕',price:3.5,desc:'Κλασικός παγωμένος'},
+      {id:'m2',name:'Cold Brew',emoji:'🧊',price:4.0,desc:'18ωρη εκχύλιση'},
+      {id:'m3',name:'Cappuccino',emoji:'☕',price:3.5,desc:'Διπλό espresso, αφρόγαλα'},
+      {id:'m4',name:'Croissant',emoji:'🥐',price:2.5,desc:'Βουτύρου, φρέσκο'},
+    ]
+  },
+  {
+    id:'s6', name:'Sweet Dreams',emoji:'🍰',bg:'linear-gradient(135deg,#fbc2eb,#a6c1ee)',
+    cat:'desserts',rating:4.7,time:'20-30',deliveryCost:1.5,minOrder:10,
+    open:true,tag:'Γλυκά',
+    menu:[
+      {id:'m1',name:'Τσίζκεϊκ Φράουλα',emoji:'🍓',price:6.0,desc:'Κρεμώδης, με coulis φράουλας'},
+      {id:'m2',name:'Σοκολατένια Τούρτα',emoji:'🎂',price:5.5,desc:'Υγρό κέντρο, σαντιγί'},
+      {id:'m3',name:'Μακαρόν (6τμχ)',emoji:'🍬',price:7.0,desc:'Διάφορες γεύσεις'},
+      {id:'m4',name:'Κρέπα Νουτέλα',emoji:'🫓',price:4.5,desc:'Με μπανάνα & φουντούκια'},
+    ]
+  },
+];
+
+// ══════════════════════════════════════════════
+// CART STATE
+// ══════════════════════════════════════════════
+let cart = {}; // { itemId: { item, qty } }
+let activeStore = null;
+let selectedPayment = 'cash';
+
+// ══════════════════════════════════════════════
+// RENDER STORES
+// ══════════════════════════════════════════════
+function renderStores(filter = null) {
+  const stores = filter ? STORES.filter(s => s.cat === filter) : STORES;
+  document.getElementById('storesGrid').innerHTML = stores.map(s => `
+    <div class="store-card" onclick="openOrderModal('${s.id}')">
+      <div class="store-card-cover" style="background:${s.bg}">
+        <span style="font-size:52px">${s.emoji}</span>
+        <div class="store-badge ${s.open?'open':'closed'}">
+          <div class="store-badge-dot"></div>
+          ${s.open ? 'Ανοιχτό' : 'Κλειστό'}
+        </div>
+      </div>
+      <div class="store-body">
+        <div class="store-name">${s.name}</div>
+        <div class="store-meta">
+          <span class="store-rating"><span class="material-icons-round">star</span>${s.rating}</span>
+          <span><span class="material-icons-round">schedule</span>${s.time}′</span>
+          <span><span class="material-icons-round">delivery_dining</span>€${s.deliveryCost.toFixed(2)}</span>
+          <span class="store-tag">${s.tag}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterStores(cat) {
+  renderStores(cat);
+  document.getElementById('storesGrid').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+renderStores();
+
+// ══════════════════════════════════════════════
+// ORDER MODAL
+// ══════════════════════════════════════════════
+function openOrderModal(storeId) {
+  activeStore = STORES.find(s => s.id === storeId);
+  if (!activeStore) return;
+  cart = {};
+  renderModal();
+  document.getElementById('orderModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOrderModal() {
+  document.getElementById('orderModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('orderModal').addEventListener('click', function(e) {
+  if (e.target === this) closeOrderModal();
+});
+
+function renderModal() {
+  const s = activeStore;
+  document.getElementById('orderModalBox').innerHTML = `
+    <div class="modal-hd">
+      <div class="modal-store-icon" style="background:${s.bg}">${s.emoji}</div>
+      <div>
+        <div class="modal-store-name">${s.name}</div>
+        <div class="modal-store-meta">⭐ ${s.rating} · ${s.time}′ · Min €${s.minOrder}</div>
+      </div>
+      <button class="modal-close" onclick="closeOrderModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- MENU -->
+      <div>
+        <div class="order-section-title">Μενού</div>
+        <div class="menu-items" id="menuItems">
+          ${s.menu.map(item => `
+            <div class="menu-item" id="mi_${item.id}" onclick="addItem('${item.id}')">
+              <div class="menu-item-left">
+                <span class="menu-item-emoji">${item.emoji}</span>
+                <div>
+                  <div class="menu-item-name">${item.name}</div>
+                  <div class="menu-item-desc">${item.desc}</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <span class="menu-item-price">€${item.price.toFixed(2)}</span>
+                <div class="qty-control" id="qc_${item.id}" style="display:none" onclick="event.stopPropagation()">
+                  <div class="qty-btn" onclick="changeQty('${item.id}',-1)">−</div>
+                  <div class="qty-num" id="qn_${item.id}">0</div>
+                  <div class="qty-btn" onclick="changeQty('${item.id}',1)">+</div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- DELIVERY INFO -->
+      <div>
+        <div class="order-section-title">Στοιχεία Παράδοσης</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Όνομα *</label>
+              <input class="form-input" id="oName" placeholder="Το όνομά σου">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Τηλέφωνο *</label>
+              <input class="form-input" id="oPhone" placeholder="+30 69..." type="tel">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Διεύθυνση Παράδοσης *</label>
+            <input class="form-input" id="oAddress" placeholder="π.χ. Πατησίων 42, Αθήνα">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Σχόλια (προαιρετικό)</label>
+            <input class="form-input" id="oNotes" placeholder="π.χ. 3ος όροφος, χωρίς κρεμμύδι...">
+          </div>
+        </div>
+      </div>
+
+      <!-- PAYMENT -->
+      <div>
+        <div class="order-section-title">Τρόπος Πληρωμής</div>
+        <div class="pay-options">
+          <div class="pay-opt selected" id="pay_cash" onclick="selectPay('cash')">
+            <span class="material-icons-round">payments</span>Μετρητά
+          </div>
+          <div class="pay-opt" id="pay_card" onclick="selectPay('card')">
+            <span class="material-icons-round">credit_card</span>Κάρτα
+          </div>
+          <div class="pay-opt" id="pay_online" onclick="selectPay('online')">
+            <span class="material-icons-round">phone_iphone</span>Online
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="order-summary" id="orderSummary">
+        <div style="font-size:13px;font-weight:700;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Σύνοψη</div>
+        <div id="summaryLines"></div>
+        <div class="summary-row">
+          <span>Παράδοση</span>
+          <span>€${s.deliveryCost.toFixed(2)}</span>
+        </div>
+        <div class="summary-row total">
+          <span>Σύνολο</span>
+          <span class="summary-val" id="summaryTotal">€${s.deliveryCost.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <button class="btn-order-submit" onclick="submitOrder()">
+        <span class="material-icons-round">rocket_launch</span>
+        Παράγγειλε τώρα!
+      </button>
+    </div>
+  `;
+}
+
+function addItem(itemId) {
+  const item = activeStore.menu.find(m => m.id === itemId);
+  if (!item) return;
+  if (!cart[itemId]) { cart[itemId] = { item, qty: 0 }; }
+  cart[itemId].qty++;
+  updateCartUI(itemId);
+  updateSummary();
+}
+
+function changeQty(itemId, delta) {
+  if (!cart[itemId]) return;
+  cart[itemId].qty += delta;
+  if (cart[itemId].qty <= 0) { delete cart[itemId]; }
+  updateCartUI(itemId);
+  updateSummary();
+}
+
+function updateCartUI(itemId) {
+  const qty = cart[itemId]?.qty || 0;
+  const qcEl = document.getElementById(`qc_${itemId}`);
+  const qnEl = document.getElementById(`qn_${itemId}`);
+  const miEl = document.getElementById(`mi_${itemId}`);
+  if (!qcEl) return;
+  if (qty > 0) {
+    qcEl.style.display = 'flex';
+    qnEl.textContent = qty;
+    miEl.classList.add('selected');
+  } else {
+    qcEl.style.display = 'none';
+    miEl.classList.remove('selected');
+  }
+}
+
+function updateSummary() {
+  const items = Object.values(cart);
+  const subtotal = items.reduce((s, {item, qty}) => s + item.price * qty, 0);
+  const total = subtotal + activeStore.deliveryCost;
+
+  document.getElementById('summaryLines').innerHTML = items.map(({item, qty}) =>
+    `<div class="summary-row"><span>${item.emoji} ${item.name} ×${qty}</span><span>€${(item.price*qty).toFixed(2)}</span></div>`
+  ).join('');
+
+  document.getElementById('summaryTotal').textContent = `€${total.toFixed(2)}`;
+}
+
+function selectPay(type) {
+  selectedPayment = type;
+  ['cash','card','online'].forEach(t => {
+    document.getElementById(`pay_${t}`).classList.toggle('selected', t === type);
+  });
+}
+
+function submitOrder() {
+  const name = document.getElementById('oName')?.value.trim();
+  const phone = document.getElementById('oPhone')?.value.trim();
+  const address = document.getElementById('oAddress')?.value.trim();
+
+  if (!name || !phone || !address) { showToast('⚠️ Συμπλήρωσε όνομα, τηλέφωνο & διεύθυνση'); return; }
+  if (!Object.keys(cart).length) { showToast('🛒 Πρόσθεσε τουλάχιστον ένα προϊόν'); return; }
+
+  const items = Object.values(cart);
+  const subtotal = items.reduce((s,{item,qty}) => s + item.price * qty, 0);
+  const total = subtotal + activeStore.deliveryCost;
+
+  const order = {
+    id: '#ORD' + (1000 + Math.floor(Math.random() * 9000)),
+    store: activeStore.name,
+    storeId: activeStore.id,
+    customerName: name,
+    phone,
+    address,
+    notes: document.getElementById('oNotes')?.value || '',
+    items: items.map(({item,qty}) => ({ name: item.name, price: item.price, qty })),
+    total,
+    payment: selectedPayment,
+    status: 'new',
+    createdAt: Date.now()
+  };
+
+  // Save to Firebase or demo
+  if (window._db) {
+    const r = window._push(window._ref(window._db, 'orders'));
+    window._set(r, order);
+  }
+
+  // Show success UI
+  showOrderSuccess(order);
+}
+
+function showOrderSuccess(order) {
+  document.getElementById('orderModalBox').innerHTML = `
+    <div class="order-success" style="display:flex">
+      <div class="success-icon"><span class="material-icons-round">check_circle</span></div>
+      <h3 class="success-title">Παραγγελία επιβεβαιώθηκε!</h3>
+      <p class="success-sub">Η παραγγελία ${order.id} ελήφθη. Θα σε καλέσουν σύντομα.</p>
+      <div class="tracking-card">
+        <div style="font-size:13px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Tracking Παραγγελίας</div>
+        <div class="tracking-steps">
+          <div class="t-step">
+            <div class="t-step-dot done"><span class="material-icons-round">check</span></div>
+            <div><div class="t-step-label">Παραγγελία ελήφθη</div><div class="t-step-sub">Μόλις τώρα</div></div>
+          </div>
+          <div class="t-step">
+            <div class="t-step-dot active"><span class="material-icons-round">restaurant</span></div>
+            <div><div class="t-step-label">Ετοιμάζεται...</div><div class="t-step-sub">~10 λεπτά</div></div>
+          </div>
+          <div class="t-step">
+            <div class="t-step-dot pending"><span class="material-icons-round">delivery_dining</span></div>
+            <div><div class="t-step-label">Σε δρόμο</div><div class="t-step-sub">~${activeStore.time}′ λεπτά</div></div>
+          </div>
+          <div class="t-step">
+            <div class="t-step-dot pending"><span class="material-icons-round">home</span></div>
+            <div><div class="t-step-label">Παράδοση</div><div class="t-step-sub">Στην πόρτα σου</div></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-hero-secondary" style="width:100%" onclick="closeOrderModal()">Κλείσιμο</button>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+// BUSINESS LOGIN
+// ══════════════════════════════════════════════
+function doLogin() {
+  const email = document.getElementById('bizEmail').value.trim();
+  const pass = document.getElementById('bizPass').value;
+  if (!email || !pass) { showLoginError('Συμπλήρωσε email και κωδικό.'); return; }
+
+  if (window._auth) {
+    window._signIn(window._auth, email, pass)
+      .then(uc => showBusinessDashboard(uc.user))
+      .catch(() => showLoginError('Λανθασμένα στοιχεία. Δοκίμασε ξανά.'));
+  } else {
+    // Demo login
+    if (email.includes('@') && pass.length >= 4) {
+      showBusinessDashboard({ email, displayName: email.split('@')[0] });
+    } else {
+      showLoginError('Λανθασμένα στοιχεία. Δοκίμασε ξανά.');
+    }
+  }
+}
+
+function doRegister() {
+  showToast('📧 Επικοινωνήστε μαζί μας για εγγραφή: info@orderaki.gr');
+}
+
+function doLogout() {
+  if (window._auth && window._signOut) window._signOut(window._auth);
+  document.getElementById('loginCard').style.display = 'block';
+  document.getElementById('bizDashboard').classList.remove('show');
+  showToast('👋 Αποσυνδεθήκατε!');
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function showBusinessDashboard(user) {
+  document.getElementById('loginCard').style.display = 'none';
+  const dash = document.getElementById('bizDashboard');
+  dash.classList.add('show');
+  const name = user.displayName || user.email || 'Κατάστημα';
+  document.getElementById('bizDashTitle').textContent = 'Γεια, ' + name + '!';
+
+  // Demo stats
+  document.getElementById('bsOrders').textContent = '12';
+  document.getElementById('bsRevenue').textContent = '€147';
+  document.getElementById('bsRating').textContent = '4.8★';
+  document.getElementById('bizOrdersList').innerHTML = [
+    { id:'#ORD1042', item:'Burger House', status:'new', statusLabel:'Νέα', total:'€22.50' },
+    { id:'#ORD1041', item:'Pizza Napoli', status:'prep', statusLabel:'Ετοιμάζεται', total:'€19.00' },
+    { id:'#ORD1040', item:'Souvlaki Station', status:'done', statusLabel:'Παραδόθηκε', total:'€14.50' },
+  ].map(o => `
+    <div class="biz-order-row">
+      <div class="biz-order-id">${o.id}</div>
+      <div style="flex:1;font-size:13px;font-weight:600">${o.item}</div>
+      <div class="biz-status biz-s-${o.status}">${o.statusLabel}</div>
+      <div style="font-size:13px;font-weight:800;font-family:'Fraunces',serif">${o.total}</div>
+    </div>
+  `).join('');
+
+  showToast('✅ Συνδεθήκατε επιτυχώς!');
+
+  // Link to admin dashboard
+  if (window._db) {
+    window._onValue(window._ref(window._db, 'orders'), snap => {
+      const all = Object.values(snap.val() || {});
+      document.getElementById('bsOrders').textContent = all.length;
+      const rev = all.reduce((s,o)=>s+(o.total||0),0);
+      document.getElementById('bsRevenue').textContent = '€' + rev.toFixed(0);
+    });
+  }
+}
+
+// ══════════════════════════════════════════════
+// NAV SCROLL
+// ══════════════════════════════════════════════
+window.addEventListener('scroll', () => {
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 20);
+}, { passive: true });
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastT;
+function showToast(msg) {
+  document.getElementById('toastMsg').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
