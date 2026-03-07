@@ -29,12 +29,13 @@
   if (FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
     try {
       const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-      const { getDatabase, ref, onValue, update, push, set, serverTimestamp }
+      const { getDatabase, ref, onValue, update, push, set, remove, serverTimestamp }
         = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
       const app = initializeApp(FIREBASE_CONFIG);
       const db = getDatabase(app);
       window._db = db; window._ref = ref; window._update = update;
       window._push = push; window._set = set; window._serverTimestamp = serverTimestamp;
+      window._remove = remove; window._onValue = onValue;
       window._onValue = onValue; window._firebaseReady = true;
       onValue(ref(db,'orders'), s => { const d=s.val()||{}; window._firebaseOrders=d; renderOrdersFromFirebase(d); updateStats(d); if(autoDispatch) runAutoDispatch(d); });
       onValue(ref(db,'drivers'), s => { const d=s.val()||{}; window._firebaseDrivers=d; renderDriversFromFirebase(d); });
@@ -503,20 +504,32 @@ const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digi
 // INIT
 // ══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  allOrders = DEMO_ORDERS;
-  allDrivers = DEMO_DRIVERS;
-  allChats = DEMO_CHAT;
+  // Start EMPTY — Firebase will fill everything
+  allOrders = {};
+  allDrivers = {};
+  allChats = {};
   renderTable();
   renderDrivers();
   updateStats(allOrders);
   renderChatDriverList();
   updateAutoDispatchUI();
+  // Fallback: show demo data only if Firebase doesn't respond in 5 seconds
+  setTimeout(()=>{
+    if(Object.keys(allOrders).length===0 && Object.keys(allDrivers).length===0){
+      console.log('Firebase timeout - showing demo data');
+      allOrders = DEMO_ORDERS;
+      allDrivers = DEMO_DRIVERS;
+      renderTable(); renderDrivers(); updateStats(allOrders);
+    }
+  }, 5000);
 });
 
 // ══════════════════════════════════════════════════════════
 // FIREBASE BRIDGES
 // ══════════════════════════════════════════════════════════
-window.renderOrdersFromFirebase = d => { allOrders=d||{}; renderTable(); };
+window.renderOrdersFromFirebase = d => { allOrders=d||{}; renderTable(); updateStats(allOrders); };
+// Ensure _set alias exists
+if(!window._set && window._fbSet) window._set = window._fbSet;
 window.renderDriversFromFirebase = d => {
   const all = d||{};
   allDrivers = {};
@@ -563,15 +576,16 @@ window.renderPendingStores = function(all){
     </div>`).join('');
 };
 window.approveStore = function(uid){
-  console.log('Approving store:', uid);
-  if(window._db) {
-    window._update(window._ref(window._db,'stores/'+uid),{status:'approved',open:true})
-      .then(()=>showToast('✅ Κατάστημα εγκρίθηκε!'))
-      .catch(e=>showToast('❌ Σφάλμα: '+e.message));
-  } else showToast('❌ Δεν υπάρχει Firebase σύνδεση');
+  if(!uid){showToast('❌ Σφάλμα: δεν βρέθηκε uid');return;}
+  if(!window._db){showToast('❌ Χωρίς Firebase σύνδεση');return;}
+  console.log('Approving store uid:', uid);
+  window._set(window._ref(window._db,'stores/'+uid+'/status'),'approved');
+  window._set(window._ref(window._db,'stores/'+uid+'/open'),true);
+  showToast('✅ Κατάστημα εγκρίθηκε!');
 };
 window.rejectStore = function(uid){
-  if(window._db) window._remove(window._ref(window._db,'stores/'+uid));
+  if(!window._db){showToast('❌ Χωρίς Firebase');return;}
+  window._remove(window._ref(window._db,'stores/'+uid));
   showToast('❌ Κατάστημα απορρίφθηκε');
 };
 
@@ -749,7 +763,7 @@ function renderDrivers() {
     seen.add(name);
     return true;
   });
-  const online = entries.filter(([,d])=>d.online===true).length;
+  const online = entries.filter(([,d])=>d.online===true || d.online==='true').length;
   document.getElementById('driverCount').textContent = online + ' Online';
   document.getElementById('sDrivers').textContent = online;
   document.getElementById('navDrivers').textContent = online;
@@ -763,7 +777,7 @@ function renderDrivers() {
       </div>
       <div style="flex:1">
         <div class="d-name">${d.name}</div>
-        <div class="d-info">${d.online?'Online':'Offline'}</div>
+        <div class="d-info">${(d.online===true||d.online==='true')?'Online':'Offline'}</div>
       </div>
       <div class="d-orders"><span>${d.orders||0}</span></div>
       <div class="chat-btn-small" onclick="openChatWith('${d.name}')" title="Chat με ${d.name}">
@@ -1033,23 +1047,9 @@ function toggleNotifPanel(){
 }
 
 
-function approveStore(storeId, notifKey) {
-  if (!storeId) return;
-  if (window._db) {
-    window._update(window._ref(window._db,'stores/'+storeId),{status:'approved'});
-    window._update(window._ref(window._db,'notifications/'+notifKey),{read:true});
-  }
-  showToast('✅ Το κατάστημα εγκρίθηκε!');
-}
+// approveStore is defined above as window.approveStore
 
-function approveDriver(driverId, notifKey) {
-  if (!driverId) return;
-  if (window._db) {
-    window._update(window._ref(window._db,'drivers/'+driverId),{status:'approved',online:false,orders:0});
-    window._update(window._ref(window._db,'notifications/'+notifKey),{read:true});
-  }
-  showToast('✅ Ο οδηγός εγκρίθηκε!');
-}
+// approveDriver is defined above as window.approveDriver
 
 function rejectApplicant(id, notifKey, type) {
   if (!id) return;
