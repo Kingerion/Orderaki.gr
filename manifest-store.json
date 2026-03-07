@@ -1,0 +1,14 @@
+{
+  "name": "Orderaki Store",
+  "short_name": "Store Panel",
+  "description": "Διαχείριση καταστήματος",
+  "start_url": "/store-panel.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff4500",
+  "orientation": "portrait-primary",
+  "icons": [
+    {"src": "icon-store.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-store.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
