@@ -192,3 +192,181 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--surface3);color:var(--text);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:var(--shadow);pointer-events:none}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 ::-webkit-scrollbar{width:0}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="screen active" id="screenAuth">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🏍️</div>
+      <div class="auth-logo-text">Order<span>aki</span></div>
+      <div class="auth-logo-sub">Driver App</div>
+    </div>
+    <div id="authErr" class="auth-error"></div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabL" onclick="switchTab('login')">Σύνδεση</div>
+      <div class="auth-tab" id="tabR" onclick="switchTab('register')">Εγγραφή</div>
+    </div>
+    <div id="loginForm">
+      <div class="f-group"><label class="f-label">Email</label><input class="f-input" id="lEmail" type="email" placeholder="your@email.com"></div>
+      <div class="f-group"><label class="f-label">Κωδικός</label><input class="f-input" id="lPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="auth-btn" onclick="doLogin()"><span class="material-icons-round">login</span>Σύνδεση</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Όνομα</label><input class="f-input" id="rFirst" placeholder="Γιώργης"></div>
+        <div class="f-group"><label class="f-label">Επώνυμο</label><input class="f-input" id="rLast" placeholder="Παπαδόπουλος"></div>
+      </div>
+      <div class="f-group"><label class="f-label">Τηλέφωνο</label><input class="f-input" id="rPhone" type="tel" placeholder="+30 693..."></div>
+      <div class="f-group"><label class="f-label">Email</label><input class="f-input" id="rEmail" type="email" placeholder="your@email.com"></div>
+      <div class="f-group"><label class="f-label">Κωδικός (min 6)</label><input class="f-input" id="rPass" type="password" placeholder="••••••••"></div>
+      <button class="auth-btn" onclick="doRegister()"><span class="material-icons-round">person_add</span>Αίτηση Εγγραφής</button>
+    </div>
+  </div>
+</div>
+
+<!-- PENDING APPROVAL -->
+<div class="screen" id="screenPending">
+  <div class="pending-wrap">
+    <div class="pending-icon"><span class="material-icons-round">hourglass_top</span></div>
+    <div class="pending-title">Αναμονή Έγκρισης</div>
+    <div class="pending-sub">Η αίτησή σου στάλθηκε στον admin. Θα ειδοποιηθείς μόλις εγκριθείς.</div>
+    <div class="pending-badge">⏳ Σε αναμονή έγκρισης</div>
+    <button style="background:transparent;border:1.5px solid var(--border);color:var(--text2);border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;margin-top:8px" onclick="doSignOut()">Αποσύνδεση</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="screen" id="screenApp">
+  <div class="topbar">
+    <div class="top-driver-info">
+      <div class="top-avatar" id="topAvatar">?</div>
+      <div><div class="top-name" id="topName">Οδηγός</div><div class="top-role">Οδηγός Delivery</div></div>
+    </div>
+    <div class="online-toggle on" id="onlineToggle" onclick="toggleOnline()">
+      <div class="online-dot"></div>
+      <span class="online-label" id="onlineLabel">Online</span>
+    </div>
+  </div>
+  <div class="earnings-bar">
+    <div class="earn-item"><div class="earn-val" id="earnToday">€0</div><div class="earn-label">Σήμερα</div></div>
+    <div class="earn-item"><div class="earn-val" id="earnDeliveries">0</div><div class="earn-label">Παραδόσεις</div></div>
+    <div class="earn-item"><div class="earn-val" id="earnWeek">€0</div><div class="earn-label">Εβδομάδα</div></div>
+  </div>
+
+  <!-- ORDERS PAGE -->
+  <div class="content" id="pageOrders" style="display:block">
+    <div id="ordersList"><div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span><span style="font-size:13px">Οι παραγγελίες σου εμφανίζονται εδώ</span></div></div>
+  </div>
+
+  <!-- CHAT PAGE -->
+  <div class="content" id="pageChat" style="display:none;padding:0">
+    <div class="chat-wrap">
+      <div class="chat-msgs" id="chatMsgs"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chatInput" placeholder="Μήνυμα στον admin..." onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="chat-send" onclick="sendMsg()"><span class="material-icons-round">send</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EARNINGS PAGE -->
+  <div class="content" id="pageEarnings" style="display:none">
+    <div class="earn-page">
+      <div class="earn-big-card">
+        <div class="earn-big-val" id="earnBigMonth">€0</div>
+        <div class="earn-big-label">Σύνολο Μήνα</div>
+      </div>
+      <div class="earn-grid">
+        <div class="earn-card"><div class="earn-card-val" id="earnStatToday" style="color:var(--accent)">€0</div><div class="earn-card-label">Σήμερα</div></div>
+        <div class="earn-card"><div class="earn-card-val" id="earnStatDeliveries" style="color:var(--green)">0</div><div class="earn-card-label">Παραδόσεις</div></div>
+        <div class="earn-card"><div class="earn-card-val" id="earnStatWeek" style="color:var(--yellow)">€0</div><div class="earn-card-label">Εβδομάδα</div></div>
+        <div class="earn-card"><div class="earn-card-val" id="earnStatAvg" style="color:var(--text)">€0</div><div class="earn-card-label">Μέσος Όρος</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE PAGE -->
+  <div class="content" id="pageProfile" style="display:none">
+    <div class="profile-page">
+      <div class="profile-card">
+        <div class="profile-avatar" id="profAvatar">?</div>
+        <div class="profile-name" id="profName">—</div>
+        <div class="profile-email" id="profEmail">—</div>
+        <div class="profile-status"><span class="material-icons-round" style="font-size:14px">verified</span>Εγκεκριμένος Οδηγός</div>
+      </div>
+      <div class="profile-menu-item"><span class="material-icons-round">phone</span><span class="profile-menu-label" id="profPhone">—</span></div>
+      <div class="profile-menu-item danger" onclick="doSignOut()"><span class="material-icons-round">logout</span><span class="profile-menu-label">Αποσύνδεση</span><span class="material-icons-round">chevron_right</span></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-orders" onclick="goPage('orders')"><span class="material-icons-round">receipt_long</span><span class="nav-label">Παραγγελίες</span><div class="nav-badge" id="navBadge" style="display:none">0</div></div>
+    <div class="nav-item" id="nav-chat" onclick="goPage('chat')"><span class="material-icons-round">chat</span><span class="nav-label">Chat</span><div class="nav-badge" id="chatBadge" style="display:none">!</div></div>
+    <div class="nav-item" id="nav-earnings" onclick="goPage('earnings')"><span class="material-icons-round">account_balance_wallet</span><span class="nav-label">Κέρδη</span></div>
+    <div class="nav-item" id="nav-profile" onclick="goPage('profile')"><span class="material-icons-round">person</span><span class="nav-label">Προφίλ</span></div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="rejectSheet">
+  <div class="sheet">
+    <div class="sheet-title">Απόρριψη Παραγγελίας</div>
+    <div class="reject-opt" onclick="rejectOrder('Δεν μπορώ να παραδώσω τώρα')">Δεν μπορώ να παραδώσω τώρα</div>
+    <div class="reject-opt" onclick="rejectOrder('Η διεύθυνση δεν βρίσκεται')">Η διεύθυνση δεν βρίσκεται</div>
+    <div class="reject-opt" onclick="rejectOrder('Τεχνικό πρόβλημα')">Τεχνικό πρόβλημα</div>
+    <div class="reject-opt" onclick="rejectOrder('Άλλος λόγος')">Άλλος λόγος</div>
+    <div class="reject-opt" style="color:var(--text3)" onclick="closeSheet()">Ακύρωση</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let driverData=null, myOrders={}, myChat=[], isOnline=true, rejectingKey=null;
+const fmtTime=ts=>ts?new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}):'';
+const fmtCur=v=>`€${(v||0).toFixed(2)}`;
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen'+id.charAt(0).toUpperCase()+id.slice(1))?.classList.add('active');}
+function showErr(msg){const e=document.getElementById('authErr');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),4000);}
+function switchTab(t){document.getElementById('tabL').classList.toggle('active',t==='login');document.getElementById('tabR').classList.toggle('active',t==='register');document.getElementById('loginForm').style.display=t==='login'?'block':'none';document.getElementById('registerForm').style.display=t==='register'?'block':'none';}
+
+function doLogin(){
+  const email=document.getElementById('lEmail').value.trim(),pass=document.getElementById('lPass').value;
+  if(!email||!pass){showErr('Συμπλήρωσε email και κωδικό');return;}
+  if(window._auth)window._signIn(window._auth,email,pass).catch(()=>showErr('Λανθασμένα στοιχεία'));
+  else initDemo();
+}
+
+function doRegister(){
+  const first=document.getElementById('rFirst').value.trim(),last=document.getElementById('rLast').value.trim(),
+        phone=document.getElementById('rPhone').value.trim(),email=document.getElementById('rEmail').value.trim(),
+        pass=document.getElementById('rPass').value;
+  if(!first||!last||!phone||!email||!pass){showErr('Συμπλήρωσε όλα τα πεδία');return;}
+  if(pass.length<6){showErr('Κωδικός min 6 χαρακτήρες');return;}
+  if(window._auth){
+    window._createUser(window._auth,email,pass).then(uc=>{
+      const uid=uc.user.uid;
+      window._set(window._ref(window._db,'drivers/'+uid),{
+        name:first+' '+last,firstName:first,lastName:last,phone,email,
+        online:false,orders:0,earnings:0,status:'pending',createdAt:Date.now(),uid
+      });
+      // Notify admin
+      window._push(window._ref(window._db,'notifications'),{
+        type:'new_driver',driverId:uid,name:first+' '+last,phone,email,time:Date.now(),read:false
+      });
+    }).catch(e=>showErr(e.message));
+  } else initDemo();
+}
+
+function checkDriverStatus(user){
+  if(!window._db){initDemo();return;}
+  window._onValue(window._ref(window._db,'drivers/'+user.uid),snap=>{
+    const d=snap.val();
+    if(!d){showScreen('auth');return;}
+    driverData={...d,uid:user.uid};
+    if(d.status==='pending'||d.status==='rejected'){showScreen('pending');}
+    else{loadDriverApp();}
+  });
+}
