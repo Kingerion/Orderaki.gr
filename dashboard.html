@@ -561,3 +561,220 @@ window.renderPendingStores = function(all){
       <button onclick="approveStore('${k}')" style="background:var(--green-light);color:var(--green);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✅ Έγκριση</button>
       <button onclick="rejectStore('${k}')" style="background:var(--red-light);color:var(--red);border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">❌</button>
     </div>`).join('');
+};
+window.approveStore = function(uid){
+  if(window._db) window._update(window._ref(window._db,'stores/'+uid),{status:'approved'});
+  showToast('✅ Κατάστημα εγκρίθηκε!');
+};
+window.rejectStore = function(uid){
+  if(window._db) window._remove(window._ref(window._db,'stores/'+uid));
+  showToast('❌ Κατάστημα απορρίφθηκε');
+};
+
+window.approveDriver = function(uid, name, phone){
+  if(window._db) window._update(window._ref(window._db,'drivers/'+uid),{status:'approved'});
+  showToast('✅ Οδηγός εγκρίθηκε: '+name);
+};
+window.rejectDriverReq = function(uid){
+  if(window._db) window._remove(window._ref(window._db,'drivers/'+uid));
+  showToast('❌ Αίτημα απορρίφθηκε');
+};
+window.renderAllChats = function(){
+  // allChats merges drivers and stores
+  allChats = {};
+  // drivers: keyed by uid, use name as key for display
+  const drv = window._driverChats||{};
+  for(const [uid,msgs] of Object.entries(drv)){
+    const d = allDrivers[uid];
+    const label = (d&&d.name)||uid;
+    allChats['driver:'+uid] = { msgs: Array.isArray(msgs)?msgs:Object.values(msgs||{}), label, type:'driver', uid };
+  }
+  // stores: keyed by uid
+  const str = window._storeChats||{};
+  for(const [uid,msgs] of Object.entries(str)){
+    const s = allStores ? (allStores[uid]||{}) : {};
+    const label = s.name||uid;
+    allChats['store:'+uid] = { msgs: Array.isArray(msgs)?msgs:Object.values(msgs||{}), label, type:'store', uid };
+  }
+  renderChatList();
+  if(activeChatKey) renderChatMessages(activeChatKey);
+};
+let allStores = {};
+window.setAllStores = d => { allStores=d||{}; };
+window.updateStats = function(data){
+  const o = Object.values(data||{});
+  document.getElementById('sNew').textContent = o.filter(x=>x.status==='new').length;
+  document.getElementById('sActive').textContent = o.filter(x=>x.status==='picked'||x.status==='assigned').length;
+  document.getElementById('sDelivered').textContent = o.filter(x=>x.status==='delivered').length;
+  document.getElementById('sTotal').textContent = o.length;
+  document.getElementById('navCount').textContent = o.filter(x=>x.status==='new').length;
+};
+
+// ══════════════════════════════════════════════════════════
+// AUTO-DISPATCH
+// ══════════════════════════════════════════════════════════
+function toggleAutoDispatch() {
+  autoDispatch = !autoDispatch;
+  updateAutoDispatchUI();
+  showToast(autoDispatch ? '🤖 Auto-Dispatch: Ενεργό!' : '✋ Manual Mode: Εσύ αναθέτεις');
+  if (autoDispatch) runAutoDispatch(allOrders);
+}
+
+function updateAutoDispatchUI() {
+  const wrap = document.getElementById('adWrap');
+  const toggle = document.getElementById('adToggle');
+  const label = document.getElementById('adLabel');
+  const icon = document.getElementById('adIcon');
+  if (autoDispatch) {
+    wrap.className = 'auto-dispatch-wrap on';
+    toggle.className = 'toggle-switch on';
+    label.textContent = 'Auto-Dispatch: ON';
+    icon.style.color = 'var(--green)';
+  } else {
+    wrap.className = 'auto-dispatch-wrap';
+    toggle.className = 'toggle-switch';
+    label.textContent = 'Auto-Dispatch: OFF';
+    icon.style.color = 'var(--muted)';
+  }
+}
+
+function runAutoDispatch(orders) {
+  if (!autoDispatch) return;
+  const newOrders = Object.entries(orders||{}).filter(([,o]) => o.status === 'new');
+  const onlineDrivers = Object.values(allDrivers).filter(d => d.online);
+  if (!newOrders.length || !onlineDrivers.length) return;
+
+  newOrders.forEach(([key, order]) => {
+    // Pick driver with fewest active orders
+    const driverLoads = {};
+    onlineDrivers.forEach(d => { driverLoads[d.name] = 0; });
+    Object.values(allOrders).forEach(o => {
+      if ((o.status === 'assigned' || o.status === 'picked') && o.driver && driverLoads[o.driver] !== undefined) {
+        driverLoads[o.driver]++;
+      }
+    });
+    const bestDriver = onlineDrivers.reduce((a,b) =>
+      (driverLoads[a.name]||0) <= (driverLoads[b.name]||0) ? a : b
+    );
+
+    setTimeout(() => {
+      if (window._db) {
+        window._update(window._ref(window._db,'orders/'+key), { driver: bestDriver.name, status:'assigned' });
+      } else {
+        if (allOrders[key] && allOrders[key].status === 'new') {
+          allOrders[key].driver = bestDriver.name;
+          allOrders[key].status = 'assigned';
+          renderTable();
+          updateStats(allOrders);
+          showToast('🤖 Ανατέθηκε αυτόματα → ' + bestDriver.name);
+        }
+      }
+    }, 1200);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER TABLE
+// ══════════════════════════════════════════════════════════
+function renderTable() {
+  let orders = Object.entries(allOrders).map(([k,v])=>({...v,_key:k}));
+  if (currentFilter !== 'all') orders = orders.filter(o=>o.status===currentFilter);
+  if (searchQ) orders = orders.filter(o =>
+    (o.customerName||'').toLowerCase().includes(searchQ) ||
+    (o.id||'').toLowerCase().includes(searchQ) ||
+    (o.deliveryAddress||'').toLowerCase().includes(searchQ) ||
+    (o.phone||'').includes(searchQ)
+  );
+  orders.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  document.getElementById('tableCount').textContent = orders.length;
+  document.getElementById('emptyState').style.display = orders.length ? 'none' : 'flex';
+
+  const driverOptions = Object.entries(allDrivers).filter(([uid,d])=>d.online&&d.status==='approved')
+    .map(([uid,d])=>`<option value="${uid}::${d.name}">${d.name} (${d.phone||''})</option>`).join('');
+
+  const statusMap = {
+    new:['Νέα','s-new'], assigned:['Ανατέθηκε','s-assigned'],
+    picked:['Παρέλαβε','s-picked'], delivered:['Παραδόθηκε','s-delivered'],
+    failed:['Αποτυχία','s-failed'], rejected:['Απορρίφθηκε','s-rejected'],
+  };
+
+  document.getElementById('ordersBody').innerHTML = orders.map((o,i)=>{
+    const [sl,sc] = statusMap[o.status]||['—','s-new'];
+    const c = COLORS[i%COLORS.length];
+    return `<tr class="${i===0&&o.status==='new'?'row-new':''}">
+      <td><span class="order-id">${o.id||o._key}</span></td>
+      <td><div class="cust-cell">
+        <div class="cust-av" style="background:${c}18;color:${c}">${initials(o.customerName)}</div>
+        <div><div class="cust-name">${o.customerName||'—'}</div><div class="cust-phone">${o.phone||''}</div></div>
+      </div></td>
+      <td><div class="addr-text" title="${o.deliveryAddress||''}">${o.deliveryAddress||'—'}</div></td>
+      <td>
+        ${o.status==='rejected'
+          ? `<div style="font-size:12px;color:var(--red);font-weight:600">${o.driver||'—'}</div><div class="rejected-reason">↳ ${o.rejectionReason||'Απορρίφθηκε'}</div>`
+          : `<select class="driver-sel" onchange="assignDriver('${o._key}',this.value)">
+              <option value="">— Επιλογή —</option>
+              ${driverOptions}
+              ${o.driver?`<option selected>${o.driver}</option>`:''}
+            </select>`
+        }
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${fmtTime(o.createdAt)}</td>
+      <td><span class="status-tag ${sc}">${sl}</span></td>
+      <td><div style="display:flex;gap:4px">
+        <div class="act-btn" title="Παρέλαβε" onclick="setStatus('${o._key}','picked')"><span class="material-icons-round">inventory_2</span></div>
+        <div class="act-btn" title="Παραδόθηκε" onclick="setStatus('${o._key}','delivered')" style="color:var(--green)"><span class="material-icons-round">check_circle</span></div>
+        ${o.status==='rejected'
+          ? `<div class="act-btn" title="Ανάθεση σε άλλον οδηγό" onclick="reassignOrder('${o._key}')" style="color:var(--blue)"><span class="material-icons-round">person_add</span></div>`
+          : ''
+        }
+        <div class="act-btn" title="Διαγραφή" onclick="deleteOrder('${o._key}')" style="color:var(--red)"><span class="material-icons-round">delete_outline</span></div>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER DRIVERS (with chat button)
+// ══════════════════════════════════════════════════════════
+function renderDrivers() {
+  const entries = Object.entries(allDrivers);
+  const online = entries.filter(([,d])=>d.online===true).length;
+  document.getElementById('driverCount').textContent = online + ' Online';
+  document.getElementById('sDrivers').textContent = online;
+  document.getElementById('navDrivers').textContent = online;
+
+  document.getElementById('driversList').innerHTML = entries.map(([k,d],i)=>{
+    const unread = (allChats[d.name]||[]).filter(m=>m.from==='driver'&&!m.read).length;
+    return `<div class="driver-row">
+      <div class="driver-av" style="background:${COLORS[i%COLORS.length]}18;color:${COLORS[i%COLORS.length]}">
+        ${initials(d.name)}
+        <div class="online-dot" style="background:${d.online?'var(--green)':'var(--muted)'}"></div>
+      </div>
+      <div style="flex:1">
+        <div class="d-name">${d.name}</div>
+        <div class="d-info">${d.online?'Online':'Offline'}</div>
+      </div>
+      <div class="d-orders"><span>${d.orders||0}</span></div>
+      <div class="chat-btn-small" onclick="openChatWith('${d.name}')" title="Chat με ${d.name}">
+        <span class="material-icons-round">chat</span>
+        ${unread>0?`<div class="chat-unread">${unread}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════════════════════
+function openChat() { document.getElementById('chatOverlay').classList.add('open'); renderChatDriverList(); }
+function closeChat() { document.getElementById('chatOverlay').classList.remove('open'); }
+function openChatWith(driverName) { openChat(); selectChatDriver(driverName); }
+
+let activeChatKey = null; // 'driver:uid' or 'store:uid'
+let activeChatType = 'driver'; // current tab
+
+function renderChatList() {
+  let totalUnread = 0;
+  const entries = Object.entries(allChats);
+  // Filter by active tab
+  const filtered = entries.filter(([k])=>k.startsWith(activeChatType+':'));
