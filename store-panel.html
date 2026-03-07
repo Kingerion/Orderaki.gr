@@ -484,4 +484,70 @@ function renderMenu(){
 }
 
 function openAddItemModal(){editingItemId=null;document.getElementById('itemModalTitle').textContent='Νέο Προϊόν';['iEmoji','iName','iDesc','iPrice'].forEach(id=>document.getElementById(id).value='');document.getElementById('iEmoji').value='🍴';document.getElementById('itemOverlay').classList.add('open');}
-function openEditItemModal(key){const item=myMenu[key];if(!item)return;editingItemId=key;document.getElementById('itemModalTitle').textContent='Επεξεργασία';document.getElementById('iEmoji').value=item.emoji||'🍴';document.getElementById('iName').value=item.name||'';document.getElementById('iDesc').value=item.description||'';document.getElementById('iPrice').value
+function openEditItemModal(key){const item=myMenu[key];if(!item)return;editingItemId=key;document.getElementById('itemModalTitle').textContent='Επεξεργασία';document.getElementById('iEmoji').value=item.emoji||'🍴';document.getElementById('iName').value=item.name||'';document.getElementById('iDesc').value=item.description||'';document.getElementById('iPrice').value=item.price||'';document.getElementById('itemOverlay').classList.add('open');}
+function closeItemModal(){document.getElementById('itemOverlay').classList.remove('open');}
+
+function saveItem(){
+  const name=document.getElementById('iName').value.trim(),price=parseFloat(document.getElementById('iPrice').value);
+  if(!name||isNaN(price)){showToast('⚠️ Συμπλήρωσε όνομα και τιμή');return;}
+  const item={name,emoji:document.getElementById('iEmoji').value||'🍴',price,description:document.getElementById('iDesc').value.trim(),available:true};
+  const path='stores/'+storeId+'/menu/';
+  if(window._db){if(editingItemId)window._update(window._ref(window._db,path+editingItemId),item);else{const nr=window._push(window._ref(window._db,path));window._set(nr,item);}}
+  else{const k=editingItemId||('i_'+Date.now());myMenu[k]=item;renderMenu();}
+  closeItemModal();showToast(editingItemId?'✅ Ενημερώθηκε':'✅ Προστέθηκε');
+}
+
+function toggleItemAvail(key){
+  const cur=myMenu[key]?.available;
+  if(window._db)window._update(window._ref(window._db,'stores/'+storeId+'/menu/'+key),{available:!cur});
+  else{myMenu[key].available=!cur;renderMenu();}
+}
+
+function deleteItem(key){
+  if(!confirm('Διαγραφή;'))return;
+  if(window._db)window._remove(window._ref(window._db,'stores/'+storeId+'/menu/'+key));
+  else{delete myMenu[key];renderMenu();}
+  showToast('🗑️ Διαγράφηκε');
+}
+
+function selectEmoji(el){document.querySelectorAll('.emoji-opt').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');selectedEmoji=el.dataset.e;}
+
+function saveStoreSettings(){
+  const data={name:document.getElementById('sName').value.trim(),category:document.getElementById('sCat').value,deliveryCost:parseFloat(document.getElementById('sDelivery').value)||2,minOrder:parseFloat(document.getElementById('sMin').value)||10,description:document.getElementById('sDesc').value.trim(),emoji:selectedEmoji};
+  if(!data.name){showToast('⚠️ Βάλε όνομα');return;}
+  if(window._db)window._update(window._ref(window._db,'stores/'+storeId),data);
+  else{Object.assign(currentStore,data);applyStoreData();}
+  showToast('✅ Αποθηκεύτηκε!');
+}
+
+function renderChat(){
+  const area=document.getElementById('chatMsgs');
+  if(!myChat.length){area.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Γράψε στον admin για βοήθεια.</div>';return;}
+  area.innerHTML=myChat.map(m=>`<div><div class="msg ${m.from==='store'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div></div>`).join('');
+  setTimeout(()=>{const a=document.getElementById('chatMsgs');a.scrollTop=a.scrollHeight;},50);
+}
+
+function sendChatMsg(){
+  const input=document.getElementById('chatInput'),text=input.value.trim();
+  if(!text)return;input.value='';
+  const msg={from:'store',text,time:Date.now(),read:false,storeName:currentStore?.name||'Store'};
+  myChat.push(msg);
+  if(window._db){const r=window._push(window._ref(window._db,'chat/'+storeId));window._set(r,msg);}
+  renderChat();
+}
+
+function goToPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.s-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+  if(name==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;});document.getElementById('chatBadge').classList.remove('show');document.getElementById('sideChatBadge').style.display='none';renderChat();}
+}
+
+document.getElementById('itemOverlay').addEventListener('click',function(e){if(e.target===this)closeItemModal();});
+
+let toastT;
+function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200);}
+</script>
+</body>
+</html>
