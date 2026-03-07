@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orderaki — Store Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<script type="module">
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "YOUR_PROJECT", storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID", appId: "YOUR_APP_ID"
+};
+if (FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const { getDatabase, ref, set, push, update, remove, onValue } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+    const app = initializeApp(FIREBASE_CONFIG);
+    const db = getDatabase(app); const auth = getAuth(app);
+    window._db=db; window._ref=ref; window._set=set; window._push=push; window._update=update; window._remove=remove; window._onValue=onValue;
+    window._auth=auth; window._createUser=createUserWithEmailAndPassword; window._signIn=signInWithEmailAndPassword; window._signOut=signOut;
+    window._firebaseReady=true;
+    onAuthStateChanged(auth, user => { if(user){window._uid=user.uid;initStorePanel(user);}else{showAuthScreen();} });
+  } catch(e) { window._firebaseReady=false; initDemoMode(); }
+} else { window._firebaseReady=false; initDemoMode(); }
+<\/script>
+<style>
+:root{--bg:#f8f6f3;--surface:#fff;--surface2:#f3f1ed;--border:rgba(0,0,0,.08);--text:#1a1714;--text2:#5c5751;--text3:#9c9590;--accent:#ff4500;--accent-light:rgba(255,69,0,.08);--green:#16a34a;--green-light:rgba(22,163,74,.1);--red:#dc2626;--red-light:rgba(220,38,38,.08);--yellow:#d97706;--yellow-light:rgba(217,119,6,.1);--blue:#2563eb;--blue-light:rgba(37,99,235,.1);--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 32px rgba(0,0,0,.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 60% 0%,rgba(255,69,0,.08) 0%,transparent 60%),var(--bg);padding:20px}
+.auth-card{background:var(--surface);border-radius:24px;padding:44px;width:100%;max-width:460px;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.auth-logo-mark{width:42px;height:42px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 14px rgba(255,69,0,.35)}
+.auth-logo-text{font-family:'Fraunces',serif;font-size:24px;font-weight:900;letter-spacing:-1px}
+.auth-logo-text span{color:var(--accent)}
+.auth-title{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.auth-sub{font-size:13px;color:var(--text3);margin-bottom:24px}
+.auth-tabs{display:flex;background:var(--surface2);border-radius:12px;padding:3px;gap:2px;margin-bottom:22px}
+.auth-tab{flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text3);transition:all .15s}
+.auth-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 6px rgba(0,0,0,.08)}
+.f-group{margin-bottom:12px}
+.f-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:5px}
+.f-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px 16px;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;font-family:'Plus Jakarta Sans',sans-serif}
+.f-input:focus{border-color:var(--accent);background:var(--surface)}
+.f-input::placeholder{color:var(--text3)}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239c9590' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(255,69,0,.3);transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;margin-top:4px}
+.auth-btn:hover{background:#e03d00;transform:translateY(-1px)}
+.auth-error{background:var(--red-light);border:1px solid rgba(220,38,38,.2);color:var(--red);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;display:none;margin-bottom:12px}
+.auth-error.show{display:block}
+.app{display:none;min-height:100vh;flex-direction:column}
+.app.visible{display:flex}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 24px;gap:14px;box-shadow:var(--shadow);position:sticky;top:0;z-index:50;flex-shrink:0}
+.top-logo{font-family:'Fraunces',serif;font-size:20px;font-weight:900;letter-spacing:-.5px;text-decoration:none;color:var(--text)}
+.top-logo span{color:var(--accent)}
+.top-divider{width:1px;height:20px;background:var(--border)}
+.top-store-name{font-size:14px;font-weight:800;color:var(--text2)}
+.status-toggle{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:6px 14px;cursor:pointer;transition:all .2s;user-select:none}
+.status-toggle.open{background:var(--green-light);border-color:rgba(22,163,74,.3)}
+.status-dot{width:8px;height:8px;border-radius:50%;transition:background .2s}
+.status-toggle.open .status-dot{background:var(--green);box-shadow:0 0 8px var(--green)}
+.status-toggle:not(.open) .status-dot{background:var(--text3)}
+.status-label{font-size:12px;font-weight:800}
+.status-toggle.open .status-label{color:var(--green)}
+.status-toggle:not(.open) .status-label{color:var(--text3)}
+.top-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.icon-btn{width:36px;height:36px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:var(--text3)}
+.icon-btn:hover{background:var(--border);color:var(--text)}
+.icon-btn .material-icons-round{font-size:18px}
+.notif-wrap{position:relative}
+.notif-badge{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);display:none}
+.notif-badge.show{display:block}
+.content{flex:1;display:flex;overflow:hidden}
+.sidebar{width:210px;background:var(--surface);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.s-label{font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 8px 4px}
+.s-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--text2);transition:all .15s;font-size:13px;font-weight:600}
+.s-item:hover{background:var(--surface2);color:var(--text)}
+.s-item.active{background:var(--accent-light);color:var(--accent)}
+.s-item .material-icons-round{font-size:18px}
+.s-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;display:none}
+.main{flex:1;overflow-y:auto;padding:28px}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text3);margin-bottom:22px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
+.stat-val{font-family:'Fraunces',serif;font-size:32px;font-weight:900;letter-spacing:-2px;line-height:1}
+.stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-top:4px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px}
+.panel-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.panel-title{font-size:14px;font-weight:800}
+.count-pill{background:var(--accent-light);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800}
+.order-row{display:grid;grid-template-columns:110px 1fr 130px 90px 110px 130px;align-items:center;gap:12px;padding:13px 20px;border-top:1px solid var(--border);transition:background .15s}
+.order-row:hover{background:var(--surface2)}
+.order-id{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-light);padding:3px 8px;border-radius:6px;font-family:monospace}
+.order-status{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.st-new{background:var(--blue-light);color:var(--blue)}
+.st-confirmed{background:var(--yellow-light);color:var(--yellow)}
+.st-preparing{background:var(--accent-light);color:var(--accent)}
+.st-picked{background:rgba(139,92,246,.1);color:#7c3aed}
+.st-delivered{background:var(--green-light);color:var(--green)}
+.st-cancelled{background:var(--red-light);color:var(--red)}
+.order-items-text{font-size:12px;color:var(--text3)}
+.order-total{font-family:'Fraunces',serif;font-size:16px;font-weight:700;letter-spacing:-.5px}
+.btn-sm{padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px}
+.btn-sm .material-icons-round{font-size:14px}
+.btn-confirm{background:var(--green-light);color:var(--green);border:1px solid rgba(22,163,74,.2)}
+.btn-confirm:hover{background:var(--green);color:#fff}
+.btn-reject{background:var(--red-light);color:var(--red);border:1px solid rgba(220,38,38,.15)}
+.btn-reject:hover{background:var(--red);color:#fff}
+.order-actions{display:flex;gap:6px}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:4px}
+.menu-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--shadow);transition:all .2s}
+.menu-card:hover{border-color:rgba(255,69,0,.2);box-shadow:var(--shadow-lg)}
+.menu-card-emoji{font-size:34px;margin-bottom:8px}
+.menu-card-name{font-size:15px;font-weight:800;margin-bottom:4px}
+.menu-card-desc{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5}
+.menu-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.menu-card-price{font-family:'Fraunces',serif;font-size:22px;font-weight:700;letter-spacing:-1px;color:var(--accent)}
+.menu-card-actions{display:flex;gap:5px}
+.menu-avail{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:none;font-family:'Plus Jakarta Sans',sans-serif}
+.menu-avail.available{background:var(--green-light);color:var(--green)}
+.menu-avail.unavailable{background:var(--surface2);color:var(--text3)}
+.menu-avail .material-icons-round{font-size:14px}
+.add-item-card{background:var(--surface2);border:2px dashed var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;min-height:160px}
+.add-item-card:hover{border-color:var(--accent);background:var(--accent-light)}
+.add-item-card .material-icons-round{font-size:32px;color:var(--text3)}
+.add-item-card:hover .material-icons-round{color:var(--accent)}
+.add-item-label{font-size:13px;font-weight:700;color:var(--text3)}
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:var(--shadow);margin-bottom:20px}
+.settings-card-title{font-size:14px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.settings-card-title .material-icons-round{font-size:18px;color:var(--accent)}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-top:8px}
+.emoji-opt{font-size:22px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:2px solid var(--border);cursor:pointer;transition:all .15s}
+.emoji-opt:hover,.emoji-opt.selected{border-color:var(--accent);background:var(--accent-light)}
+.save-btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:12px 22px;font-size:14px;font-weight:800;cursor:pointer;transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(255,69,0,.3)}
+.save-btn:hover{background:#e03d00;transform:translateY(-1px)}
+.save-btn .material-icons-round{font-size:18px}
+.overlay{position:fixed;inset:0;background:rgba(26,23,20,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:20px;width:100%;max-width:480px;padding:28px;box-shadow:var(--shadow-lg);transform:translateY(20px);transition:transform .25s;border:1px solid var(--border)}
+.overlay.open .modal{transform:translateY(0)}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.close-btn{width:34px;height:34px;border-radius:10px;background:var(--surface2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3)}
+.close-btn .material-icons-round{font-size:18px}
+.chat-box{display:flex;flex-direction:column;height:420px;background:var(--surface2);border-radius:16px;overflow:hidden;border:1px solid var(--border)}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:75%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.45;word-break:break-word}
+.msg.me{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.msg.them{background:var(--surface);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
+.msg-time{font-size:10px;opacity:.6;margin-top:4px;display:block;text-align:right}
+.msg.them .msg-time{text-align:left}
+.chat-input-row{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface)}
+.chat-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s;font-family:'Plus Jakarta Sans',sans-serif}
+.chat-input:focus{border-color:var(--accent)}
+.chat-send{width:40px;height:40px;background:var(--accent);border:none;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff}
+.chat-send .material-icons-round{font-size:18px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);min-width:240px;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast .material-icons-round{font-size:18px;color:var(--accent)}
+.empty-state{text-align:center;padding:48px;color:var(--text3)}
+.empty-state .material-icons-round{font-size:44px;opacity:.3;display:block;margin:0 auto 10px}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:10px}
+</style>
+<body>
+
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">🍔</div>
+      <div class="auth-logo-text">Order<span>aki</span> <span style="font-size:14px;font-weight:600;color:var(--text3)">Store Panel</span></div>
+    </div>
+    <div id="authError" class="auth-error"></div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Σύνδεση</div>
+      <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Εγγραφή Νέου Καταστήματος</div>
+    </div>
+    <div id="loginForm">
+      <div class="auth-title">Καλωσόρισες πίσω</div>
+      <div class="auth-sub">Συνδέσου για να διαχειριστείς το κατάστημά σου</div>
+      <div class="f-group"><label class="f-label">Email</label><input class="f-input" id="lEmail" type="email" placeholder="store@example.com"></div>
+      <div class="f-group"><label class="f-label">Κωδικός</label><input class="f-input" id="lPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="auth-btn" onclick="doLogin()">Σύνδεση →</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="auth-title">Εγγραφή Καταστήματος</div>
+      <div class="auth-sub">Δημιούργησε λογαριασμό για το κατάστημά σου</div>
+      <div class="f-group"><label class="f-label">Όνομα Καταστήματος</label><input class="f-input" id="rName" placeholder="π.χ. Pizza Napoli"></div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Κατηγορία</label>
+          <select class="f-input f-select" id="rCat">
+            <option value="burger">🍔 Burger</option><option value="pizza">🍕 Pizza</option>
+            <option value="souvlaki">🌯 Souvlaki</option><option value="sushi">🍣 Sushi</option>
+            <option value="coffee">☕ Καφές</option><option value="desserts">🍰 Γλυκά</option>
+            <option value="greek">🥗 Ελληνική Κουζίνα</option>
+          </select>
+        </div>
+        <div class="f-group"><label class="f-label">Min. Παραγγελία (€)</label><input class="f-input" id="rMin" type="number" placeholder="10" value="10"></div>
+      </div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Email</label><input class="f-input" id="rEmail" type="email" placeholder="store@example.com"></div>
+        <div class="f-group"><label class="f-label">Κωδικός (min 6)</label><input class="f-input" id="rPass" type="password" placeholder="••••••••"></div>
+      </div>
+      <button class="auth-btn" onclick="doRegister()">Δημιουργία Λογαριασμού →</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="appScreen">
+  <div class="topbar">
+    <a href="orderaki.html" class="top-logo">Order<span>aki</span></a>
+    <div class="top-divider"></div>
+    <div class="top-store-name" id="topStoreName">Φόρτωση...</div>
+    <div class="status-toggle open" id="statusToggle" onclick="toggleStoreStatus()">
+      <div class="status-dot"></div>
+      <span class="status-label" id="statusLabel">Ανοιχτό</span>
+    </div>
+    <div class="top-actions">
+      <div class="icon-btn notif-wrap" onclick="goToPage('orders',document.querySelector('[data-page=orders]'))">
+        <span class="material-icons-round">notifications_none</span>
+        <div class="notif-badge" id="newOrderBadge"></div>
+      </div>
+      <div class="icon-btn notif-wrap" onclick="goToPage('chat',document.querySelector('[data-page=c
