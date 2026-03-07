@@ -624,4 +624,226 @@ function renderTable() {
         <div class="act-btn" title="Διαγραφή" onclick="deleteOrder('${o._key}')" style="color:var(--red)"><span class="material-icons-round">delete_outline</span></div>
       </div></td>
     </tr>`;
+}).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER DRIVERS (with chat button)
+// ══════════════════════════════════════════════════════════
+function renderDrivers() {
+  const entries = Object.entries(allDrivers);
+  const online = entries.filter(([,d])=>d.online).length;
+  document.getElementById('driverCount').textContent = online + ' Online';
+  document.getElementById('sDrivers').textContent = online;
+  document.getElementById('navDrivers').textContent = online;
+
+  document.getElementById('driversList').innerHTML = entries.map(([k,d],i)=>{
+    const unread = (allChats[d.name]||[]).filter(m=>m.from==='driver'&&!m.read).length;
+    return `<div class="driver-row">
+      <div class="driver-av" style="background:${COLORS[i%COLORS.length]}18;color:${COLORS[i%COLORS.length]}">
+        ${initials(d.name)}
+        <div class="online-dot" style="background:${d.online?'var(--green)':'var(--muted)'}"></div>
+      </div>
+      <div style="flex:1">
+        <div class="d-name">${d.name}</div>
+        <div class="d-info">${d.online?'Online':'Offline'}</div>
+      </div>
+      <div class="d-orders"><span>${d.orders||0}</span></div>
+      <div class="chat-btn-small" onclick="openChatWith('${d.name}')" title="Chat με ${d.name}">
+        <span class="material-icons-round">chat</span>
+        ${unread>0?`<div class="chat-unread">${unread}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════════════════════
+function openChat() { document.getElementById('chatOverlay').classList.add('open'); renderChatDriverList(); }
+function closeChat() { document.getElementById('chatOverlay').classList.remove('open'); }
+function openChatWith(driverName) { openChat(); selectChatDriver(driverName); }
+
+function renderChatDriverList() {
+  const entries = Object.entries(allDrivers);
+  let totalUnread = 0;
+  document.getElementById('chatDriverList').innerHTML = entries.map(([k,d],i)=>{
+    const msgs = allChats[d.name]||[];
+    const unread = msgs.filter(m=>m.from==='driver'&&!m.read).length;
+    totalUnread += unread;
+    const last = msgs.length ? msgs[msgs.length-1].text : 'Κανένα μήνυμα';
+    return `<div class="chat-driver-item ${activeChatDriver===d.name?'active':''}" onclick="selectChatDriver('${d.name}')">
+      <div class="d-av" style="background:${COLORS[i%COLORS.length]}18;color:${COLORS[i%COLORS.length]};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">${initials(d.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="chat-driver-name">${d.name.split(' ')[0]}</div>
+        <div class="chat-driver-last">${last}</div>
+      </div>
+      ${unread>0?`<div class="chat-unread-badge">${unread}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // Update global unread indicators
+  const dot = document.getElementById('chatDot');
+  const navBadge = document.getElementById('navUnread');
+  if (totalUnread > 0) {
+    dot.style.display = 'block';
+    navBadge.style.display = 'inline-flex';
+    navBadge.textContent = totalUnread;
+  } else {
+    dot.style.display = 'none';
+    navBadge.style.display = 'none';
+  }
+}
+
+function selectChatDriver(driverName) {
+  activeChatDriver = driverName;
+  // Mark messages as read
+  if (allChats[driverName]) {
+    allChats[driverName].forEach(m => { if (m.from==='driver') m.read = true; });
+    if (window._db) {
+      allChats[driverName].forEach((m,i) => {
+        if (m.from==='driver') window._update(window._ref(window._db,`chat/${driverName}/${i}`),{read:true});
+      });
+    }
+  }
+  document.getElementById('chatSubtitle').textContent = driverName;
+  renderChatDriverList();
+  renderChatMessages(driverName);
+}
+
+function renderChatMessages(driverName) {
+  const msgs = allChats[driverName]||[];
+  const main = document.getElementById('chatMain');
+  main.innerHTML = `
+    <div class="chat-messages" id="chatMsgs">
+      ${msgs.length
+        ? msgs.map(m=>`
+          <div>
+            <div class="msg ${m.from==='admin'?'admin':'driver'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div>
+          </div>`).join('')
+        : '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Δεν υπάρχουν μηνύματα ακόμα</div>'
+      }
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInputField" placeholder="Γράψε μήνυμα..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg();}">
+      <button class="chat-send-btn" onclick="sendChatMsg()"><span class="material-icons-round">send</span></button>
+    </div>`;
+  scrollChatBottom();
+}
+
+function sendChatMsg() {
+  if (!activeChatDriver) return;
+  const input = document.getElementById('chatInputField');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const msg = { from:'admin', text, time: Date.now(), read: true };
+
+  if (!allChats[activeChatDriver]) allChats[activeChatDriver] = [];
+  allChats[activeChatDriver].push(msg);
+
+  if (window._db) {
+    const chatRef = window._push(window._ref(window._db, `chat/${activeChatDriver}`));
+    window._set(chatRef, msg);
+  }
+
+  renderChatMessages(activeChatDriver);
+  renderChatDriverList();
+}
+
+function scrollChatBottom() {
+  setTimeout(() => {
+    const el = document.getElementById('chatMsgs');
+    if (el) el.scrollTop = el.scrollHeight;
+  }, 50);
+}
+
+// Simulate incoming driver message every 30s (demo only)
+setInterval(() => {
+  if (window._firebaseReady) return;
+  const drivers = Object.values(allDrivers).filter(d=>d.online);
+  if (!drivers.length) return;
+  const d = drivers[Math.floor(Math.random()*drivers.length)];
+  const msgs = ['Φτάνω σε λίγο!','Ο πελάτης δεν απαντάει.','Παρέλαβα την παραγγελία.','Παρέδωσα επιτυχώς! ✅','Χρειάζομαι βοήθεια με τη διεύθυνση.'];
+  const text = msgs[Math.floor(Math.random()*msgs.length)];
+  if (!allChats[d.name]) allChats[d.name]=[];
+  allChats[d.name].push({ from:'driver', text, time: Date.now(), read: activeChatDriver===d.name });
+  renderChatDriverList();
+  if (activeChatDriver===d.name) renderChatMessages(d.name);
+  showToast('💬 ' + d.name.split(' ')[0] + ': ' + text);
+}, 30000);
+
+// ══════════════════════════════════════════════════════════
+// ORDER ACTIONS
+// ══════════════════════════════════════════════════════════
+function assignDriver(key, driverName) {
+  if (!driverName) return;
+  if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:driverName,status:'assigned'});
+  else { allOrders[key].driver=driverName; allOrders[key].status='assigned'; renderTable(); updateStats(allOrders); }
+  showToast('✅ Ανατέθηκε: '+driverName);
+}
+
+function setStatus(key, status) {
+  if (window._db) window._update(window._ref(window._db,'orders/'+key),{status});
+  else { if(allOrders[key]){allOrders[key].status=status;renderTable();updateStats(allOrders);} }
+  showToast('📦 Status: '+{picked:'Παρέλαβε',delivered:'Παραδόθηκε'}[status]);
+}
+
+function reassignOrder(key) {
+  const onlineDrivers = Object.values(allDrivers).filter(d=>d.online);
+  if (!onlineDrivers.length) { showToast('⚠️ Κανένας online οδηγός'); return; }
+  // Assign to driver with least orders (excluding the one who rejected)
+  const oldDriver = allOrders[key]?.driver;
+  const available = onlineDrivers.filter(d => d.name !== oldDriver);
+  if (!available.length) { showToast('⚠️ Δεν υπάρχει άλλος διαθέσιμος'); return; }
+  const best = available[0];
+  if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:best.name,status:'assigned',rejectionReason:''});
+  else { allOrders[key].driver=best.name; allOrders[key].status='assigned'; allOrders[key].rejectionReason=''; renderTable(); updateStats(allOrders); }
+  showToast('🔄 Ανα-ανατέθηκε: '+best.name);
+}
+
+function deleteOrder(key) {
+  if (window._db) window._set(window._ref(window._db,'orders/'+key),null);
+  else { delete allOrders[key]; renderTable(); updateStats(allOrders); }
+  showToast('🗑️ Παραγγελία διαγράφηκε');
+}
+
+function submitNewOrder() {
+  const name=document.getElementById('fName').value.trim();
+  const address=document.getElementById('fAddress').value.trim();
+  if(!name||!address){showToast('⚠️ Συμπλήρωσε όνομα & διεύθυνση');return;}
+  const order={
+    id:'#'+(1000+Math.floor(Math.random()*9000)),
+    customerName:name, phone:document.getElementById('fPhone').value,
+    deliveryAddress:address, pickupAddress:document.getElementById('fPickup').value,
+    cost:parseFloat(document.getElementById('fCost').value)||0,
+    notes:document.getElementById('fNotes').value,
+    driver:'', status:'new', source:'admin', createdAt:Date.now()
+  };
+  if(window._db){const r=window._push(window._ref(window._db,'orders'));window._set(r,order);}
+  else{const k='order_'+Date.now();allOrders[k]={...order,_key:k};renderTable();updateStats(allOrders);}
+  if(autoDispatch) setTimeout(()=>runAutoDispatch(allOrders),500);
+  closeModal();
+  showToast('🚀 Παραγγελία '+order.id+' δημιουργήθηκε!');
+  ['fName','fPhone','fAddress','fPickup','fCost','fNotes'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ══════════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════════
+function filterTab(f,el){currentFilter=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderTable();}
+function searchOrders(q){searchQ=q.toLowerCase();renderTable();}
+function navTo(el){document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));el.classList.add('active');}
+function openModal(){document.getElementById('orderOverlay').classList.add('open');}
+function closeModal(){document.getElementById('orderOverlay').classList.remove('open');}
+document.getElementById('orderOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('chatOverlay').addEventListener('click',function(e){if(e.target===this)closeChat();});
+
+let toastT;
+function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3500);}
+</script>
+</body>
+</html>
+
  
