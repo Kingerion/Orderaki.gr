@@ -292,7 +292,7 @@ tr:hover td{background:#fdf9f7}
     <div class="auto-dispatch-wrap on" id="adWrap" onclick="toggleAutoDispatch()" title="Αυτόματη ανάθεση παραγγελιών σε διαθέσιμο οδηγό">
       <span class="material-icons-round" style="font-size:16px;color:var(--green)" id="adIcon">smart_toy</span>
       <div>
-        <div class="ad-label" id="adLabel">Auto-Dispatch: ON</div>
+        <div class="ad-label" id="adLabel">Auto-Dispatch: <span id="adLabel">ON</span></div>
       </div>
       <div class="toggle-switch on" id="adToggle"></div>
     </div>
@@ -494,7 +494,7 @@ let allDrivers = {};
 let allChats = {}; // { driverName: [{from, text, time}] }
 let currentFilter = 'all';
 let searchQ = '';
-let autoDispatch = true;
+let autoDispatch = true; // true=auto assign, false=manual
 let activeChatDriver = null, activeChatDriverUid = null;
 const COLORS = ['#ff3d00','#3b82f6','#00b37e','#f59e0b','#8b5cf6'];
 const initials = n => n ? n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase() : '?';
@@ -611,8 +611,11 @@ window.renderAllChats = function(){
   const drv = window._driverChats||{};
   for(const [uid,msgs] of Object.entries(drv)){
     const d = allDrivers[uid];
-    const label = (d&&d.name)||uid;
-    allChats['driver:'+uid] = { msgs: Array.isArray(msgs)?msgs:Object.values(msgs||{}), label, type:'driver', uid };
+    // Try to get name from: allDrivers, then from message metadata, then uid
+    const msgArr = Array.isArray(msgs)?msgs:Object.values(msgs||{});
+    const nameFromMsg = msgArr.find(m=>m.driverName)?.driverName || msgArr.find(m=>m.from==='driver'&&m.senderName)?.senderName;
+    const label = (d&&d.name) || nameFromMsg || uid;
+    allChats['driver:'+uid] = { msgs: msgArr, label, type:'driver', uid };
   }
   // stores: keyed by uid
   const str = window._storeChats||{};
@@ -653,7 +656,7 @@ function updateAutoDispatchUI() {
   if (autoDispatch) {
     wrap.className = 'auto-dispatch-wrap on';
     toggle.className = 'toggle-switch on';
-    label.textContent = 'Auto-Dispatch: ON';
+    label.textContent = 'Auto-Dispatch: <span id="adLabel">ON</span>';
     icon.style.color = 'var(--green)';
   } else {
     wrap.className = 'auto-dispatch-wrap';
@@ -968,7 +971,14 @@ function assignDriver(key, driverVal) {
 }
 
 function setStatus(key, status) {
-  if (window._db) window._update(window._ref(window._db,'orders/'+key),{status});
+  if (window._db) {
+    window._update(window._ref(window._db,'orders/'+key),{status});
+    // If rejected, try to reassign
+    if(status === 'rejected') {
+      const rejOrder = allOrders[key];
+      if(rejOrder) setTimeout(()=>reassignAfterReject(key, rejOrder.driverName||rejOrder.driver), 500);
+    }
+  }
   else { if(allOrders[key]){allOrders[key].status=status;renderTable();updateStats(allOrders);} }
   showToast('📦 Status: '+{picked:'Παρέλαβε',delivered:'Παραδόθηκε'}[status]);
 }

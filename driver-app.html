@@ -478,6 +478,32 @@ function renderOrders(){
 }
 
 
+function openCustomerChat(orderKey) {
+  const o = myOrders[orderKey];
+  if(!o) return;
+  switchNav('chat');
+  setTimeout(()=>{
+    const chatWrap = document.getElementById('chatWrap');
+    if(chatWrap) {
+      chatWrap.innerHTML = `
+        <div style="background:var(--surface2);border-radius:16px;padding:16px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;margin-bottom:8px">Επικοινωνία με Πελάτη</div>
+          <div style="font-size:15px;font-weight:700">${o.customerName||'Πελάτης'}</div>
+          <div style="font-size:13px;color:var(--text3)">${o.phone||'—'}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">📍 ${o.address||''}${o.floor?' · '+o.floor:''}${o.doorbell?' 🔔 '+o.doorbell:''}</div>
+          <a href="tel:${o.phone||''}" style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:var(--accent);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">
+            <span class="material-icons-round" style="font-size:16px">call</span> Κάλεσε Πελάτη
+          </a>
+        </div>`;
+    }
+  }, 100);
+}
+
+function closeCustomerChat() {
+  const chatWrap = document.getElementById('chatWrap');
+  if(chatWrap) chatWrap.innerHTML = '<div class="chat-empty"><span class="material-icons-round">chat_bubble_outline</span><span>Δεν υπάρχουν μηνύματα</span></div>';
+}
+
 function calcDriverEarnings(order) {
   // 2.50€ for first 500m, then 0.30€/km after that
   // We estimate distance from delivery cost set by store, or use 1km default
@@ -497,6 +523,7 @@ function pickupOrder(k){
   showToast('📦 Παρέλαβες την παραγγελία!');
 }
 function deliverOrder(k){
+  closeCustomerChat();
   const o=myOrders[k];if(!o)return;
   if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'delivered'});
   else{delete myOrders[k];renderOrders();}
