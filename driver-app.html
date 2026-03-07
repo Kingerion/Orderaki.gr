@@ -2,612 +2,196 @@
 <html lang="el">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0f0f0f">
-<title>2Fast Driver</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Orderaki — Driver App</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-
 <script type="module">
-  const CFG = {
-    apiKey: "AIzaSyA_MyIsYGScuuK-7qXAg4vPSPk5RS0uxNA",
-    authDomain: "orderaki-cc05a.firebaseapp.com",
-    databaseURL: "https://orderaki-cc05a-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "orderaki-cc05a",
-    storageBucket: "orderaki-cc05a.firebasestorage.app",
-    messagingSenderId: "418215879535",
-    appId: "1:418215879535:web:bf048c4b728862a5d5be9a"
-  };
-  if (CFG.apiKey !== "YOUR_API_KEY") {
-    try {
-      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-      const { getDatabase, ref, onValue, update, push, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-      const db = getDatabase(initializeApp(CFG));
-      window._db=db; window._ref=ref; window._update=update; window._push=push; window._set=set; window._onValue=onValue; window._firebaseReady=true;
-      onValue(ref(db,'orders'), s=>{ window._allFirebaseOrders=s.val()||{}; const n=window._driverName||localStorage.getItem('driverName'); if(n) filterDriverOrders(window._allFirebaseOrders,n); });
-      onValue(ref(db,'drivers'), s=>{ window._allFirebaseDrivers=s.val()||{}; });
-      onValue(ref(db,'chat'), s=>{ const d=s.val()||{}; window._allFirebaseChat=d; const n=window._driverName; if(n){ updateChatFromFirebase(d[n]||[]); } });
-    } catch(e){ window._firebaseReady=false; }
-  } else { window._firebaseReady=false; }
+const CFG = {
+  apiKey: "AIzaSyA_MyIsYGScuuK-7qXAg4vPSPk5RS0uxNA",
+  authDomain: "orderaki-cc05a.firebaseapp.com",
+  databaseURL: "https://orderaki-cc05a-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "orderaki-cc05a",
+  storageBucket: "orderaki-cc05a.firebasestorage.app",
+  messagingSenderId: "418215879535",
+  appId: "1:418215879535:web:bf048c4b728862a5d5be9a"
+};
+if (CFG.apiKey !== "YOUR_API_KEY") {
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const { getDatabase, ref, set, push, update, onValue, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+    const app = initializeApp(CFG);
+    const db = getDatabase(app); const auth = getAuth(app);
+    window._db=db; window._ref=ref; window._set=set; window._push=push; window._update=update; window._onValue=onValue; window._get=get;
+    window._auth=auth; window._createUser=createUserWithEmailAndPassword; window._signIn=signInWithEmailAndPassword; window._signOut=signOut;
+    window._firebaseReady=true;
+    onAuthStateChanged(auth, user => {
+      if(user){ window._uid=user.uid; checkDriverStatus(user); }
+      else { showScreen('auth'); }
+    });
+  } catch(e){ console.warn(e); window._firebaseReady=false; showScreen('auth'); }
+} else { window._firebaseReady=false; initDemo(); }
 </script>
-
 <style>
-:root {
-  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222;
-  --border:rgba(255,255,255,.08); --accent:#ff3d00;
-  --green:#22c55e; --yellow:#f59e0b; --blue:#3b82f6;
-  --red:#ef4444; --text:#f1f5f9; --muted:#64748b;
-}
+:root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--surface3:#2e2e2e;--border:rgba(255,255,255,.08);--text:#f5f5f5;--text2:#a0a0a0;--text3:#666;--accent:#ff4500;--accent2:#ff6b35;--green:#22c55e;--green-dark:#16a34a;--red:#ef4444;--yellow:#f59e0b;--shadow:0 4px 20px rgba(0,0,0,.4)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow-x:hidden}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:15px;min-height:100vh;max-width:430px;margin:0 auto;position:relative;overflow-x:hidden}
 
-/* LOGIN */
-.login-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px;background:radial-gradient(ellipse at 50% 0%,rgba(255,61,0,.12) 0%,transparent 60%),var(--bg)}
-.login-logo{width:80px;height:80px;background:var(--accent);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:20px;box-shadow:0 8px 32px rgba(255,61,0,.4)}
-.login-title{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
-.login-sub{font-size:14px;color:var(--muted);margin-bottom:36px}
-.l-group{width:100%;margin-bottom:12px}
-.l-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block}
-.l-input{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text);font-family:'Outfit',sans-serif;font-size:16px;outline:none;transition:border-color .15s}
-.l-input:focus{border-color:var(--accent)}
-.l-input::placeholder{color:var(--muted)}
-.login-btn{width:100%;background:var(--accent);border:none;border-radius:14px;padding:16px;color:#fff;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;cursor:pointer;margin-top:8px;box-shadow:0 6px 20px rgba(255,61,0,.35);transition:all .15s;letter-spacing:-.3px}
-.login-btn:active{transform:scale(.98)}
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
 
-/* APP */
-.app-screen{display:none;flex-direction:column;min-height:100vh}
-.app-screen.visible{display:flex}
+/* ── AUTH ── */
+.auth-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:32px 24px;background:radial-gradient(ellipse at 50% 0%,rgba(255,69,0,.15),transparent 60%)}
+.auth-logo{text-align:center;margin-bottom:36px}
+.auth-logo-icon{width:64px;height:64px;background:var(--accent);border-radius:20px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 8px 24px rgba(255,69,0,.4)}
+.auth-logo-text{font-size:28px;font-weight:900;letter-spacing:-1px}
+.auth-logo-text span{color:var(--accent)}
+.auth-logo-sub{font-size:14px;color:var(--text2);margin-top:4px}
+.auth-tabs{display:flex;background:var(--surface2);border-radius:14px;padding:4px;gap:3px;margin-bottom:24px}
+.auth-tab{flex:1;text-align:center;padding:10px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text3);transition:all .15s}
+.auth-tab.active{background:var(--surface3);color:var(--text)}
+.f-group{margin-bottom:13px}
+.f-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);display:block;margin-bottom:6px}
+.f-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;font-size:15px;color:var(--text);outline:none;transition:border-color .15s;font-family:'Outfit',sans-serif}
+.f-input:focus{border-color:var(--accent)}
+.f-input::placeholder{color:var(--text3)}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:13px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(255,69,0,.4);transition:all .2s;font-family:'Outfit',sans-serif;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-btn:hover{background:#e03d00}
+.auth-btn .material-icons-round{font-size:20px}
+.auth-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:10px;padding:11px 14px;font-size:13px;font-weight:600;display:none;margin-bottom:12px}
+.auth-error.show{display:block}
 
-/* HEADER */
-.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
-.header-av{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
-.header-name{font-size:16px;font-weight:700}
-.header-role{font-size:11px;color:var(--muted)}
-.online-toggle{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all .2s;border:1.5px solid var(--border);font-size:12px;font-weight:700;user-select:none}
-.online-toggle.online{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:var(--green)}
-.online-toggle.offline{color:var(--muted)}
-.toggle-dot{width:8px;height:8px;border-radius:50%}
-.online-toggle.online .toggle-dot{background:var(--green);box-shadow:0 0 8px var(--green)}
-.online-toggle.offline .toggle-dot{background:var(--muted)}
+/* ── PENDING SCREEN ── */
+.pending-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;gap:16px}
+.pending-icon{width:80px;height:80px;border-radius:50%;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center}
+.pending-icon .material-icons-round{font-size:40px;color:var(--yellow)}
+.pending-title{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.pending-sub{font-size:14px;color:var(--text2);line-height:1.6;max-width:280px}
+.pending-badge{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--yellow);padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700}
 
-/* EARNINGS BAR */
-.earnings-bar{background:linear-gradient(135deg,#1a0a00,#2a1200);border-bottom:1px solid rgba(255,61,0,.2);padding:12px 18px;display:flex}
-.earn-item{flex:1;text-align:center}
-.earn-item+.earn-item{border-left:1px solid rgba(255,255,255,.06)}
-.earn-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px}
-.earn-value{font-size:18px;font-weight:800;font-family:'DM Mono',monospace;margin-top:2px}
-.earn-value.money{color:var(--accent)}
+/* ── TOPBAR ── */
+.topbar{background:var(--surface);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
+.top-driver-info{display:flex;align-items:center;gap:12px}
+.top-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
+.top-name{font-size:14px;font-weight:700}
+.top-role{font-size:11px;color:var(--text3)}
+.online-toggle{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:7px 14px;cursor:pointer;transition:all .2s}
+.online-toggle.on{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3)}
+.online-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);transition:background .2s}
+.online-toggle.on .online-dot{background:var(--green);box-shadow:0 0 8px var(--green)}
+.online-label{font-size:12px;font-weight:800;color:var(--text3)}
+.online-toggle.on .online-label{color:var(--green)}
 
-/* BOTTOM NAV */
-.bottom-nav{background:var(--surface);border-top:1px solid var(--border);display:flex;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
-.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0;cursor:pointer;transition:all .15s;color:var(--muted);gap:2px;position:relative}
-.bnav-item .material-icons-round{font-size:22px}
-.bnav-item span.label{font-size:10px;font-weight:600}
-.bnav-item.active{color:var(--accent)}
-.bnav-unread{position:absolute;top:6px;right:calc(50% - 16px);min-width:16px;height:16px;background:var(--red);border-radius:20px;font-size:9px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;padding:0 4px}
+/* ── EARNINGS BAR ── */
+.earnings-bar{background:var(--accent);padding:12px 20px;display:flex;justify-content:space-around}
+.earn-item{text-align:center}
+.earn-val{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.5px}
+.earn-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.7);margin-top:2px}
 
-/* CONTENT */
-.content-area{flex:1;padding:14px;padding-bottom:80px;display:flex;flex-direction:column;gap:12px}
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:16px}
 
-/* ORDER CARD */
-.order-card{background:var(--surface);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;animation:cardIn .35s ease both;transition:border-color .2s}
-.order-card.new-order{border-color:rgba(255,61,0,.5)}
-.order-card.picked-order{border-color:rgba(245,158,11,.5)}
-.order-card.delivered-order{border-color:rgba(34,197,94,.3);opacity:.6}
-.order-card.rejected-card{border-color:rgba(239,68,68,.3);opacity:.7}
-@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.card-header{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
-.card-id{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--accent);background:rgba(255,61,0,.1);padding:3px 10px;border-radius:8px}
-.card-status{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
-.st-new{background:rgba(59,130,246,.15);color:var(--blue)}
-.st-assigned{background:rgba(255,61,0,.15);color:var(--accent)}
-.st-picked{background:rgba(245,158,11,.15);color:var(--yellow)}
-.st-delivered{background:rgba(34,197,94,.15);color:var(--green)}
-.st-rejected{background:rgba(239,68,68,.15);color:var(--red)}
-.card-time{margin-left:auto;font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
-.card-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.card-customer{font-size:17px;font-weight:700}
-.card-phone{font-size:13px;color:var(--muted)}
-.route-item{display:flex;align-items:flex-start;gap:10px}
-.route-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.route-icon .material-icons-round{font-size:15px}
-.route-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.route-addr{font-size:13px;font-weight:500;color:var(--text)}
-.card-notes{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--yellow);display:flex;align-items:center;gap:8px}
-.card-notes .material-icons-round{font-size:15px;flex-shrink:0}
-.card-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
-.cta-btn{flex:1;min-width:80px;border:none;border-radius:12px;padding:13px 8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
-.cta-btn:active{transform:scale(.97)}
-.cta-pickup{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(255,61,0,.3)}
-.cta-deliver{background:var(--green);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,.3)}
-.cta-maps{background:var(--surface2);color:var(--text);border:1.5px solid var(--border)}
-.cta-reject{background:rgba(239,68,68,.1);color:var(--red);border:1.5px solid rgba(239,68,68,.25)}
-.cta-btn .material-icons-round{font-size:16px}
-.cost-badge{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text);white-space:nowrap}
+/* ── ORDER CARD ── */
+.order-card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden}
+.order-card.new-order{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,69,0,.15),var(--shadow)}
+.order-card.new-order::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.new-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+.order-card-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.order-id{font-size:13px;font-weight:800;color:var(--accent)}
+.order-store{font-size:14px;font-weight:700;margin-top:2px}
+.order-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.order-info-item{background:var(--surface2);border-radius:10px;padding:10px 12px}
+.order-info-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:3px}
+.order-info-val{font-size:13px;font-weight:700}
+.order-addr{background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
+.order-addr .material-icons-round{font-size:18px;color:var(--accent);flex-shrink:0;margin-top:1px}
+.order-addr-text{font-size:13px;font-weight:600;line-height:1.4}
+.order-total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.order-total-label{font-size:13px;color:var(--text2)}
+.order-total-val{font-size:20px;font-weight:900;letter-spacing:-1px;color:var(--text)}
+.order-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-accept{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.btn-accept:hover{background:var(--green-dark)}
+.btn-accept .material-icons-round{font-size:18px}
+.btn-delivered{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;grid-column:span 2;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-delivered .material-icons-round{font-size:18px}
+.status-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.st-assigned{background:rgba(245,158,11,.15);color:var(--yellow)}
+.st-picked{background:rgba(139,92,246,.15);color:#a78bfa}
+.st-delivered{background:rgba(34,197,94,.12);color:var(--green)}
+.empty-orders{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;color:var(--text3)}
+.empty-orders .material-icons-round{font-size:48px;opacity:.25}
 
-/* EMPTY */
-.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px;text-align:center;color:var(--muted)}
-.empty-state .material-icons-round{font-size:52px;opacity:.25}
-.empty-title{font-size:17px;font-weight:700;color:var(--text);opacity:.5}
-.empty-sub{font-size:13px}
-
-/* PAGES */
-.page{display:none}
-.page.active{display:block}
-
-/* EARNINGS PAGE */
-.earnings-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:12px}
-.earn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.earn-box{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px}
-.earn-box-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.earn-box-val{font-size:24px;font-weight:800;font-family:'DM Mono',monospace}
-
-/* ═══════════════════════════
-   CHAT (Driver Side)
-═══════════════════════════ */
-.chat-screen{display:none;flex-direction:column;height:100%;padding-bottom:70px}
-.chat-screen.active-page{display:flex}
-.chat-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface);flex-shrink:0}
-.chat-hd-name{font-size:15px;font-weight:700}
-.chat-hd-sub{font-size:11px;color:var(--muted)}
-.chat-messages-area{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
-.msg{max-width:80%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.45;word-break:break-word}
-.msg.driver-out{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
-.msg.admin-in{background:var(--surface2);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
-.msg-time{font-size:10px;opacity:.6;margin-top:3px;display:block;text-align:right}
-.msg.admin-in .msg-time{text-align:left}
+/* ── CHAT ── */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 120px)}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:78%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.45;word-break:break-word}
+.msg.me{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.msg.them{background:var(--surface2);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.msg-time{font-size:10px;opacity:.5;margin-top:4px;display:block;text-align:right}
+.msg.them .msg-time{text-align:left}
 .chat-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface);flex-shrink:0}
-.chat-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .15s}
+.chat-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;color:var(--text);outline:none;font-family:'Outfit',sans-serif}
 .chat-input:focus{border-color:var(--accent)}
-.chat-input::placeholder{color:var(--muted)}
-.chat-send-btn{width:44px;height:44px;background:var(--accent);border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0}
-.chat-send-btn .material-icons-round{font-size:20px}
+.chat-send{width:42px;height:42px;background:var(--accent);border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0}
+.chat-send .material-icons-round{font-size:20px}
 
-/* REJECT MODAL */
-.reject-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-.reject-overlay.open{opacity:1;pointer-events:all}
-.reject-sheet{background:var(--surface);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:430px;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
-.reject-overlay.open .reject-sheet{transform:translateY(0)}
-.reject-title{font-size:18px;font-weight:800;margin-bottom:6px;color:var(--red)}
-.reject-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
-.reject-reason-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;cursor:pointer;transition:all .15s;margin-bottom:8px;font-size:14px;font-weight:600}
-.reject-reason-btn:hover,.reject-reason-btn:active{border-color:var(--red);background:rgba(239,68,68,.08);color:var(--red)}
-.reject-reason-btn .material-icons-round{font-size:20px;color:var(--muted)}
-.reject-custom-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);outline:none;margin-bottom:12px;transition:border-color .15s}
-.reject-custom-input:focus{border-color:var(--red)}
-.reject-custom-input::placeholder{color:var(--muted)}
-.reject-btns{display:flex;gap:10px}
-.reject-confirm{flex:1;background:var(--red);border:none;border-radius:12px;padding:14px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:#fff;cursor:pointer}
-.reject-cancel{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:14px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:var(--text);cursor:pointer}
+/* ── EARNINGS PAGE ── */
+.earn-page{padding:20px}
+.earn-big-card{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:20px;padding:28px;text-align:center;margin-bottom:20px}
+.earn-big-val{font-size:48px;font-weight:900;color:#fff;letter-spacing:-3px}
+.earn-big-label{font-size:13px;color:rgba(255,255,255,.8);margin-top:4px;font-weight:600}
+.earn-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.earn-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center}
+.earn-card-val{font-size:26px;font-weight:900;letter-spacing:-1px}
+.earn-card-label{font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
 
-/* PROFILE */
-.profile-header{background:linear-gradient(135deg,rgba(255,61,0,.1),transparent);padding:30px 20px;text-align:center;border-bottom:1px solid var(--border)}
-.profile-av{width:72px;height:72px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;margin:0 auto 12px;box-shadow:0 6px 20px rgba(255,61,0,.3)}
-.profile-name{font-size:22px;font-weight:800;letter-spacing:-.5px}
-.profile-role{font-size:13px;color:var(--muted)}
-.menu-item{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;font-size:15px;font-weight:600}
-.menu-item:hover{background:var(--surface2)}
-.menu-item .material-icons-round{font-size:20px;color:var(--muted)}
-.menu-item .arrow{margin-left:auto;font-size:18px;color:var(--border)}
-.menu-item.danger{color:var(--red)}
-.menu-item.danger .material-icons-round{color:var(--red)}
+/* ── PROFILE PAGE ── */
+.profile-page{padding:20px}
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;text-align:center;margin-bottom:16px}
+.profile-avatar{width:70px;height:70px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 12px;box-shadow:0 6px 20px rgba(255,69,0,.35)}
+.profile-name{font-size:18px;font-weight:800;margin-bottom:2px}
+.profile-email{font-size:13px;color:var(--text3)}
+.profile-status{margin-top:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.12);color:var(--green);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.profile-menu-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.profile-menu-item:hover{background:var(--surface2)}
+.profile-menu-item .material-icons-round{font-size:20px;color:var(--text2)}
+.profile-menu-item.danger .material-icons-round{color:var(--red)}
+.profile-menu-item.danger span:last-child{color:var(--red)}
+.profile-menu-label{flex:1;font-size:14px;font-weight:600}
+.profile-menu-item .material-icons-round:last-child{font-size:16px;color:var(--text3)}
 
-/* TOAST */
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;z-index:999;white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.4);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast .material-icons-round{font-size:18px;color:var(--green)}
+/* ── BOTTOM NAV ── */
+.bottom-nav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom));flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;cursor:pointer;color:var(--text3);transition:color .15s;position:relative}
+.nav-item.active{color:var(--accent)}
+.nav-item .material-icons-round{font-size:22px}
+.nav-label{font-size:10px;font-weight:700}
+.nav-badge{position:absolute;top:4px;right:calc(50% - 18px);background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center}
 
-::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:10px}
+/* ── REJECT SHEET ── */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+.sheet-overlay.open{opacity:1;pointer-events:all}
+.sheet{background:var(--surface);border-radius:24px 24px 0 0;width:100%;padding:20px;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.2,.64,1)}
+.sheet-overlay.open .sheet{transform:translateY(0)}
+.sheet-title{font-size:16px;font-weight:800;margin-bottom:16px;text-align:center}
+.reject-opt{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;margin-bottom:8px;text-align:center}
+.reject-opt:hover{border-color:var(--red);color:var(--red)}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--surface3);color:var(--text);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:var(--shadow);pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+::-webkit-scrollbar{width:0}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="login-screen" id="loginScreen">
-  <div class="login-logo">⚡</div>
-  <div class="login-title">2Fast Driver</div>
-  <div class="login-sub">Εφαρμογή Οδηγών</div>
-  <div class="l-group"><label class="l-label">Όνομά σου</label><input class="l-input" id="loginName" type="text" placeholder="π.χ. Νίκος Παπαδόπουλος"></div>
-  <div class="l-group"><label class="l-label">PIN</label><input class="l-input" id="loginPin" type="password" placeholder="••••" inputmode="numeric"></div>
-  <button class="login-btn" onclick="doLogin()">🚀 Σύνδεση</button>
-</div>
-
-<!-- APP -->
-<div class="app-screen" id="appScreen">
-
-  <!-- HEADER -->
-  <div class="app-header">
-    <div class="header-av" id="headerAv">Ν</div>
-    <div><div class="header-name" id="headerName">Νίκος</div><div class="header-role">Οδηγός Delivery</div></div>
-    <div class="online-toggle online" id="onlineToggle" onclick="toggleOnline()">
-      <div class="toggle-dot"></div><span id="onlineLabel">Online</span>
-    </div>
-  </div>
-
-  <!-- EARNINGS BAR -->
-  <div class="earnings-bar">
-    <div class="earn-item"><div class="earn-label">Σήμερα</div><div class="earn-value money" id="todayEarnings">€0.00</div></div>
-    <div class="earn-item"><div class="earn-label">Παραδόσεις</div><div class="earn-value" id="todayDeliveries">0</div></div>
-    <div class="earn-item"><div class="earn-label">Εβδομάδα</div><div class="earn-value money" id="weekEarnings">€0.00</div></div>
-  </div>
-
-  <!-- PAGES CONTAINER -->
-  <div style="flex:1;overflow-y:auto;padding-bottom:70px">
-
-    <!-- ORDERS PAGE -->
-    <div class="page active" id="pageOrders">
-      <div class="content-area" id="ordersArea"></div>
-    </div>
-
-    <!-- CHAT PAGE -->
-    <div class="page" id="pageChat">
-      <div class="chat-screen" id="chatScreen">
-        <div class="chat-hd">
-          <span class="material-icons-round" style="color:var(--accent)">support_agent</span>
-          <div><div class="chat-hd-name">Admin</div><div class="chat-hd-sub">2Fast Delivery Support</div></div>
-          <div style="margin-left:auto;width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)"></div>
-        </div>
-        <div class="chat-messages-area" id="chatMsgsArea">
-          <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Γράψε στον admin για οποιοδήποτε πρόβλημα.</div>
-        </div>
-        <div class="chat-input-row">
-          <input class="chat-input" id="chatInput" placeholder="Γράψε μήνυμα..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendMsg();}">
-          <button class="chat-send-btn" onclick="sendMsg()"><span class="material-icons-round">send</span></button>
-        </div>
-      </div>
-    </div>
-
-    <!-- EARNINGS PAGE -->
-    <div class="page" id="pageEarnings">
-      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-        <div class="earnings-card">
-          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Κέρδη Σήμερα</div>
-          <div style="font-size:40px;font-weight:800;font-family:'DM Mono',monospace;letter-spacing:-2px"><span style="font-size:24px;color:var(--muted)">€</span><span id="bigEarnings">0.00</span></div>
-        </div>
-        <div class="earn-grid">
-          <div class="earn-box"><div class="earn-box-label">Παραδόσεις</div><div class="earn-box-val" id="eTodayDel">0</div></div>
-          <div class="earn-box"><div class="earn-box-label">Μέση Αξία</div><div class="earn-box-val" id="eAvg">€0</div></div>
-          <div class="earn-box" style="grid-column:span 2"><div class="earn-box-label">Εβδομαδιαία Εκτίμηση</div><div class="earn-box-val" id="eWeek">€0.00</div></div>
-        </div>
-        <div class="earnings-card">
-          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Ιστορικό</div>
-          <div id="earningsHistory"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PROFILE PAGE -->
-    <div class="page" id="pageProfile">
-      <div class="profile-header">
-        <div class="profile-av" id="profileAv">Ν</div>
-        <div class="profile-name" id="profileName">Νίκος</div>
-        <div class="profile-role">Οδηγός Delivery</div>
-      </div>
-      <div class="menu-item" onclick="showToast('⚙️ Ρυθμίσεις')"><span class="material-icons-round">settings</span>Ρυθμίσεις<span class="material-icons-round arrow">chevron_right</span></div>
-      <div class="menu-item" onclick="switchPage('chat',document.getElementById('nav-chat'))"><span class="material-icons-round">chat</span>Chat με Admin<span class="material-icons-round arrow">chevron_right</span></div>
-      <div class="menu-item danger" onclick="doLogout()"><span class="material-icons-round">logout</span>Αποσύνδεση</div>
-    </div>
-  </div>
-
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <div class="bnav-item active" id="nav-orders" onclick="switchPage('orders',this)">
-      <span class="material-icons-round">receipt_long</span><span class="label">Παραγγελίες</span>
-    </div>
-    <div class="bnav-item" id="nav-chat" onclick="switchPage('chat',this)">
-      <span class="material-icons-round">chat</span><span class="label">Chat</span>
-      <div class="bnav-unread" id="chatUnreadBadge" style="display:none">!</div>
-    </div>
-    <div class="bnav-item" id="nav-earnings" onclick="switchPage('earnings',this)">
-      <span class="material-icons-round">payments</span><span class="label">Κέρδη</span>
-    </div>
-    <div class="bnav-item" id="nav-profile" onclick="switchPage('profile',this)">
-      <span class="material-icons-round">person</span><span class="label">Προφίλ</span>
-    </div>
-  </div>
-</div>
-
-<!-- REJECT MODAL (bottom sheet) -->
-<div class="reject-overlay" id="rejectOverlay">
-  <div class="reject-sheet">
-    <div class="reject-title">❌ Απόρριψη Παραγγελίας</div>
-    <div class="reject-sub">Επίλεξε τον λόγο απόρριψης:</div>
-    <div class="reject-reason-btn" onclick="confirmReject('Δεν είμαι διαθέσιμος αυτή τη στιγμή')">
-      <span class="material-icons-round">block</span> Δεν είμαι διαθέσιμος
-    </div>
-    <div class="reject-reason-btn" onclick="confirmReject('Η διαδρομή είναι πολύ μακριά')">
-      <span class="material-icons-round">directions_off</span> Πολύ μακριά διαδρομή
-    </div>
-    <div class="reject-reason-btn" onclick="confirmReject('Πρόβλημα με το όχημά μου')">
-      <span class="material-icons-round">car_repair</span> Πρόβλημα οχήματος
-    </div>
-    <div class="reject-reason-btn" onclick="confirmReject('Δεν μπορώ να βρω τη διεύθυνση')">
-      <span class="material-icons-round">location_off</span> Δεν βρίσκω διεύθυνση
-    </div>
-    <input class="reject-custom-input" id="rejectCustom" placeholder="Άλλος λόγος (προαιρετικό)...">
-    <div class="reject-btns">
-      <button class="reject-cancel" onclick="closeRejectModal()">Ακύρωση</button>
-      <button class="reject-confirm" onclick="confirmReject(document.getElementById('rejectCustom').value||'Άλλος λόγος')">Απόρριψη</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"><span class="material-icons-round">check_circle</span><span id="toastMsg">OK</span></div>
-
-<script>
-// ══════════════════════════════════════════════
-// DEMO DATA
-// ══════════════════════════════════════════════
-const DEMO_ORDERS_DRV = {
-  'demo1':{ id:'#1001', customerName:'Γιώργης Παπαδόπουλος', phone:'6934021000', deliveryAddress:'Πατησίων 42, Αθήνα', pickupAddress:'Φαρμακείο Κέντρου', driver:'Νίκος Παπαδόπουλος', cost:5.00, notes:'3ος όροφος', status:'assigned', createdAt:Date.now()-3600000 },
-  'demo2':{ id:'#1002', customerName:'Ελένη Σταματίου', phone:'6945678901', deliveryAddress:'Λ. Βουλιαγμένης 88', pickupAddress:'Φαρμακείο Γλυφάδας', driver:'Νίκος Παπαδόπουλος', cost:6.50, notes:'', status:'picked', createdAt:Date.now()-7200000 },
-};
-const DEMO_CHAT_DRV = [
-  { from:'admin', text:'Γεια! Τα πάς καλά;', time:Date.now()-600000, read:true },
-  { from:'driver', text:'Ναι, πάω για παραλαβή!', time:Date.now()-540000, read:true },
-];
-
-// ══════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════
-let driverName='', isOnline=true, myOrders={}, myChat=[], rejectOrderKey=null;
-const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}) : '';
-
-// ══════════════════════════════════════════════
-// LOGIN
-// ══════════════════════════════════════════════
-function doLogin(){
-  const name = document.getElementById('loginName').value.trim();
-  if(!name){showToast('⚠️ Βάλε το όνομά σου');return;}
-  driverName = name; window._driverName = name;
-  localStorage.setItem('driverName', name);
-  const ini = name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-  document.getElementById('headerAv').textContent = ini;
-  document.getElementById('headerName').textContent = name.split(' ')[0];
-  document.getElementById('profileAv').textContent = ini;
-  document.getElementById('profileName').textContent = name;
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appScreen').classList.add('visible');
-  if(window._db) updateDriverOnline(true);
-  loadOrders();
-  loadChat();
-}
-
-function doLogout(){
-  if(window._db) updateDriverOnline(false);
-  localStorage.removeItem('driverName');
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('appScreen').classList.remove('visible');
-}
-
-const saved = localStorage.getItem('driverName');
-if(saved){ document.getElementById('loginName').value=saved; setTimeout(doLogin,100); }
-
-// ══════════════════════════════════════════════
-// ONLINE
-// ══════════════════════════════════════════════
-function toggleOnline(){
-  isOnline=!isOnline;
-  const btn=document.getElementById('onlineToggle');
-  btn.className='online-toggle '+(isOnline?'online':'offline');
-  document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline';
-  if(window._db) updateDriverOnline(isOnline);
-  showToast(isOnline?'✅ Online!':'⏸️ Offline');
-}
-function updateDriverOnline(online){
-  if(!window._db) return;
-  const drivers=window._allFirebaseDrivers||{};
-  for(const [k,d] of Object.entries(drivers)){if(d.name===driverName){window._update(window._ref(window._db,'drivers/'+k),{online});return;}}
-}
-
-// ══════════════════════════════════════════════
-// ORDERS
-// ══════════════════════════════════════════════
-function loadOrders(){
-  if(window._firebaseReady && window._allFirebaseOrders) filterDriverOrders(window._allFirebaseOrders, driverName);
-  else filterDriverOrders(DEMO_ORDERS_DRV, driverName);
-}
-
-window.filterDriverOrders = function(all, driver){
-  myOrders={};
-  for(const [k,o] of Object.entries(all)){
-    if((o.driver||'').toLowerCase().includes((driver||'').split(' ')[0].toLowerCase())){
-      myOrders[k]={...o,_key:k};
-    }
-  }
-  renderOrders();
-  calcEarnings();
-};
-
-function renderOrders(){
-  const area=document.getElementById('ordersArea');
-  const orders=Object.values(myOrders).sort((a,b)=>{const p={assigned:0,picked:1,new:2,delivered:3,rejected:4};return (p[a.status]||9)-(p[b.status]||9);});
-  if(!orders.length){area.innerHTML=`<div class="empty-state"><span class="material-icons-round">two_wheeler</span><div class="empty-title">Δεν υπάρχουν παραγγελίες</div><div class="empty-sub">Οι παραγγελίες σου εμφανίζονται εδώ</div></div>`;return;}
-  const statMap={new:['Νέα','st-new'],assigned:['Ανατέθηκε','st-assigned'],picked:['Παρέλαβες','st-picked'],delivered:['Παραδόθηκε','st-delivered'],rejected:['Απορρίφθηκε','st-rejected']};
-  area.innerHTML=orders.map(o=>{
-    const [sl,sc]=statMap[o.status]||['—','st-new'];
-    const cls=o.status==='delivered'?'delivered-order':o.status==='picked'?'picked-order':o.status==='rejected'?'rejected-card':'new-order';
-    const footer=o.status==='assigned'?`
-      <div class="card-footer">
-        <button class="cta-btn cta-maps" onclick="openMaps('${(o.pickupAddress||'').replace(/'/g,"\\'")}')"><span class="material-icons-round">directions</span>Maps</button>
-        <button class="cta-btn cta-pickup" onclick="updateStatus('${o._key}','picked')"><span class="material-icons-round">inventory_2</span>Παρέλαβα!</button>
-        <button class="cta-btn cta-reject" onclick="openRejectModal('${o._key}')"><span class="material-icons-round">close</span>Απόρριψη</button>
-      </div>`:
-    o.status==='picked'?`
-      <div class="card-footer">
-        <button class="cta-btn cta-maps" onclick="openMaps('${(o.deliveryAddress||'').replace(/'/g,"\\'")}')"><span class="material-icons-round">directions</span>Διαδρομή</button>
-        <button class="cta-btn cta-deliver" onclick="updateStatus('${o._key}','delivered')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>
-      </div>`:'';
-    return `<div class="order-card ${cls}">
-      <div class="card-header">
-        <span class="card-id">${o.id||o._key}</span>
-        <span class="card-status ${sc}">${sl}</span>
-        <span class="cost-badge">€${(o.cost||0).toFixed(2)}</span>
-        <span class="card-time">${fmtTime(o.createdAt)}</span>
-      </div>
-      <div class="card-body">
-        <div><div class="card-customer">${o.customerName||'—'}</div>
-        <div class="card-phone" onclick="window.open('tel:${o.phone}')" style="cursor:pointer;color:var(--blue)">📞 ${o.phone||''}</div></div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          ${o.pickupAddress?`<div class="route-item"><div class="route-icon" style="background:rgba(59,130,246,.1)"><span class="material-icons-round" style="color:var(--blue)">store</span></div><div><div class="route-label">Παραλαβή Από</div><div class="route-addr">${o.pickupAddress}</div></div></div>`:''}
-          <div class="route-item"><div class="route-icon" style="background:rgba(255,61,0,.1)"><span class="material-icons-round" style="color:var(--accent)">location_on</span></div><div><div class="route-label">Παράδοση Σε</div><div class="route-addr">${o.deliveryAddress||'—'}</div></div></div>
-</div>
-        ${o.notes?`<div class="card-notes"><span class="material-icons-round">info</span>${o.notes}</div>`:''}
-      </div>
-      ${footer}
-    </div>`;
-  }).join('');
-}
-
-// ══════════════════════════════════════════════
-// ACTIONS
-// ══════════════════════════════════════════════
-function updateStatus(key, status){
-  if(window._db) window._update(window._ref(window._db,'orders/'+key),{status});
-  else{if(myOrders[key]){myOrders[key].status=status;renderOrders();calcEarnings();}}
-  showToast({picked:'📦 Παρέλαβες!',delivered:'✅ Παρέδωσες! Μπράβο!'}[status]||'OK');
-}
-
-function openMaps(addr){
-  if(!addr){showToast('⚠️ Χωρίς διεύθυνση');return;}
-  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}&travelmode=driving`,'_blank');
-}
-
-// ── REJECT ──
-function openRejectModal(key){
-  rejectOrderKey=key;
-  document.getElementById('rejectCustom').value='';
-  document.getElementById('rejectOverlay').classList.add('open');
-}
-function closeRejectModal(){document.getElementById('rejectOverlay').classList.remove('open');rejectOrderKey=null;}
-function confirmReject(reason){
-  if(!rejectOrderKey) return;
-  const r=reason.trim()||'Απορρίφθηκε';
-  if(window._db) window._update(window._ref(window._db,'orders/'+rejectOrderKey),{status:'rejected',rejectionReason:r});
-  else{if(myOrders[rejectOrderKey]){myOrders[rejectOrderKey].status='rejected';myOrders[rejectOrderKey].rejectionReason=r;renderOrders();}}
-  // Notify admin via chat
-  const notif={from:'driver',text:`❌ Απέρριψα παραγγελία ${myOrders[rejectOrderKey]?.id||''}: ${r}`,time:Date.now(),read:false};
-  myChat.push(notif);
-  if(window._db){const cr=window._push(window._ref(window._db,`chat/${driverName}`));window._set(cr,notif);}
-  renderChat();
-  closeRejectModal();
-  showToast('❌ Παραγγελία απορρίφθηκε');
-}
-
-// ══════════════════════════════════════════════
-// CHAT
-// ══════════════════════════════════════════════
-function loadChat(){
-  if(window._firebaseReady && window._allFirebaseChat?.[driverName]) {
-    myChat = Object.values(window._allFirebaseChat[driverName]);
-  } else {
-    myChat = [...DEMO_CHAT_DRV];
-  }
-  renderChat();
-}
-
-window.updateChatFromFirebase = function(msgs){
-  const arr = Array.isArray(msgs) ? msgs : Object.values(msgs||{});
-  const hadUnread = arr.filter(m=>m.from==='admin'&&!m.read).length;
-  myChat = arr;
-  renderChat();
-  // Show unread badge if on different page
-  if(document.getElementById('pageChat').style.display==='none' && hadUnread>0){
-    document.getElementById('chatUnreadBadge').style.display='flex';
-    document.getElementById('chatUnreadBadge').textContent=hadUnread;
-    showToast('💬 Νέο μήνυμα από Admin!');
-  }
-};
-
-function renderChat(){
-  const area=document.getElementById('chatMsgsArea');
-  if(!myChat.length){area.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Γράψε στον admin για βοήθεια.</div>';return;}
-  area.innerHTML=myChat.map(m=>`
-    <div>
-      <div class="msg ${m.from==='driver'?'driver-out':'admin-in'}">${m.text}
-        <span class="msg-time">${fmtTime(m.time)}</span>
-      </div>
-    </div>`).join('');
-  setTimeout(()=>{area.scrollTop=area.scrollHeight;},50);
-}
-
-function sendMsg(){
-  const input=document.getElementById('chatInput');
-  const text=input.value.trim();
-  if(!text) return;
-  input.value='';
-  const msg={from:'driver',text,time:Date.now(),read:false};
-  myChat.push(msg);
-  if(window._db){const cr=window._push(window._ref(window._db,`chat/${driverName}`));window._set(cr,msg);}
-  renderChat();
-}
-
-// ══════════════════════════════════════════════
-// EARNINGS
-// ══════════════════════════════════════════════
-function calcEarnings(){
-  const del=Object.values(myOrders).filter(o=>o.status==='delivered');
-  const total=del.reduce((s,o)=>s+(o.cost||0),0);
-  const week=total*5.2;
-  document.getElementById('todayEarnings').textContent='€'+total.toFixed(2);
-  document.getElementById('todayDeliveries').textContent=del.length;
-  document.getElementById('weekEarnings').textContent='€'+week.toFixed(2);
-  document.getElementById('bigEarnings').textContent=total.toFixed(2);
-  document.getElementById('eTodayDel').textContent=del.length;
-  document.getElementById('eAvg').textContent=del.length?'€'+(total/del.length).toFixed(1):'€0';
-  document.getElementById('eWeek').textContent='€'+week.toFixed(2);
-  document.getElementById('earningsHistory').innerHTML=del.length
-    ?del.map(o=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:700">${o.customerName}</div><div style="font-size:11px;color:var(--muted)">${o.deliveryAddress}</div></div><div style="font-family:'DM Mono',monospace;font-weight:700;color:var(--green)">+€${(o.cost||0).toFixed(2)}</div></div>`).join('')
-    :'<div style="font-size:13px;color:var(--muted);text-align:center;padding:20px">Καμία παράδοση ακόμα</div>';
-}
-
-// ══════════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════════
-function switchPage(page, el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page'+page.charAt(0).toUpperCase()+page.slice(1)).classList.add('active');
-  if(el) el.classList.add('active');
-  if(page==='earnings') calcEarnings();
-  if(page==='chat'){
-    // Mark admin messages as read
-    myChat.forEach(m=>{if(m.from==='admin') m.read=true;});
-    document.getElementById('chatUnreadBadge').style.display='none';
-    renderChat();
-    if(window._db) myChat.forEach((m,i)=>{if(m.from==='admin')window._update(window._ref(window._db,`chat/${driverName}/${i}`),{read:true});});
-  }
-}
-
-// Simulate incoming admin message (demo only)
-setInterval(()=>{
-  if(window._firebaseReady) return;
-  const adminMsgs=['Πώς πάνε οι παραδόσεις;','Νέα παραγγελία σύντομα!','Όλα OK;','Καλή συνέχεια! 💪'];
-  const text=adminMsgs[Math.floor(Math.random()*adminMsgs.length)];
-  myChat.push({from:'admin',text,time:Date.now(),read:false});
-  const onChat=document.getElementById('pageChat').classList.contains('active');
-  if(!onChat){document.getElementById('chatUnreadBadge').style.display='flex';document.getElementById('chatUnreadBadge').textContent='!';showToast('💬 Admin: '+text);}
-  else renderChat();
-},40000);
-
-// ══════════════════════════════════════════════
-// TOAST
-// ══════════════════════════════════════════════
-let toastT;
-function showToast(msg){
-  document.getElementById('toastMsg').textContent=msg;
-  const t=document.getElementById('toast');
-  t.classList.add('show');clearTimeout(toastT);
-  toastT=setTimeout(()=>t.classList.remove('show'),3000);
-}
-
-// Close reject modal on overlay click
-document.getElementById('rejectOverlay').addEventListener('click',function(e){if(e.target===this)closeRejectModal();});
-</script>
-</body>
-</html>
+<!-- AUTH -->
+<div class="screen active" id="screenAuth">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🏍️</div>
+      <div class="auth-logo-text">Order<span>aki</span></div>
+      <div class="auth-logo-sub">Driver App</div>
