@@ -421,3 +421,131 @@ function toggleStoreStatus(){
   else{currentStore.open=n;applyStoreData();}
   showToast(n?'✅ Κατάστημα: Ανοιχτό':'⏸️ Κατάστημα: Κλειστό');
 }
+
+function updateStats(){
+  const o=Object.values(myOrders);
+  document.getElementById('st-new').textContent=o.filter(x=>x.status==='new').length;
+  document.getElementById('st-active').textContent=o.filter(x=>['confirmed','preparing'].includes(x.status)).length;
+  document.getElementById('st-done').textContent=o.filter(x=>x.status==='delivered').length;
+  const rev=o.filter(x=>x.status==='delivered').reduce((s,x)=>s+(x.total||0),0);
+  document.getElementById('st-rev').textContent='€'+rev.toFixed(0);
+  const nc=o.filter(x=>x.status==='new').length;
+  const sb=document.getElementById('sideOrderBadge');
+  sb.style.display=nc>0?'inline-flex':'none';sb.textContent=nc;
+  document.getElementById('newOrderBadge').classList.toggle('show',nc>0);
+}
+
+const STATUS_MAP={new:['Νέα','st-new'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],cancelled:['Ακυρώθηκε','st-cancelled']};
+
+function renderOrders(){
+  const orders=Object.values(myOrders).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  document.getElementById('ordersCount').textContent=orders.length;
+  const html=orders.length?orders.map(o=>orderRowHTML(o)).join(''):'<div class="empty-state"><span class="material-icons-round">inbox</span>Δεν υπάρχουν παραγγελίες</div>';
+  document.getElementById('ordersList').innerHTML=html;
+  document.getElementById('recentOrders').innerHTML=orders.slice(0,5).map(o=>orderRowHTML(o)).join('')||'<div class="empty-state"><span class="material-icons-round">inbox</span>Καμία παραγγελία σήμερα</div>';
+}
+
+function orderRowHTML(o){
+  const[sl,sc]=STATUS_MAP[o.status]||['—','st-new'];
+  const itemsTxt=(o.items||[]).map(i=>`${i.name}×${i.qty}`).join(', ');
+  const actions=o.status==='new'
+    ?`<div class="order-actions"><button class="btn-sm btn-confirm" onclick="setOrderStatus('${o._key}','confirmed')"><span class="material-icons-round">check</span>Επιβεβαίωση</button><button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button></div>`
+    :o.status==='confirmed'
+    ?`<button class="btn-sm btn-confirm" onclick="setOrderStatus('${o._key}','preparing')"><span class="material-icons-round">restaurant</span>Ετοιμάζεται</button>`
+    :`<span style="font-size:11px;color:var(--text3)">${fmtTime(o.createdAt)}</span>`;
+  return`<div class="order-row"><div><span class="order-id">${o.id||o._key}</span></div><div><div style="font-size:13px;font-weight:700">${o.customerName||'—'}</div><div style="font-size:11px;color:var(--text3)">${o.phone||''}</div></div><div class="order-items-text">${itemsTxt}</div><div class="order-total">€${(o.total||0).toFixed(2)}</div><div><span class="order-status ${sc}">${sl}</span></div><div>${actions}</div></div>`;
+}
+
+function setOrderStatus(key,status){
+  if(window._db)window._update(window._ref(window._db,'orders/'+key),{status});
+  else{if(myOrders[key]){myOrders[key].status=status;renderOrders();updateStats();}}
+  if(status==='confirmed')showToast('✅ Παραγγελία επιβεβαιώθηκε!');
+}
+
+function renderMenu(){
+  const items=Object.entries(myMenu);
+  document.getElementById('menuGrid').innerHTML=items.map(([k,item])=>`
+    <div class="menu-card">
+      <div class="menu-card-emoji">${item.emoji||'🍴'}</div>
+      <div class="menu-card-name">${item.name}</div>
+      <div class="menu-card-desc">${item.description||''}</div>
+      <div class="menu-card-footer">
+        <div class="menu-card-price">€${(item.price||0).toFixed(2)}</div>
+        <div class="menu-card-actions">
+          <button class="menu-avail ${item.available?'available':'unavailable'}" onclick="toggleItemAvail('${k}')"><span class="material-icons-round">${item.available?'visibility':'visibility_off'}</span>${item.available?'Διαθέσιμο':'Κλειστό'}</button>
+          <div class="icon-btn" onclick="openEditItemModal('${k}')" style="width:30px;height:30px;border-radius:8px"><span class="material-icons-round" style="font-size:15px">edit</span></div>
+          <div class="icon-btn" onclick="deleteItem('${k}')" style="width:30px;height:30px;border-radius:8px;color:var(--red)"><span class="material-icons-round" style="font-size:15px">delete_outline</span></div>
+        </div>
+      </div>
+    </div>
+  `).join('')+`<div class="add-item-card" onclick="openAddItemModal()"><span class="material-icons-round">add_circle_outline</span><div class="add-item-label">Προσθήκη Προϊόντος</div></div>`;
+}
+
+function openAddItemModal(){editingItemId=null;document.getElementById('itemModalTitle').textContent='Νέο Προϊόν';['iEmoji','iName','iDesc','iPrice'].forEach(id=>document.getElementById(id).value='');document.getElementById('iEmoji').value='🍴';document.getElementById('itemOverlay').classList.add('open');}
+function openEditItemModal(key){const item=myMenu[key];if(!item)return;editingItemId=key;document.getElementById('itemModalTitle').textContent='Επεξεργασία';document.getElementById('iEmoji').value=item.emoji||'🍴';document.getElementById('iName').value=item.name||'';document.getElementById('iDesc').value=item.description||'';document.getElementById('iPrice').value=item.price||'';document.getElementById('itemOverlay').classList.add('open');}
+function closeItemModal(){document.getElementById('itemOverlay').classList.remove('open');}
+
+function saveItem(){
+  const name=document.getElementById('iName').value.trim(),price=parseFloat(document.getElementById('iPrice').value);
+  if(!name||isNaN(price)){showToast('⚠️ Συμπλήρωσε όνομα και τιμή');return;}
+  const item={name,emoji:document.getElementById('iEmoji').value||'🍴',price,description:document.getElementById('iDesc').value.trim(),available:true};
+  const path='stores/'+storeId+'/menu/';
+  if(window._db){if(editingItemId)window._update(window._ref(window._db,path+editingItemId),item);else{const nr=window._push(window._ref(window._db,path));window._set(nr,item);}}
+  else{const k=editingItemId||('i_'+Date.now());myMenu[k]=item;renderMenu();}
+  closeItemModal();showToast(editingItemId?'✅ Ενημερώθηκε':'✅ Προστέθηκε');
+}
+
+function toggleItemAvail(key){
+  const cur=myMenu[key]?.available;
+  if(window._db)window._update(window._ref(window._db,'stores/'+storeId+'/menu/'+key),{available:!cur});
+  else{myMenu[key].available=!cur;renderMenu();}
+}
+
+function deleteItem(key){
+  if(!confirm('Διαγραφή;'))return;
+  if(window._db)window._remove(window._ref(window._db,'stores/'+storeId+'/menu/'+key));
+  else{delete myMenu[key];renderMenu();}
+  showToast('🗑️ Διαγράφηκε');
+}
+
+function selectEmoji(el){document.querySelectorAll('.emoji-opt').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');selectedEmoji=el.dataset.e;}
+
+function saveStoreSettings(){
+  const data={name:document.getElementById('sName').value.trim(),category:document.getElementById('sCat').value,deliveryCost:parseFloat(document.getElementById('sDelivery').value)||2,minOrder:parseFloat(document.getElementById('sMin').value)||10,description:document.getElementById('sDesc').value.trim(),emoji:selectedEmoji};
+  if(!data.name){showToast('⚠️ Βάλε όνομα');return;}
+  if(window._db)window._update(window._ref(window._db,'stores/'+storeId),data);
+  else{Object.assign(currentStore,data);applyStoreData();}
+  showToast('✅ Αποθηκεύτηκε!');
+}
+
+function renderChat(){
+  const area=document.getElementById('chatMsgs');
+  if(!myChat.length){area.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Γράψε στον admin για βοήθεια.</div>';return;}
+  area.innerHTML=myChat.map(m=>`<div><div class="msg ${m.from==='store'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div></div>`).join('');
+  setTimeout(()=>{const a=document.getElementById('chatMsgs');a.scrollTop=a.scrollHeight;},50);
+}
+
+function sendChatMsg(){
+  const input=document.getElementById('chatInput'),text=input.value.trim();
+  if(!text)return;input.value='';
+  const msg={from:'store',text,time:Date.now(),read:false,storeName:currentStore?.name||'Store'};
+  myChat.push(msg);
+  if(window._db){const r=window._push(window._ref(window._db,'chat/'+storeId));window._set(r,msg);}
+  renderChat();
+}
+
+function goToPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.s-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+  if(name==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;});document.getElementById('chatBadge').classList.remove('show');document.getElementById('sideChatBadge').style.display='none';renderChat();}
+}
+
+document.getElementById('itemOverlay').addEventListener('click',function(e){if(e.target===this)closeItemModal();});
+
+let toastT;
+function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200);}
+</script>
+</body>
+</html>
