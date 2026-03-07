@@ -563,8 +563,12 @@ window.renderPendingStores = function(all){
     </div>`).join('');
 };
 window.approveStore = function(uid){
-  if(window._db) window._update(window._ref(window._db,'stores/'+uid),{status:'approved'});
-  showToast('✅ Κατάστημα εγκρίθηκε!');
+  console.log('Approving store:', uid);
+  if(window._db) {
+    window._update(window._ref(window._db,'stores/'+uid),{status:'approved',open:true})
+      .then(()=>showToast('✅ Κατάστημα εγκρίθηκε!'))
+      .catch(e=>showToast('❌ Σφάλμα: '+e.message));
+  } else showToast('❌ Δεν υπάρχει Firebase σύνδεση');
 };
 window.rejectStore = function(uid){
   if(window._db) window._remove(window._ref(window._db,'stores/'+uid));
@@ -689,7 +693,7 @@ function renderTable() {
   document.getElementById('tableCount').textContent = orders.length;
   document.getElementById('emptyState').style.display = orders.length ? 'none' : 'flex';
 
-  const driverOptions = Object.entries(allDrivers).filter(([uid,d])=>d.online&&d.status==='approved')
+  const driverOptions = Object.entries(allDrivers).filter(([uid,d])=> !d.status || d.status==='approved')
     .map(([uid,d])=>`<option value="${uid}::${d.name}">${d.name} (${d.phone||''})</option>`).join('');
 
   const statusMap = {
