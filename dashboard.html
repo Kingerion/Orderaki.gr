@@ -751,3 +751,97 @@ function sendChatMsg() {
   renderChatMessages(activeChatDriver);
   renderChatDriverList();
 }
+
+function scrollChatBottom() {
+  setTimeout(() => {
+    const el = document.getElementById('chatMsgs');
+    if (el) el.scrollTop = el.scrollHeight;
+  }, 50);
+}
+
+// Simulate incoming driver message every 30s (demo only)
+setInterval(() => {
+  if (window._firebaseReady) return;
+  const drivers = Object.values(allDrivers).filter(d=>d.online);
+  if (!drivers.length) return;
+  const d = drivers[Math.floor(Math.random()*drivers.length)];
+  const msgs = ['Φτάνω σε λίγο!','Ο πελάτης δεν απαντάει.','Παρέλαβα την παραγγελία.','Παρέδωσα επιτυχώς! ✅','Χρειάζομαι βοήθεια με τη διεύθυνση.'];
+  const text = msgs[Math.floor(Math.random()*msgs.length)];
+  if (!allChats[d.name]) allChats[d.name]=[];
+  allChats[d.name].push({ from:'driver', text, time: Date.now(), read: activeChatDriver===d.name });
+  renderChatDriverList();
+  if (activeChatDriver===d.name) renderChatMessages(d.name);
+  showToast('💬 ' + d.name.split(' ')[0] + ': ' + text);
+}, 30000);
+
+// ══════════════════════════════════════════════════════════
+// ORDER ACTIONS
+// ══════════════════════════════════════════════════════════
+function assignDriver(key, driverName) {
+  if (!driverName) return;
+  if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:driverName,status:'assigned'});
+  else { allOrders[key].driver=driverName; allOrders[key].status='assigned'; renderTable(); updateStats(allOrders); }
+  showToast('✅ Ανατέθηκε: '+driverName);
+}
+
+function setStatus(key, status) {
+  if (window._db) window._update(window._ref(window._db,'orders/'+key),{status});
+  else { if(allOrders[key]){allOrders[key].status=status;renderTable();updateStats(allOrders);} }
+  showToast('📦 Status: '+{picked:'Παρέλαβε',delivered:'Παραδόθηκε'}[status]);
+}
+
+function reassignOrder(key) {
+  const onlineDrivers = Object.values(allDrivers).filter(d=>d.online);
+  if (!onlineDrivers.length) { showToast('⚠️ Κανένας online οδηγός'); return; }
+  // Assign to driver with least orders (excluding the one who rejected)
+  const oldDriver = allOrders[key]?.driver;
+  const available = onlineDrivers.filter(d => d.name !== oldDriver);
+  if (!available.length) { showToast('⚠️ Δεν υπάρχει άλλος διαθέσιμος'); return; }
+  const best = available[0];
+  if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:best.name,status:'assigned',rejectionReason:''});
+  else { allOrders[key].driver=best.name; allOrders[key].status='assigned'; allOrders[key].rejectionReason=''; renderTable(); updateStats(allOrders); }
+  showToast('🔄 Ανα-ανατέθηκε: '+best.name);
+}
+
+function deleteOrder(key) {
+  if (window._db) window._set(window._ref(window._db,'orders/'+key),null);
+  else { delete allOrders[key]; renderTable(); updateStats(allOrders); }
+  showToast('🗑️ Παραγγελία διαγράφηκε');
+}
+
+function submitNewOrder() {
+  const name=document.getElementById('fName').value.trim();
+  const address=document.getElementById('fAddress').value.trim();
+  if(!name||!address){showToast('⚠️ Συμπλήρωσε όνομα & διεύθυνση');return;}
+  const order={
+    id:'#'+(1000+Math.floor(Math.random()*9000)),
+    customerName:name, phone:document.getElementById('fPhone').value,
+    deliveryAddress:address, pickupAddress:document.getElementById('fPickup').value,
+    cost:parseFloat(document.getElementById('fCost').value)||0,
+    notes:document.getElementById('fNotes').value,
+    driver:'', status:'new', source:'admin', createdAt:Date.now()
+  };
+  if(window._db){const r=window._push(window._ref(window._db,'orders'));window._set(r,order);}
+  else{const k='order_'+Date.now();allOrders[k]={...order,_key:k};renderTable();updateStats(allOrders);}
+  if(autoDispatch) setTimeout(()=>runAutoDispatch(allOrders),500);
+  closeModal();
+  showToast('🚀 Παραγγελία '+order.id+' δημιουργήθηκε!');
+  ['fName','fPhone','fAddress','fPickup','fCost','fNotes'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ══════════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════════
+function filterTab(f,el){currentFilter=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderTable();}
+function searchOrders(q){searchQ=q.toLowerCase();renderTable();}
+function navTo(el){document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));el.classList.add('active');}
+function openModal(){document.getElementById('orderOverlay').classList.add('open');}
+function closeModal(){document.getElementById('orderOverlay').classList.remove('open');}
+document.getElementById('orderOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('chatOverlay').addEventListener('click',function(e){if(e.target===this)closeChat();});
+
+let toastT;
+function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3500);}
+</script>
+</body>
+</html>
