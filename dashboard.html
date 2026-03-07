@@ -416,3 +416,198 @@ tr:hover td{background:#fdf9f7}
       <button class="icon-btn" onclick="closeChat()"><span class="material-icons-round">close</span></button>
     </div>
     <div
+style="display:flex;flex:1;min-height:0">
+      <!-- Driver list sidebar -->
+      <div class="chat-driver-list" style="width:130px;flex-shrink:0" id="chatDriverList"></div>
+      <!-- Chat messages area -->
+      <div class="chat-main" id="chatMain">
+        <div class="chat-empty">
+          <span class="material-icons-round">chat_bubble_outline</span>
+          <div class="chat-empty-text">Επίλεξε οδηγό</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW ORDER MODAL -->
+<div class="overlay" id="orderOverlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">➕ Νέα Παραγγελία</div>
+      <button class="icon-btn" onclick="closeModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label class="flabel">Όνομα Πελάτη *</label><input class="finput" id="fName" placeholder="π.χ. Γιώργης Παπ."></div>
+      <div class="fgroup"><label class="flabel">Τηλέφωνο *</label><input class="finput" id="fPhone" placeholder="+30 69xxxxxxxx"></div>
+    </div>
+    <div class="fgroup"><label class="flabel">Διεύθυνση Παράδοσης *</label><input class="finput" id="fAddress" placeholder="π.χ. Πατησίων 42, Αθήνα"></div>
+    <div class="frow">
+      <div class="fgroup"><label class="flabel">Σημείο Παραλαβής</label><input class="finput" id="fPickup" placeholder="π.χ. Φαρμακείο X"></div>
+      <div class="fgroup"><label class="flabel">Κόστος Μεταφοράς (€)</label><input class="finput" id="fCost" type="number" placeholder="5.00"></div>
+    </div>
+    <div class="fgroup"><label class="flabel">Σχόλια</label><textarea class="finput" id="fNotes" rows="2" placeholder="Οδηγίες παράδοσης..."></textarea></div>
+    <div class="modal-ft">
+      <button class="btn btn-outline" onclick="closeModal()">Ακύρωση</button>
+      <button class="btn btn-primary" onclick="submitNewOrder()"><span class="material-icons-round">send</span> Δημιουργία</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="material-icons-round">bolt</span><span id="toastMsg"></span></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// DEMO DATA
+// ══════════════════════════════════════════════════════════
+const DEMO_ORDERS = {
+  'demo1':{ id:'#1001', customerName:'Γιώργης Παπαδόπουλος', phone:'6934021000', deliveryAddress:'Πατησίων 42, Αθήνα', pickupAddress:'Φαρμακείο Κέντρου', driver:'', cost:5.00, notes:'3ος όροφος', status:'new', createdAt:Date.now()-3600000 },
+  'demo2':{ id:'#1002', customerName:'Ελένη Σταματίου', phone:'6945678901', deliveryAddress:'Λ. Βουλιαγμένης 88', pickupAddress:'Φαρμακείο Γλυφάδας', driver:'Νίκος Παπαδόπουλος', cost:6.50, notes:'', status:'picked', createdAt:Date.now()-7200000 },
+  'demo3':{ id:'#1003', customerName:'Κώστας Δημητρίου', phone:'6957890123', deliveryAddress:'Σόλωνος 25, Αθήνα', pickupAddress:'Κατάστημα Κολωνακίου', driver:'Μαρία Κωνσταντίνου', cost:4.00, notes:'Κουδούνι', status:'assigned', createdAt:Date.now()-1800000 },
+  'demo4':{ id:'#1004', customerName:'Δήμητρα Αλεξίου', phone:'6912345678', deliveryAddress:'Κηφισίας 50, Μαρούσι', pickupAddress:'Super Market', driver:'Δημήτρης Αλεξίου', cost:7.00, notes:'', status:'rejected', rejectionReason:'Δεν είμαι διαθέσιμος αυτή τη στιγμή', createdAt:Date.now()-900000 },
+};
+const DEMO_DRIVERS = {
+  'd1':{ name:'Νίκος Παπαδόπουλος', phone:'6934000001', online:true, orders:1 },
+  'd2':{ name:'Μαρία Κωνσταντίνου', phone:'6934000002', online:true, orders:1 },
+  'd3':{ name:'Δημήτρης Αλεξίου', phone:'6934000003', online:true, orders:0 },
+  'd4':{ name:'Αλέξης Χρήστου', phone:'6934000004', online:false, orders:0 },
+};
+const DEMO_CHAT = {
+  'Νίκος Παπαδόπουλος':[ { from:'driver', text:'Γεια! Ο πελάτης δεν απαντάει στο κουδούνι.', time: Date.now()-300000 }, { from:'admin', text:'Δοκίμασε τηλέφωνο στο 6934021000', time: Date.now()-240000 }, ],
+  'Μαρία Κωνσταντίνου':[ { from:'driver', text:'Φτάνω σε 5 λεπτά για παραλαβή.', time: Date.now()-600000 }, ],
+};
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let allOrders = {};
+let allDrivers = {};
+let allChats = {}; // { driverName: [{from, text, time}] }
+let currentFilter = 'all';
+let searchQ = '';
+let autoDispatch = true;
+let activeChatDriver = null, activeChatDriverUid = null;
+const COLORS = ['#ff3d00','#3b82f6','#00b37e','#f59e0b','#8b5cf6'];
+const initials = n => n ? n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase() : '?';
+const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}) : '--:--';
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  allOrders = DEMO_ORDERS;
+  allDrivers = DEMO_DRIVERS;
+  allChats = DEMO_CHAT;
+  renderTable();
+  renderDrivers();
+  updateStats(allOrders);
+  renderChatDriverList();
+  updateAutoDispatchUI();
+});
+
+// ══════════════════════════════════════════════════════════
+// FIREBASE BRIDGES
+// ══════════════════════════════════════════════════════════
+window.renderOrdersFromFirebase = d => { allOrders=d||{}; renderTable(); };
+window.renderDriversFromFirebase = d => {
+  const all = d||{};
+  // Separate pending from approved
+  allDrivers = {};
+  const pending = {};
+  for(const [k,v] of Object.entries(all)){
+    if(v.status==='pending') pending[k]=v;
+    else allDrivers[k]=v; // approved or no status (legacy)
+  }
+  renderDrivers();
+  renderPendingDrivers(pending);
+};
+
+window.renderPendingDrivers = function(pending){
+  const entries = Object.entries(pending);
+  const el = document.getElementById('pendingDriversList');
+  if(!el) return;
+  const badge = document.getElementById('pendingBadge');
+  if(badge) badge.style.display = entries.length?'inline-flex':'none';
+  if(badge) badge.textContent = entries.length;
+  if(!entries.length){ el.innerHTML='<div style="padding:16px 20px;font-size:13px;color:var(--text3)">Δεν υπάρχουν αιτήματα</div>'; return; }
+  el.innerHTML = entries.map(([k,d])=>`
+    <div style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-top:1px solid var(--border)">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--accent)">${(d.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px">${d.name||d.email||k}</div><div style="font-size:12px;color:var(--text3)">${d.phone||''} · ${d.email||''}</div></div>
+      <button onclick="approveDriver('${k}','${(d.name||'').replace(/'/g,'')}','${d.phone||''}')" style="background:var(--green-light);color:var(--green);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✅ Έγκριση</button>
+      <button onclick="rejectDriverReq('${k}')" style="background:var(--red-light);color:var(--red);border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">❌</button>
+    </div>`).join('');
+};
+
+window.renderPendingStores = function(all){
+  const pending = Object.entries(all||{}).filter(([k,v])=>v.status==='pending');
+  const el = document.getElementById('pendingStoresList');
+  const badge = document.getElementById('pendingStoresBadge');
+  if(badge) { badge.style.display=pending.length?'inline-flex':'none'; badge.textContent=pending.length; }
+  if(!el) return;
+  if(!pending.length){ el.innerHTML='<div style="padding:16px 20px;font-size:13px;color:var(--text3)">Δεν υπάρχουν αιτήματα</div>'; return; }
+  el.innerHTML = pending.map(([k,s])=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--border)">
+      <div style="font-size:24px">${s.emoji||'🏪'}</div>
+      <div style="flex:1"><div style="font-weight:700;font-size:13px">${s.name||k}</div><div style="font-size:11px;color:var(--text3)">${s.category||''} · ${s.ownerId||''}</div></div>
+      <button onclick="approveStore('${k}')" style="background:var(--green-light);color:var(--green);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✅ Έγκριση</button>
+      <button onclick="rejectStore('${k}')" style="background:var(--red-light);color:var(--red);border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">❌</button>
+    </div>`).join('');
+};
+window.approveStore = function(uid){
+  if(window._db) window._update(window._ref(window._db,'stores/'+uid),{status:'approved'});
+  showToast('✅ Κατάστημα εγκρίθηκε!');
+};
+window.rejectStore = function(uid){
+  if(window._db) window._remove(window._ref(window._db,'stores/'+uid));
+  showToast('❌ Κατάστημα απορρίφθηκε');
+};
+
+window.approveDriver = function(uid, name, phone){
+  if(window._db) window._update(window._ref(window._db,'drivers/'+uid),{status:'approved'});
+  showToast('✅ Οδηγός εγκρίθηκε: '+name);
+};
+window.rejectDriverReq = function(uid){
+  if(window._db) window._remove(window._ref(window._db,'drivers/'+uid));
+  showToast('❌ Αίτημα απορρίφθηκε');
+};
+window.renderAllChats = function(){
+  // allChats merges drivers and stores
+  allChats = {};
+  // drivers: keyed by uid, use name as key for display
+  const drv = window._driverChats||{};
+  for(const [uid,msgs] of Object.entries(drv)){
+    const d = allDrivers[uid];
+    const label = (d&&d.name)||uid;
+    allChats['driver:'+uid] = { msgs: Array.isArray(msgs)?msgs:Object.values(msgs||{}), label, type:'driver', uid };
+  }
+  // stores: keyed by uid
+  const str = window._storeChats||{};
+  for(const [uid,msgs] of Object.entries(str)){
+    const s = allStores ? (allStores[uid]||{}) : {};
+    const label = s.name||uid;
+    allChats['store:'+uid] = { msgs: Array.isArray(msgs)?msgs:Object.values(msgs||{}), label, type:'store', uid };
+  }
+  renderChatList();
+  if(activeChatKey) renderChatMessages(activeChatKey);
+};
+let allStores = {};
+window.setAllStores = d => { allStores=d||{}; };
+window.updateStats = function(data){
+  const o = Object.values(data||{});
+  document.getElementById('sNew').textContent = o.filter(x=>x.status==='new').length;
+  document.getElementById('sActive').textContent = o.filter(x=>x.status==='picked'||x.status==='assigned').length;
+  document.getElementById('sDelivered').textContent = o.filter(x=>x.status==='delivered').length;
+  document.getElementById('sTotal').textContent = o.length;
+  document.getElementById('navCount').textContent = o.filter(x=>x.status==='new').length;
+};
+
+// ══════════════════════════════════════════════════════════
+// AUTO-DISPATCH
+// ══════════════════════════════════════════════════════════
+function toggleAutoDispatch() {
+  autoDispatch = !autoDispatch;
+  updateAutoDispatchUI();
+  showToast(autoDispatch ? '🤖 Auto-Dispatch: Ενεργό!' : '✋ Manual Mode: Εσύ αναθέτεις');
+  if (autoDispatch) runAutoDispatch(allOrders);
+}
