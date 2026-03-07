@@ -374,3 +374,209 @@ const BG_MAP={burger:'linear-gradient(135deg,#ffecd2,#fcb69f)',pizza:'linear-gra
 const CAT_E={burger:'🍔',pizza:'🍕',souvlaki:'🌯',sushi:'🍣',coffee:'☕',desserts:'🍰',greek:'🥗',chinese:'🥡'};
 const DEMO_STORES={
   's1':{name:'Burger House',emoji:'🍔',category:'burger',rating:4.8,deliveryTime:'20-25',deliveryCost:1.5,minOrder:10,open:true,description:'Τα καλύτερα smash burgers της πόλης',menu:{m1:{name:'Classic Smash Burger',emoji:'🍔',price:8.9,description:'200g μοσχάρι, τυρί, μαρούλι, ντομάτα',available:true},m2:{name:'Double Cheese',emoji:'🧀',price:11.5,description:'Διπλό μοσχάρι, διπλό τυρί',available:true},m3:{name:'Crispy Chicken',emoji:'🍗',price:9.5,description:'Τραγανό κοτόπουλο, coleslaw',available:true},m4:{name:'Τηγανητές Πατάτες',emoji:'🍟',price:3.5,description:'Τραγανές, χοντρές',available:true},m5:{name:'Milkshake',emoji:'🥤',price:4.5,description:'Βανίλια, σοκολάτα ή φράουλα',available:true}}},
+  's2':{name:'Pizza Napoli',emoji:'🍕',category:'pizza',rating:4.7,deliveryTime:'25-35',deliveryCost:2.0,minOrder:15,open:true,description:'Authentic ναπολιτάνικη πίτσα',menu:{m1:{name:'Margherita',emoji:'🍕',price:9.0,description:'Σάλτσα ντομάτας, mozzarella, βασιλικός',available:true},m2:{name:'Quattro Formaggi',emoji:'🧀',price:12.5,description:'4 τυριά, τρούφα',available:true},m3:{name:'Diavola',emoji:'🌶️',price:11.0,description:'Σαλάμι πικάντε, jalapeños',available:true}}},
+  's3':{name:'Souvlaki Station',emoji:'🌯',category:'souvlaki',rating:4.9,deliveryTime:'15-20',deliveryCost:1.0,minOrder:8,open:true,description:'Φρέσκα καλαμάκια & γύρος',menu:{m1:{name:'Πίτα Γύρος',emoji:'🌯',price:3.5,description:'Χοιρινό ή κοτόπουλο, τζατζίκι',available:true},m2:{name:'Καλαμάκι Χοιρινό',emoji:'🍢',price:2.5,description:'Φρέσκο χοιρινό στα κάρβουνα',available:true},m3:{name:'Σπεσιάλ Πιάτο',emoji:'🍽️',price:9.5,description:'3 καλαμάκια, πατάτες, τζατζίκι',available:true}}},
+  's4':{name:'Sushi Kyoto',emoji:'🍣',category:'sushi',rating:4.6,deliveryTime:'30-40',deliveryCost:2.5,minOrder:20,open:false,description:'Αυθεντικό ιαπωνικό sushi',menu:{m1:{name:'Salmon Nigiri (2τμχ)',emoji:'🍣',price:6.0,description:'Φρέσκος σολομός',available:true},m2:{name:'California Roll',emoji:'🥟',price:9.5,description:'Καβούρι, αβοκάντο, αγγούρι',available:true}}},
+  's5':{name:'Coffee Lab',emoji:'☕',category:'coffee',rating:4.8,deliveryTime:'10-15',deliveryCost:0.5,minOrder:5,open:true,description:'Specialty καφές & brunch',menu:{m1:{name:'Freddo Espresso',emoji:'☕',price:3.5,description:'Κλασικός παγωμένος',available:true},m2:{name:'Cold Brew',emoji:'🧊',price:4.0,description:'18ωρη εκχύλιση',available:true},m3:{name:'Croissant',emoji:'🥐',price:2.5,description:'Βουτύρου, φρέσκο',available:true}}},
+  's6':{name:'Sweet Dreams',emoji:'🍰',category:'desserts',rating:4.7,deliveryTime:'20-30',deliveryCost:1.5,minOrder:10,open:true,description:'Γλυκά & επιδόρπια premium',menu:{m1:{name:'Τσίζκεϊκ Φράουλα',emoji:'🍓',price:6.0,description:'Κρεμώδης, με coulis φράουλας',available:true},m2:{name:'Σοκολατένια Τούρτα',emoji:'🎂',price:5.5,description:'Υγρό κέντρο, σαντιγί',available:true}}}
+};
+
+let allStores={};let filteredCat='all';let cart={};let activeStore=null;let selectedPay='cash';
+
+// ═══════════════════════════════════════════════
+// LOAD STORES
+// ═══════════════════════════════════════════════
+function loadStoresFromFirebase(data){
+  if(!data||!Object.keys(data).length){allStores=DEMO_STORES;}
+  else{
+    allStores={};
+    for(const[k,s]of Object.entries(data)){
+      allStores[k]={...s,_key:k,deliveryTime:s.deliveryTime||'20-30'};
+    }
+  }
+  updateHeroCount();
+  renderStores();
+}
+
+window.loadStoresFromFirebase=loadStoresFromFirebase;
+
+// Show demo stores immediately so page is never blank
+loadStoresFromFirebase(null);
+// Firebase will override with real data when ready
+
+function updateHeroCount(){
+  const n=Object.keys(allStores).length;
+  document.getElementById('heroStoreCount').textContent=n>0?n+'+':'—';
+}
+
+function renderStores(){
+  const grid=document.getElementById('storesGrid');
+  let stores=Object.entries(allStores).map(([k,s])=>({...s,_key:k}));
+  if(filteredCat!=='all')stores=stores.filter(s=>s.category===filteredCat);
+  document.getElementById('clearFilter').className='clear-filter'+(filteredCat!=='all'?' show':'');
+  if(!stores.length){grid.innerHTML='<div class="stores-empty"><span class="material-icons-round">store_off</span>Δεν βρέθηκαν καταστήματα σε αυτή την κατηγορία</div>';return;}
+  grid.innerHTML=stores.map(s=>{
+    const bg=BG_MAP[s.category]||'linear-gradient(135deg,#f0ede8,#e8e2d9)';
+    return`<div class="store-card" onclick="openOrderModal('${s._key}')">
+      <div class="store-card-cover" style="background:${bg}">
+        <span style="font-size:46px">${s.emoji||CAT_E[s.category]||'🍴'}</span>
+        <div class="store-open-badge ${s.open?'open':'closed'}"><div class="open-dot"></div>${s.open?'Ανοιχτό':'Κλειστό'}</div>
+      </div>
+      <div class="store-body">
+        <div class="store-name">${s.name}</div>
+        <div class="store-meta">
+          <span class="store-rating"><span class="material-icons-round">star</span>${s.rating||'4.5'}</span>
+          <span><span class="material-icons-round">schedule</span>${s.deliveryTime||'20-30'}′</span>
+          <span><span class="material-icons-round">delivery_dining</span>€${(s.deliveryCost||2).toFixed(2)}</span>
+          <span class="store-tag">${s.description||''}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterByCategory(cat,el){
+  filteredCat=cat;
+  document.querySelectorAll('.cat-item').forEach(c=>c.classList.remove('active-cat'));
+  if(el)el.classList.add('active-cat');
+  renderStores();
+  document.getElementById('stores-sec').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ═══════════════════════════════════════════════
+// ORDER MODAL — reads menu from store data
+// ═══════════════════════════════════════════════
+function openOrderModal(storeKey){
+  const s=allStores[storeKey];if(!s)return;
+  activeStore={...s,_key:storeKey};cart={};
+  if(window._db&&window._firebaseReady){
+    window._onValue(window._ref(window._db,'stores/'+storeKey+'/menu'),snap=>{
+      activeStore.menu=snap.val()||{};renderModal();
+    },{onlyOnce:true});
+  } else { renderModal(); }
+  document.getElementById('orderModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeOrderModal(){document.getElementById('orderModal').classList.remove('open');document.body.style.overflow='';}
+document.getElementById('orderModal').addEventListener('click',function(e){if(e.target===this)closeOrderModal();});
+
+function renderModal(){
+  const s=activeStore;
+  const bg=BG_MAP[s.category]||'linear-gradient(135deg,#f0ede8,#e8e2d9)';
+  const menuItems=Object.entries(s.menu||{}).map(([k,item])=>{
+    if(!item.available)return`<div class="menu-item unavailable"><div class="menu-item-left"><span class="menu-item-emoji">${item.emoji||'🍴'}</span><div><div class="menu-item-name">${item.name}</div><div class="menu-item-desc">${item.description||''} — <em>Μη διαθέσιμο</em></div></div></div><span class="menu-item-price">€${(item.price||0).toFixed(2)}</span></div>`;
+    return`<div class="menu-item" id="mi_${k}" onclick="addItem('${k}')">
+      <div class="menu-item-left"><span class="menu-item-emoji">${item.emoji||'🍴'}</span><div><div class="menu-item-name">${item.name}</div><div class="menu-item-desc">${item.description||''}</div></div></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="menu-item-price">€${(item.price||0).toFixed(2)}</span>
+        <div class="qty-control" id="qc_${k}" style="display:none" onclick="event.stopPropagation()">
+          <div class="qty-btn" onclick="changeQty('${k}',-1)">−</div>
+          <div class="qty-num" id="qn_${k}">0</div>
+          <div class="qty-btn" onclick="changeQty('${k}',1)">+</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('orderModalBox').innerHTML=`
+    <div class="modal-hd">
+      <div class="modal-store-icon" style="background:${bg}">${s.emoji||'🍴'}</div>
+      <div><div class="modal-store-name">${s.name}</div><div class="modal-store-meta">⭐ ${s.rating||'4.5'} · ${s.deliveryTime||'20-30'}′ · Min €${s.minOrder||10}</div></div>
+      <button class="modal-close" onclick="closeOrderModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div><div class="order-section-title">Μενού</div><div class="menu-items">${menuItems||'<div style="text-align:center;padding:20px;color:var(--text3)">Δεν υπάρχουν προϊόντα ακόμα</div>'}</div></div>
+      <div>
+        <div class="order-section-title">Στοιχεία Παράδοσης</div>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Το όνομά σου"></div>
+            <div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="+30 69..." type="tel"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Διεύθυνση Παράδοσης *</label><input class="form-input" id="oAddress" placeholder="π.χ. Πατησίων 42, Αθήνα"></div>
+          <div class="form-group"><label class="form-label">Σχόλια</label><input class="form-input" id="oNotes" placeholder="π.χ. 3ος όροφος, χωρίς κρεμμύδι..."></div>
+        </div>
+      </div>
+      <div>
+        <div class="order-section-title">Τρόπος Πληρωμής</div>
+        <div class="pay-options">
+          <div class="pay-opt selected" id="pay_cash" onclick="selectPay('cash')"><span class="material-icons-round">payments</span>Μετρητά</div>
+          <div class="pay-opt" id="pay_card" onclick="selectPay('card')"><span class="material-icons-round">credit_card</span>Κάρτα</div>
+          <div class="pay-opt" id="pay_online" onclick="selectPay('online')"><span class="material-icons-round">phone_iphone</span>Online</div>
+        </div>
+      </div>
+      <div class="order-summary" id="orderSummary">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Σύνοψη</div>
+        <div id="summaryLines"></div>
+        <div class="summary-row"><span>Παράδοση</span><span>€${(s.deliveryCost||2).toFixed(2)}</span></div>
+        <div class="summary-row total"><span>Σύνολο</span><span class="summary-val" id="summaryTotal">€${(s.deliveryCost||2).toFixed(2)}</span></div>
+      </div>
+      <button class="btn-order-submit" onclick="submitOrder()"><span class="material-icons-round">rocket_launch</span>Παράγγειλε τώρα!</button>
+    </div>`;
+}
+
+function addItem(k){
+  const menu=activeStore.menu||{};const item=menu[k];if(!item)return;
+  if(!cart[k])cart[k]={item,qty:0};cart[k].qty++;updateCartUI(k);updateSummary();
+}
+function changeQty(k,d){
+  if(!cart[k])return;cart[k].qty+=d;if(cart[k].qty<=0)delete cart[k];updateCartUI(k);updateSummary();
+}
+function updateCartUI(k){
+  const qty=cart[k]?.qty||0;
+  const qc=document.getElementById('qc_'+k),qn=document.getElementById('qn_'+k),mi=document.getElementById('mi_'+k);
+  if(!qc)return;
+  if(qty>0){qc.style.display='flex';qn.textContent=qty;mi?.classList.add('selected');}
+  else{qc.style.display='none';mi?.classList.remove('selected');}
+}
+function updateSummary(){
+  const items=Object.values(cart);const sub=items.reduce((s,{item,qty})=>s+item.price*qty,0);const total=sub+(activeStore.deliveryCost||2);
+  document.getElementById('summaryLines').innerHTML=items.map(({item,qty})=>`<div class="summary-row"><span>${item.emoji||''} ${item.name} ×${qty}</span><span>€${(item.price*qty).toFixed(2)}</span></div>`).join('');
+  document.getElementById('summaryTotal').textContent='€'+total.toFixed(2);
+}
+function selectPay(t){selectedPay=t;['cash','card','online'].forEach(x=>document.getElementById('pay_'+x).classList.toggle('selected',x===t));}
+
+function submitOrder(){
+  const name=document.getElementById('oName')?.value.trim(),phone=document.getElementById('oPhone')?.value.trim(),address=document.getElementById('oAddress')?.value.trim();
+  if(!name||!phone||!address){showToast('⚠️ Συμπλήρωσε όνομα, τηλέφωνο & διεύθυνση');return;}
+  if(!Object.keys(cart).length){showToast('🛒 Πρόσθεσε τουλάχιστον ένα προϊόν');return;}
+  const items=Object.values(cart);const sub=items.reduce((s,{item,qty})=>s+item.price*qty,0);
+  const order={
+    id:'#ORD'+(1000+Math.floor(Math.random()*9000)),
+    storeId:activeStore._key,storeName:activeStore.name,
+    customerName:name,phone,address,notes:document.getElementById('oNotes')?.value||'',
+    items:items.map(({item,qty})=>({name:item.name,emoji:item.emoji||'',price:item.price,qty})),
+    subtotal:sub,deliveryCost:activeStore.deliveryCost||2,total:sub+(activeStore.deliveryCost||2),
+    payment:selectedPay,status:'new',createdAt:Date.now()
+  };
+  if(window._db){const r=window._push(window._ref(window._db,'orders'));window._set(r,order);}
+  showSuccess(order);
+}
+
+function showSuccess(order){
+  document.getElementById('orderModalBox').innerHTML=`
+    <div class="order-success" style="display:flex">
+      <div class="success-icon"><span class="material-icons-round">check_circle</span></div>
+      <h3 class="success-title">Παραγγελία επιβεβαιώθηκε!</h3>
+      <p class="success-sub">Η παραγγελία ${order.id} ελήφθη. Θα σε καλέσουν σύντομα.</p>
+      <div class="tracking-card">
+        <div style="font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Tracking</div>
+        <div class="tracking-steps">
+          <div class="t-step"><div class="t-dot done"><span class="material-icons-round">check</span></div><div><div class="t-step-label">Παραγγελία ελήφθη</div><div class="t-step-sub">Μόλις τώρα</div></div></div>
+          <div class="t-step"><div class="t-dot active"><span class="material-icons-round">restaurant</span></div><div><div class="t-step-label">Ετοιμάζεται...</div><div class="t-step-sub">~10 λεπτά</div></div></div>
+          <div class="t-step"><div class="t-dot pending"><span class="material-icons-round">delivery_dining</span></div><div><div class="t-step-label">Σε δρόμο</div><div class="t-step-sub">~${activeStore.deliveryTime||'20-30'}′</div></div></div>
+          <div class="t-step"><div class="t-dot pending"><span class="material-icons-round">home</span></div><div><div class="t-step-label">Παράδοση</div><div class="t-step-sub">Στην πόρτα σου</div></div></div>
+        </div>
+      </div>
+      <button class="btn-secondary" style="width:100%" onclick="closeOrderModal()">Κλείσιμο</button>
+    </div>`;
+}
+
+window.addEventListener('scroll',()=>{document.getElementById('mainNav').classList.toggle('scrolled',window.scrollY>20);},{passive:true});
+
+let toastT;
+function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3500);}
+</script>
+  <script>
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
