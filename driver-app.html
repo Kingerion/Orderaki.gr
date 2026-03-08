@@ -36,8 +36,8 @@ if (CFG.apiKey !== "YOUR_API_KEY") {
     window._auth=auth; window._createUser=createUserWithEmailAndPassword; window._signIn=signInWithEmailAndPassword; window._signOut=signOut;
     window._firebaseReady=true;
     onAuthStateChanged(auth, user => {
-      if(user){ window._uid=user.uid; checkDriverStatus(user); }
-      else { showScreen('auth'); }
+      if(user){ window._uid=user.uid; window._currentUser=user; checkDriverStatus(user); }
+      else { window._currentUser=null; showScreen('auth'); }
     });
   } catch(e){ console.warn(e); window._firebaseReady=false; showScreen('auth'); }
 } else { window._firebaseReady=false; initDemo(); }
@@ -593,9 +593,9 @@ function updateEarningsUI(total, today, deliveries) {
   const avg = deliveries > 0 ? (total/deliveries) : 0;
   if(el('earnStatAvg')) el('earnStatAvg').textContent = fmtE(avg);
   // Top bar
-  if(el('topEarnings')) el('topEarnings').textContent = fmtE(today);
-  if(el('topDeliveries')) el('topDeliveries').textContent = deliveries||0;
-  if(el('topWeek')) el('topWeek').textContent = fmtE(total);
+  if(el('earnToday')) el('earnToday').textContent = fmtE(today);
+  if(el('earnDeliveries')) el('earnDeliveries').textContent = deliveries||0;
+  if(el('earnWeek')) el('earnWeek').textContent = fmtE(total);
 }
 
 function calcDriverEarnings(order) {
