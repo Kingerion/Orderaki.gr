@@ -669,28 +669,30 @@ function updateAutoDispatchUI() {
 function runAutoDispatch(orders) {
   if (!autoDispatch) return;
   const newOrders = Object.entries(orders||{}).filter(([,o]) => o.status === 'new');
-  const onlineDrivers = Object.values(allDrivers).filter(d => d.online);
-  if (!newOrders.length || !onlineDrivers.length) return;
+  // Get online drivers as [uid, driverData] pairs
+  const onlineEntries = Object.entries(allDrivers).filter(([,d]) => d.online && (!d.status || d.status==='approved'));
+  if (!newOrders.length || !onlineEntries.length) return;
 
   newOrders.forEach(([key, order]) => {
     // Pick driver with fewest active orders
     const driverLoads = {};
-    onlineDrivers.forEach(d => { driverLoads[d.name] = 0; });
+    onlineEntries.forEach(([uid]) => { driverLoads[uid] = 0; });
     Object.values(allOrders).forEach(o => {
       if ((o.status === 'assigned' || o.status === 'picked') && o.driver && driverLoads[o.driver] !== undefined) {
         driverLoads[o.driver]++;
       }
     });
-    const bestDriver = onlineDrivers.reduce((a,b) =>
-      (driverLoads[a.name]||0) <= (driverLoads[b.name]||0) ? a : b
+    const [bestUid, bestDriver] = onlineEntries.reduce((a,b) =>
+      (driverLoads[a[0]]||0) <= (driverLoads[b[0]]||0) ? a : b
     );
 
     setTimeout(() => {
       if (window._db) {
-        window._update(window._ref(window._db,'orders/'+key), { driver: bestDriver.name, status:'assigned' });
+        window._update(window._ref(window._db,'orders/'+key), { driver: bestUid, driverName: bestDriver.name, status:'assigned' });
       } else {
         if (allOrders[key] && allOrders[key].status === 'new') {
-          allOrders[key].driver = bestDriver.name;
+          allOrders[key].driver = bestUid;
+          allOrders[key].driverName = bestDriver.name;
           allOrders[key].status = 'assigned';
           renderTable();
           updateStats(allOrders);
@@ -738,11 +740,11 @@ function renderTable() {
       <td><div class="addr-text" title="${o.deliveryAddress||''}">${o.deliveryAddress||'—'}</div></td>
       <td>
         ${o.status==='rejected'
-          ? `<div style="font-size:12px;color:var(--red);font-weight:600">${o.driver||'—'}</div><div class="rejected-reason">↳ ${o.rejectionReason||'Απορρίφθηκε'}</div>`
+          ? `<div style="font-size:12px;color:var(--red);font-weight:600">${o.driverName||o.driver||'—'}</div><div class="rejected-reason">↳ ${o.rejectionReason||'Απορρίφθηκε'}</div>`
           : `<select class="driver-sel" onchange="assignDriver('${o._key}',this.value)">
               <option value="">— Επιλογή —</option>
               ${driverOptions}
-              ${o.driver?`<option selected>${o.driver}</option>`:''}
+              ${o.driver?`<option selected>${o.driverName||o.driver}</option>`:''}
             </select>`
         }
       </td>
@@ -1009,15 +1011,15 @@ function reassignAfterReject(key, rejectedDriverName) {
 }
 
 function reassignOrder(key) {
-  const onlineDrivers = Object.values(allDrivers).filter(d=>d.online);
-  if (!onlineDrivers.length) { showToast('⚠️ Κανένας online οδηγός'); return; }
+  const onlineEntries = Object.entries(allDrivers).filter(([,d])=>d.online);
+  if (!onlineEntries.length) { showToast('⚠️ Κανένας online οδηγός'); return; }
   // Assign to driver with least orders (excluding the one who rejected)
   const oldDriver = allOrders[key]?.driver;
-  const available = onlineDrivers.filter(d => d.name !== oldDriver);
+  const available = onlineEntries.filter(([uid]) => uid !== oldDriver);
   if (!available.length) { showToast('⚠️ Δεν υπάρχει άλλος διαθέσιμος'); return; }
-  const best = available[0];
-  if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:best.name,status:'assigned',rejectionReason:''});
-  else { allOrders[key].driver=best.name; allOrders[key].status='assigned'; allOrders[key].rejectionReason=''; renderTable(); updateStats(allOrders); }
+  const [bestUid, best] = available[0];
+  if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:bestUid,driverName:best.name,status:'assigned',rejectionReason:''});
+  else { allOrders[key].driver=bestUid; allOrders[key].driverName=best.name; allOrders[key].status='assigned'; allOrders[key].rejectionReason=''; renderTable(); updateStats(allOrders); }
   showToast('🔄 Ανα-ανατέθηκε: '+best.name);
 }
 
