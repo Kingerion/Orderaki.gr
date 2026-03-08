@@ -416,6 +416,10 @@ function loadDriverApp(){
   if(window._db && window._currentUser) {
     window._onValue(window._ref(window._db,'drivers/'+window._currentUser.uid), snap=>{
       const d = snap.val()||{};
+      // Keep driverData in sync so deliverOrder can use it directly
+      driverData.earnings = d.earnings||0;
+      driverData.earningsToday = d.earningsToday||0;
+      driverData.orders = d.orders||0;
       updateEarningsUI(d.earnings||0, d.earningsToday||0, d.orders||0);
     });
   }
@@ -618,24 +622,44 @@ function deliverOrder(k){
   if(!o) return;
   const earned = calcDriverEarnings(o);
   const uid = window._currentUser ? window._currentUser.uid : null;
-  // Update order status
-  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'delivered'});
-  else { delete myOrders[k]; renderOrders(); }
-  // Record earnings using get() (one-time read)
+  
+  // 1. Mark order delivered
+  if(window._db) {
+    window._update(window._ref(window._db,'orders/'+k), {status:'delivered', deliveredAt: Date.now()});
+  } else {
+    delete myOrders[k]; renderOrders();
+  }
+  
+  // 2. Write delivery record (simple append — no read needed)
   if(window._db && uid) {
-    const dRef = window._ref(window._db,'drivers/'+uid);
-    window._get(dRef).then(snap => {
-      const d = snap.val()||{};
-      const newEarnings = (parseFloat(d.earnings)||0) + earned;
-      const newOrders = (parseInt(d.orders)||0) + 1;
-      const todayEarnings = (parseFloat(d.earningsToday)||0) + earned;
-      window._update(dRef, {earnings: newEarnings, earningsToday: todayEarnings, orders: newOrders, lastDelivery: Date.now()});
-      driverData.earnings = newEarnings;
-      driverData.earningsToday = todayEarnings;
-      driverData.orders = newOrders;
-      updateEarningsUI(newEarnings, todayEarnings, newOrders);
-      showToast('✅ Παράδοση! +€' + earned.toFixed(2) + ' κερδίστηκαν!');
-    }).catch(e => { console.error(e); showToast('✅ Παράδοση ολοκληρώθηκε!'); });
+    const today = new Date().toISOString().slice(0,10); // "2026-03-08"
+    const deliveryRecord = {
+      earned, orderId: k, storeName: o.storeName||'', 
+      address: o.address||'', time: Date.now(), date: today
+    };
+    // Append to deliveries log
+    window._set(window._ref(window._db,'deliveries/'+uid+'/'+k), deliveryRecord);
+    
+    // Update running totals using current driverData (already kept in sync by onValue)
+    const curEarnings = parseFloat(driverData.earnings)||0;
+    const curToday = parseFloat(driverData.earningsToday)||0;
+    const curOrders = parseInt(driverData.orders)||0;
+    const newEarnings = curEarnings + earned;
+    const newToday = curToday + earned;
+    const newOrders = curOrders + 1;
+    
+    window._update(window._ref(window._db,'drivers/'+uid), {
+      earnings: newEarnings,
+      earningsToday: newToday,
+      orders: newOrders,
+      lastDelivery: Date.now()
+    });
+    // Update local cache immediately (onValue will also fire)
+    driverData.earnings = newEarnings;
+    driverData.earningsToday = newToday;
+    driverData.orders = newOrders;
+    updateEarningsUI(newEarnings, newToday, newOrders);
+    showToast('✅ +€' + earned.toFixed(2) + ' — Παράδοση ολοκληρώθηκε!');
   } else {
     showToast('✅ Παράδοση ολοκληρώθηκε!');
   }
