@@ -621,19 +621,24 @@ function deliverOrder(k){
   // Update order status
   if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'delivered'});
   else { delete myOrders[k]; renderOrders(); }
-  // Record earnings in Firebase
+  // Record earnings using get() (one-time read)
   if(window._db && uid) {
     const dRef = window._ref(window._db,'drivers/'+uid);
-    window._onValue(dRef, snap => {
+    window._get(dRef).then(snap => {
       const d = snap.val()||{};
       const newEarnings = (parseFloat(d.earnings)||0) + earned;
       const newOrders = (parseInt(d.orders)||0) + 1;
       const todayEarnings = (parseFloat(d.earningsToday)||0) + earned;
       window._update(dRef, {earnings: newEarnings, earningsToday: todayEarnings, orders: newOrders, lastDelivery: Date.now()});
+      driverData.earnings = newEarnings;
+      driverData.earningsToday = todayEarnings;
+      driverData.orders = newOrders;
       updateEarningsUI(newEarnings, todayEarnings, newOrders);
-    }, {onlyOnce: true});
+      showToast('✅ Παράδοση! +€' + earned.toFixed(2) + ' κερδίστηκαν!');
+    }).catch(e => { console.error(e); showToast('✅ Παράδοση ολοκληρώθηκε!'); });
+  } else {
+    showToast('✅ Παράδοση ολοκληρώθηκε!');
   }
-  showToast('✅ Παράδοση ολοκληρώθηκε!');
 }
 function openReject(k){rejectingKey=k;document.getElementById('rejectSheet').classList.add('open');}
 function closeSheet(){document.getElementById('rejectSheet').classList.remove('open');rejectingKey=null;}
