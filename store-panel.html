@@ -118,6 +118,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .st-picked{background:rgba(139,92,246,.1);color:#7c3aed}
 .st-delivered{background:var(--green-light);color:var(--green)}
 .st-cancelled{background:var(--red-light);color:var(--red)}
+.st-ready{background:var(--green-light);color:var(--green)}
+.prep-time-btn{width:60px;height:48px;border-radius:12px;border:2px solid var(--border);background:var(--surface2);font-size:16px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif}
+.prep-time-btn:hover,.prep-time-btn.selected{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
 .order-items-text{font-size:12px;color:var(--text3)}
 .order-total{font-family:'Fraunces',serif;font-size:16px;font-weight:700;letter-spacing:-.5px}
 .btn-sm{padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px}
@@ -369,6 +372,35 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
 <div class="toast" id="toast"><span class="material-icons-round">check_circle</span><span id="toastMsg">OK</span></div>
 
+<!-- PREP TIME MODAL -->
+<div class="overlay" id="prepOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hd">
+      <div class="modal-title">⏱ Χρόνος Ετοιμασίας</div>
+      <button class="close-btn" onclick="closePrepModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div style="text-align:center;padding:10px 0 20px">
+      <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Σε πόσα λεπτά θα είναι έτοιμη;</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap" id="prepTimeOptions">
+        <button class="prep-time-btn" onclick="selectPrepTime(10)">10'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(15)">15'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(20)">20'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(25)">25'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(30)">30'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(45)">45'</button>
+      </div>
+      <div style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <input class="f-input" id="customPrepTime" type="number" min="1" max="120" placeholder="Άλλο..." style="width:100px;text-align:center">
+        <span style="font-size:13px;color:var(--text3)">λεπτά</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn-sm" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);padding:10px 16px" onclick="closePrepModal()">Ακύρωση</button>
+      <button class="save-btn" onclick="confirmWithPrepTime()" style="font-size:13px;padding:10px 18px"><span class="material-icons-round">check</span>Αποδοχή</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const DEMO_STORE={name:'Burger House Demo',category:'burger',emoji:'🍔',deliveryCost:1.5,minOrder:10,description:'Demo κατάστημα',open:true};
 const DEMO_MENU={'i1':{name:'Classic Burger',emoji:'🍔',price:8.9,description:'200g μοσχάρι, τυρί, μαρούλι',available:true},'i2':{name:'Double Cheese',emoji:'🧀',price:11.5,description:'Διπλό τυρί',available:true},'i3':{name:'Πατάτες',emoji:'🍟',price:3.5,description:'Τραγανές',available:true}};
@@ -465,7 +497,7 @@ function toggleStoreStatus(){
 function updateStats(){
   const o=Object.values(myOrders);
   document.getElementById('st-new').textContent=o.filter(x=>x.status==='new').length;
-  document.getElementById('st-active').textContent=o.filter(x=>['confirmed','preparing'].includes(x.status)).length;
+  document.getElementById('st-active').textContent=o.filter(x=>['confirmed','preparing','ready','assigned','picked'].includes(x.status)).length;
   document.getElementById('st-done').textContent=o.filter(x=>x.status==='delivered').length;
   const rev=o.filter(x=>x.status==='delivered').reduce((s,x)=>s+(x.total||0),0);
   document.getElementById('st-rev').textContent='€'+rev.toFixed(0);
@@ -475,7 +507,7 @@ function updateStats(){
   document.getElementById('newOrderBadge').classList.toggle('show',nc>0);
 }
 
-const STATUS_MAP={new:['Νέα','st-new'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],cancelled:['Ακυρώθηκε','st-cancelled']};
+const STATUS_MAP={new:['Νέα','st-new'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],ready:['Έτοιμη','st-ready'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],assigned:['Ανατέθηκε','st-confirmed'],cancelled:['Ακυρώθηκε','st-cancelled']};
 
 function renderOrders(){
   const orders=Object.values(myOrders).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
@@ -488,11 +520,27 @@ function renderOrders(){
 function orderRowHTML(o){
   const[sl,sc]=STATUS_MAP[o.status]||['—','st-new'];
   const itemsTxt=(o.items||[]).map(i=>`${i.name}×${i.qty}`).join(', ');
-  const actions=o.status==='new'
-    ?`<div class="order-actions"><button class="btn-sm btn-confirm" onclick="setOrderStatus('${o._key}','confirmed')"><span class="material-icons-round">check</span>Επιβεβαίωση</button><button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button></div>`
-    :o.status==='confirmed'
-    ?`<button class="btn-sm btn-confirm" onclick="setOrderStatus('${o._key}','preparing')"><span class="material-icons-round">restaurant</span>Ετοιμάζεται</button>`
-    :`<span style="font-size:11px;color:var(--text3)">${fmtTime(o.createdAt)}</span>`;
+  let actions='';
+  if(o.status==='new'){
+    actions=`<div class="order-actions">
+      <button class="btn-sm btn-confirm" onclick="openPrepTimeModal('${o._key}')"><span class="material-icons-round">check</span>Αποδοχή</button>
+      <button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button>
+    </div>`;
+  } else if(o.status==='preparing'){
+    const prepMin=o.prepMinutes||0;
+    const elapsed=o.prepStartedAt?Math.floor((Date.now()-o.prepStartedAt)/60000):0;
+    const remaining=Math.max(0,prepMin-elapsed);
+    actions=`<div class="order-actions" style="flex-direction:column;gap:4px;align-items:flex-start">
+      <div style="font-size:11px;color:var(--accent);font-weight:700">⏱ ${remaining>0?remaining+' λεπτά ακόμα':'Ώρα ετοιμασίας πέρασε!'}</div>
+      <button class="btn-sm btn-confirm" style="background:var(--green);color:#fff" onclick="markOrderReady('${o._key}')"><span class="material-icons-round">done_all</span>Έτοιμη!</button>
+    </div>`;
+  } else if(o.status==='ready'){
+    actions=`<div style="font-size:11px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">delivery_dining</span>Αναμονή διανομέα</div>`;
+  } else if(o.status==='assigned'||o.status==='picked'){
+    actions=`<div style="font-size:11px;color:var(--yellow);font-weight:700;display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">two_wheeler</span>${o.driverName||'Διανομέας'}</div>`;
+  } else {
+    actions=`<span style="font-size:11px;color:var(--text3)">${fmtTime(o.createdAt)}</span>`;
+  }
   return`<div class="order-row"><div><span class="order-id">${o.id||o._key}</span></div><div><div style="font-size:13px;font-weight:700">${o.customerName||'—'}</div><div style="font-size:11px;color:var(--text3)">${o.phone||''}</div></div><div class="order-items-text">${itemsTxt}</div><div class="order-total">€${(o.total||0).toFixed(2)}</div><div><span class="order-status ${sc}">${sl}</span></div><div>${actions}</div></div>`;
 }
 
@@ -500,7 +548,51 @@ function setOrderStatus(key,status){
   if(window._db)window._update(window._ref(window._db,'orders/'+key),{status});
   else{if(myOrders[key]){myOrders[key].status=status;renderOrders();updateStats();}}
   if(status==='confirmed')showToast('✅ Παραγγελία επιβεβαιώθηκε!');
+  if(status==='cancelled')showToast('❌ Παραγγελία ακυρώθηκε');
 }
+
+let pendingPrepKey=null, selectedPrepMin=15;
+
+function openPrepTimeModal(key){
+  pendingPrepKey=key;
+  selectedPrepMin=15;
+  document.getElementById('customPrepTime').value='';
+  document.querySelectorAll('.prep-time-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.prep-time-btn')[1]?.classList.add('selected'); // default 15min
+  document.getElementById('prepOverlay').classList.add('open');
+}
+
+function closePrepModal(){document.getElementById('prepOverlay').classList.remove('open');pendingPrepKey=null;}
+
+function selectPrepTime(min){
+  selectedPrepMin=min;
+  document.getElementById('customPrepTime').value='';
+  document.querySelectorAll('.prep-time-btn').forEach(b=>b.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+function confirmWithPrepTime(){
+  if(!pendingPrepKey)return;
+  const custom=parseInt(document.getElementById('customPrepTime').value);
+  const mins=custom>0?custom:selectedPrepMin;
+  const data={status:'preparing',prepMinutes:mins,prepStartedAt:Date.now()};
+  if(window._db)window._update(window._ref(window._db,'orders/'+pendingPrepKey),data);
+  else{if(myOrders[pendingPrepKey])Object.assign(myOrders[pendingPrepKey],data);renderOrders();updateStats();}
+  closePrepModal();
+  showToast('✅ Αποδοχή — Ετοιμασία '+mins+' λεπτά');
+}
+
+function markOrderReady(key){
+  const data={status:'ready',readyAt:Date.now()};
+  if(window._db)window._update(window._ref(window._db,'orders/'+key),data);
+  else{if(myOrders[key])Object.assign(myOrders[key],data);renderOrders();updateStats();}
+  showToast('✅ Η παραγγελία είναι έτοιμη! Ειδοποιείται ο διανομέας...');
+}
+
+document.getElementById('prepOverlay').addEventListener('click',function(e){if(e.target===this)closePrepModal();});
+
+// Refresh countdown every 30 seconds
+setInterval(()=>{if(Object.values(myOrders).some(o=>o.status==='preparing'))renderOrders();},30000);
 
 function renderMenu(){
   const items=Object.entries(myMenu);

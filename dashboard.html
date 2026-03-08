@@ -157,6 +157,7 @@ tr:hover td{background:#fdf9f7}
 .s-assigned{background:rgba(245,158,11,.1);color:var(--yellow)}
 .s-picked{background:rgba(255,109,0,.1);color:var(--accent2)}
 .s-delivered{background:rgba(0,179,126,.1);color:var(--green)}
+.s-ready{background:rgba(0,179,126,.2);color:var(--green);font-weight:800}
 .s-failed{background:rgba(239,68,68,.1);color:var(--red)}
 .s-rejected{background:rgba(239,68,68,.08);color:var(--red)}
 .act-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:var(--muted)}
@@ -300,6 +301,8 @@ tr:hover td{background:#fdf9f7}
     <div class="tabs">
       <div class="tab active" onclick="filterTab('all',this)">Όλες</div>
       <div class="tab" onclick="filterTab('new',this)">Νέες</div>
+      <div class="tab" onclick="filterTab('preparing',this)">Ετοιμάζεται</div>
+      <div class="tab" onclick="filterTab('ready',this)">Έτοιμη</div>
       <div class="tab" onclick="filterTab('assigned',this)">Ανατεθ.</div>
       <div class="tab" onclick="filterTab('picked',this)">Σε Διαδρ.</div>
       <div class="tab" onclick="filterTab('delivered',this)">Παραδόθ.</div>
@@ -631,11 +634,11 @@ let allStores = {};
 window.setAllStores = d => { allStores=d||{}; };
 window.updateStats = function(data){
   const o = Object.values(data||{});
-  document.getElementById('sNew').textContent = o.filter(x=>x.status==='new').length;
-  document.getElementById('sActive').textContent = o.filter(x=>x.status==='picked'||x.status==='assigned').length;
+  document.getElementById('sNew').textContent = o.filter(x=>x.status==='new'||x.status==='preparing').length;
+  document.getElementById('sActive').textContent = o.filter(x=>x.status==='ready'||x.status==='assigned'||x.status==='picked').length;
   document.getElementById('sDelivered').textContent = o.filter(x=>x.status==='delivered').length;
   document.getElementById('sTotal').textContent = o.length;
-  document.getElementById('navCount').textContent = o.filter(x=>x.status==='new').length;
+  document.getElementById('navCount').textContent = o.filter(x=>x.status==='ready').length;
 };
 
 // ══════════════════════════════════════════════════════════
@@ -668,7 +671,7 @@ function updateAutoDispatchUI() {
 
 function runAutoDispatch(orders) {
   if (!autoDispatch) return;
-  const newOrders = Object.entries(orders||{}).filter(([,o]) => o.status === 'new');
+  const newOrders = Object.entries(orders||{}).filter(([,o]) => o.status === 'ready');
   // Get online drivers as [uid, driverData] pairs
   const onlineEntries = Object.entries(allDrivers).filter(([,d]) => d.online && (!d.status || d.status==='approved'));
   if (!newOrders.length || !onlineEntries.length) return;
@@ -723,9 +726,9 @@ function renderTable() {
     .map(([uid,d])=>`<option value="${uid}::${d.name}">${d.name} (${d.phone||''})</option>`).join('');
 
   const statusMap = {
-    new:['Νέα','s-new'], assigned:['Ανατέθηκε','s-assigned'],
-    picked:['Παρέλαβε','s-picked'], delivered:['Παραδόθηκε','s-delivered'],
-    failed:['Αποτυχία','s-failed'], rejected:['Απορρίφθηκε','s-rejected'],
+    new:['Νέα','s-new'], preparing:['Ετοιμάζεται','s-assigned'], ready:['Έτοιμη','s-ready'],
+    assigned:['Ανατέθηκε','s-assigned'], picked:['Παρέλαβε','s-picked'], 
+    delivered:['Παραδόθηκε','s-delivered'], failed:['Αποτυχία','s-failed'], rejected:['Απορρίφθηκε','s-rejected'],
   };
 
   document.getElementById('ordersBody').innerHTML = orders.map((o,i)=>{
@@ -748,8 +751,8 @@ function renderTable() {
             </select>`
         }
       </td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${fmtTime(o.createdAt)}</td>
-      <td><span class="status-tag ${sc}">${sl}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${fmtTime(o.createdAt)}${o.storeName?'<div style="font-size:10px;color:var(--accent);font-family:Syne,sans-serif;font-weight:600">'+o.storeName+'</div>':''}</td>
+      <td><span class="status-tag ${sc}">${sl}</span>${o.status==='preparing'&&o.prepMinutes?'<div style="font-size:10px;color:var(--muted);margin-top:3px">⏱ '+o.prepMinutes+' λεπτά</div>':''}</td>
       <td><div style="display:flex;gap:4px">
         <div class="act-btn" title="Παρέλαβε" onclick="setStatus('${o._key}','picked')"><span class="material-icons-round">inventory_2</span></div>
         <div class="act-btn" title="Παραδόθηκε" onclick="setStatus('${o._key}','delivered')" style="color:var(--green)"><span class="material-icons-round">check_circle</span></div>
@@ -1039,7 +1042,7 @@ function submitNewOrder() {
     deliveryAddress:address, pickupAddress:document.getElementById('fPickup').value,
     cost:parseFloat(document.getElementById('fCost').value)||0,
     notes:document.getElementById('fNotes').value,
-    driver:'', status:'new', source:'admin', createdAt:Date.now()
+    driver:'', status:'ready', source:'admin', createdAt:Date.now()
   };
   if(window._db){const r=window._push(window._ref(window._db,'orders'));window._set(r,order);}
   else{const k='order_'+Date.now();allOrders[k]={...order,_key:k};renderTable();updateStats(allOrders);}
