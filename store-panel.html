@@ -217,6 +217,11 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         </div>
         <div class="f-group"><label class="f-label">Min. Παραγγελία (€)</label><input class="f-input" id="rMin" type="number" placeholder="10" value="10"></div>
       </div>
+      <div class="f-group"><label class="f-label">Διεύθυνση Καταστήματος</label><input class="f-input" id="rAddress" placeholder="π.χ. Πατησίων 42, Αθήνα"></div>
+      <div class="f-row">
+        <div class="f-group"><label class="f-label">Τηλέφωνο</label><input class="f-input" id="rPhone" type="tel" placeholder="2101234567"></div>
+        <div class="f-group"><label class="f-label">Min. Παραγγελία (€)</label><input class="f-input" id="rMin2" type="number" placeholder="10" value="10"></div>
+      </div>
       <div class="f-row">
         <div class="f-group"><label class="f-label">Email</label><input class="f-input" id="rEmail" type="email" placeholder="store@example.com"></div>
         <div class="f-group"><label class="f-label">Κωδικός (min 6)</label><input class="f-input" id="rPass" type="password" placeholder="••••••••"></div>
@@ -306,6 +311,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
             <div class="f-group"><label class="f-label">Κόστος Παράδοσης (€)</label><input class="f-input" id="sDelivery" type="number" placeholder="2.00"></div>
             <div class="f-group"><label class="f-label">Min. Παραγγελία (€)</label><input class="f-input" id="sMin" type="number" placeholder="10"></div>
           </div>
+          <div class="f-group" style="margin-bottom:12px"><label class="f-label">Διεύθυνση Καταστήματος</label><input class="f-input" id="sAddress" placeholder="π.χ. Πατησίων 42, Αθήνα"></div>
+          <div class="f-group" style="margin-bottom:12px"><label class="f-label">Τηλέφωνο Καταστήματος</label><input class="f-input" id="sPhone" type="tel" placeholder="2101234567"></div>
           <div class="f-group" style="margin-bottom:14px"><label class="f-label">Περιγραφή</label><textarea class="f-input" id="sDesc" rows="2" placeholder="Σύντομη περιγραφή..."></textarea></div>
           <div class="f-group" style="margin-bottom:16px"><label class="f-label">Εικονίδιο</label>
             <div class="emoji-grid" id="emojiGrid">
@@ -383,14 +390,18 @@ function doLogin(){
 }
 
 function doRegister(){
-  const name=document.getElementById('rName').value.trim(),email=document.getElementById('rEmail').value.trim(),pass=document.getElementById('rPass').value,cat=document.getElementById('rCat').value,min=parseFloat(document.getElementById('rMin').value)||10;
-  if(!name||!email||!pass){showAuthError('Συμπλήρωσε όλα τα πεδία');return;}
+  const name=document.getElementById('rName').value.trim(),email=document.getElementById('rEmail').value.trim(),pass=document.getElementById('rPass').value,cat=document.getElementById('rCat').value;
+  const min=parseFloat(document.getElementById('rMin2')?.value||document.getElementById('rMin')?.value)||10;
+  const address=document.getElementById('rAddress')?.value.trim()||'';
+  const phone=document.getElementById('rPhone')?.value.trim()||'';
+  if(!name||!email||!pass){showAuthError('Συμπλήρωσε όνομα, email και κωδικό');return;}
+  if(!address){showAuthError('Συμπλήρωσε τη διεύθυνση του καταστήματος');return;}
   if(pass.length<6){showAuthError('Κωδικός min 6 χαρακτήρες');return;}
   if(window._auth){
     window._createUser(window._auth,email,pass).then(uc=>{
       const uid=uc.user.uid;
       const catE={burger:'🍔',pizza:'🍕',souvlaki:'🌯',sushi:'🍣',coffee:'☕',desserts:'🍰',greek:'🥗'};
-      window._set(window._ref(window._db,'stores/'+uid),{name,category:cat,emoji:catE[cat]||'🍴',deliveryCost:2,minOrder:min,description:'',open:false,rating:0,totalOrders:0,ownerId:uid,createdAt:Date.now(),status:'pending'});
+      window._set(window._ref(window._db,'stores/'+uid),{name,category:cat,emoji:catE[cat]||'🍴',deliveryCost:2,minOrder:min,description:'',address,phone,open:false,rating:0,totalOrders:0,ownerId:uid,createdAt:Date.now(),status:'pending'});
       // Notify admin
       window._push(window._ref(window._db,'notifications'),{type:'new_store',storeId:uid,name,email,time:Date.now(),read:false});
     }).catch(e=>showAuthError(e.message));
@@ -434,6 +445,8 @@ function applyStoreData(){
   document.getElementById('statusLabel').textContent=currentStore.open?'Ανοιχτό':'Κλειστό';
   document.getElementById('statusToggle').className='status-toggle'+(currentStore.open?' open':'');
   document.getElementById('sName').value=currentStore.name||'';
+  if(document.getElementById('sAddress')) document.getElementById('sAddress').value=currentStore.address||'';
+  if(document.getElementById('sPhone')) document.getElementById('sPhone').value=currentStore.phone||'';
   document.getElementById('sCat').value=currentStore.category||'burger';
   document.getElementById('sDelivery').value=currentStore.deliveryCost||2;
   document.getElementById('sMin').value=currentStore.minOrder||10;
@@ -538,7 +551,7 @@ function deleteItem(key){
 function selectEmoji(el){document.querySelectorAll('.emoji-opt').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');selectedEmoji=el.dataset.e;}
 
 function saveStoreSettings(){
-  const data={name:document.getElementById('sName').value.trim(),category:document.getElementById('sCat').value,deliveryCost:parseFloat(document.getElementById('sDelivery').value)||2,minOrder:parseFloat(document.getElementById('sMin').value)||10,description:document.getElementById('sDesc').value.trim(),emoji:selectedEmoji};
+  const data={name:document.getElementById('sName').value.trim(),category:document.getElementById('sCat').value,deliveryCost:parseFloat(document.getElementById('sDelivery').value)||2,minOrder:parseFloat(document.getElementById('sMin').value)||10,description:document.getElementById('sDesc').value.trim(),address:document.getElementById('sAddress').value.trim(),phone:document.getElementById('sPhone')?.value.trim()||'',emoji:selectedEmoji};
   if(!data.name){showToast('⚠️ Βάλε όνομα');return;}
   if(window._db)window._update(window._ref(window._db,'stores/'+storeId),data);
   else{Object.assign(currentStore,data);applyStoreData();}

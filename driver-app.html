@@ -387,6 +387,28 @@ function startHeartbeat() {
   }, 30000);
 }
 
+
+// Cache of all stores for address lookup
+window._storesCache = {};
+function loadStoresCache() {
+  if(!window._db) return;
+  window._onValue(window._ref(window._db,'stores'), snap => {
+    window._storesCache = snap.val()||{};
+  });
+}
+function getStoreAddress(storeId, storeName) {
+  // Try by storeId first
+  if(storeId && window._storesCache[storeId]) return window._storesCache[storeId].address||'';
+  // Try by name
+  const found = Object.values(window._storesCache).find(s=>s.name===storeName);
+  return found ? (found.address||'') : '';
+}
+function getStorePhone(storeId, storeName) {
+  if(storeId && window._storesCache[storeId]) return window._storesCache[storeId].phone||'';
+  const found = Object.values(window._storesCache).find(s=>s.name===storeName);
+  return found ? (found.phone||'') : '';
+}
+
 function loadDriverApp(){
   showScreen('app');
   setTimeout(startHeartbeat, 1000);
@@ -453,7 +475,7 @@ function renderOrders(){
       </div>
       <div class="order-addr" style="background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);border-radius:10px;padding:10px 12px;margin:6px 0;gap:8px">
         <span class="material-icons-round" style="color:#ff9800;font-size:18px">storefront</span>
-        <div class="order-addr-text"><div style="font-size:10px;font-weight:800;color:#ff9800;text-transform:uppercase;margin-bottom:2px">Παραλαβή από</div><div style="font-weight:700">${o.storeName||'Κατάστημα'}</div>${o.storeAddress?'<div style="font-size:12px;color:#aaa;margin-top:2px">📍 '+o.storeAddress+'</div>':''}</div>
+        <div class="order-addr-text"><div style="font-size:10px;font-weight:800;color:#ff9800;text-transform:uppercase;margin-bottom:2px">Παραλαβή από</div><div style="font-weight:700">${o.storeName||'Κατάστημα'}</div>${(()=>{const addr=o.storeAddress||getStoreAddress(o.storeId,o.storeName);return addr?'<div style="font-size:12px;color:#ffb347;margin-top:3px">📍 '+addr+'</div>':''})()}</div>
       </div>
       <div class="order-addr" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 12px;margin:6px 0;gap:8px">
         <span class="material-icons-round" style="color:#22c55e;font-size:18px">location_on</span>
