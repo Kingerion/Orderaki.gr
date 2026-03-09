@@ -486,9 +486,15 @@ function loadDriverApp(){
     window._onValue(window._ref(window._db,'orders'),snap=>{
       const all=snap.val()||{};
       myOrders={};
+      const myUid  = window._currentUser?.uid || driverData.uid || '';
+      const myName = driverData.name || '';
       for(const[k,v]of Object.entries(all)){
-        if(v.driver===driverData.uid||v.driverName===driverData.name){
-          if(['assigned','accepted','picked'].includes(v.status))myOrders[k]={...v,_key:k};
+        // Match by uid OR name (dashboard may store either)
+        const isMyOrder = (myUid && (v.driver===myUid || v.driverUid===myUid)) 
+                       || (myName && v.driverName===myName)
+                       || (myName && v.driver===myName);
+        if(isMyOrder && ['assigned','accepted','picked'].includes(v.status)){
+          myOrders[k]={...v,_key:k};
         }
       }
       renderOrders();
@@ -592,10 +598,13 @@ function calcDriverEarnings(order) {
 }
 
 function acceptOrder(k) {
+  // Update Firebase status
+  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'accepted'});
+  // Update local cache immediately so UI refreshes without waiting for Firebase
+  if(myOrders[k]) myOrders[k].status = 'accepted';
   activeOrderForChat = k;
-  setActiveOrderForChat(k);
-  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'assigned'});
-  showToast('✅ Αποδέχτηκες την παραγγελία!');
+  renderOrders();
+  showToast('✅ Αποδέχτηκες! Πήγαινε να παραλάβεις.');
 }
 
 function pickupOrder(k){
@@ -608,6 +617,20 @@ function pickupOrder(k){
   switchChatTab('customer');
   showToast('📦 Παρέλαβες! Επικοινώνησε με τον πελάτη αν χρειαστεί.');
 }
+function closeCustomerChat() {
+  activeOrderForChat = null;
+  ['customer','store'].forEach(t => {
+    const input = document.getElementById(t+'ChatInput');
+    const msgs  = document.getElementById(t+'ChatMsgs');
+    const name  = document.getElementById(t+'ChatName');
+    const info  = document.getElementById(t+'ChatInfo')||document.getElementById(t+'ChatAddr');
+    if(input) input.style.display = 'none';
+    if(msgs)  msgs.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Δεν υπάρχει ενεργή παραγγελία</div>';
+    if(name)  name.textContent = '—';
+    if(info)  info.textContent = 'Δεν υπάρχει ενεργή παραγγελία';
+  });
+}
+
 function deliverOrder(k){
   closeCustomerChat();
   const o = myOrders[k];
