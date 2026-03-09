@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- driver-app v3.9 | chat:customer+store+admin | earnings:deliveries | 2026-03-09 -->
 <html lang="el">
 <head>
   <!-- PWA -->
@@ -37,8 +36,8 @@ if (CFG.apiKey !== "YOUR_API_KEY") {
     window._auth=auth; window._createUser=createUserWithEmailAndPassword; window._signIn=signInWithEmailAndPassword; window._signOut=signOut;
     window._firebaseReady=true;
     onAuthStateChanged(auth, user => {
-      if(user){ window._uid=user.uid; checkDriverStatus(user); }
-      else { showScreen('auth'); }
+      if(user){ window._uid=user.uid; window._currentUser=user; checkDriverStatus(user); }
+      else { window._currentUser=null; showScreen('auth'); }
     });
   } catch(e){ console.warn(e); window._firebaseReady=false; showScreen('auth'); }
 } else { window._firebaseReady=false; initDemo(); }
@@ -265,65 +264,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 
   <!-- CHAT PAGE -->
   <div class="content" id="pageChat" style="display:none;padding:0">
-    <!-- Chat Tabs -->
-    <div style="display:flex;border-bottom:2px solid var(--border);background:var(--surface)">
-      <button id="chatTab-admin" onclick="switchChatTab('admin')" style="flex:1;padding:12px 4px;background:none;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
-        <span class="material-icons-round" style="font-size:18px">support_agent</span>Admin
-      </button>
-      <button id="chatTab-customer" onclick="switchChatTab('customer')" style="flex:1;padding:12px 4px;background:none;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative">
-        <span class="material-icons-round" style="font-size:18px">person</span>Πελάτης
-        <span id="customerChatBadge" style="display:none;position:absolute;top:8px;right:20px;width:8px;height:8px;background:#ef4444;border-radius:50%"></span>
-      </button>
-      <button id="chatTab-store" onclick="switchChatTab('store')" style="flex:1;padding:12px 4px;background:none;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative">
-        <span class="material-icons-round" style="font-size:18px">storefront</span>Κατάστημα
-        <span id="storeChatBadge" style="display:none;position:absolute;top:8px;right:20px;width:8px;height:8px;background:#ef4444;border-radius:50%"></span>
-      </button>
-    </div>
-
-    <!-- Admin Chat -->
-    <div id="chatPane-admin" class="chat-wrap">
+    <div class="chat-wrap">
       <div class="chat-msgs" id="chatMsgs"></div>
       <div class="chat-input-row">
         <input class="chat-input" id="chatInput" placeholder="Μήνυμα στον admin..." onkeydown="if(event.key==='Enter')sendMsg()">
         <button class="chat-send" onclick="sendMsg()"><span class="material-icons-round">send</span></button>
-      </div>
-    </div>
-
-    <!-- Customer Chat -->
-    <div id="chatPane-customer" class="chat-wrap" style="display:none">
-      <div id="customerChatHeader" style="background:var(--surface2);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-        <div style="width:38px;height:38px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0" id="customerChatAvatar">?</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="customerChatName">Δεν υπάρχει ενεργή παραγγελία</div>
-          <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="customerChatAddr"></div>
-        </div>
-        <a id="customerCallBtn" href="#" style="display:none;flex-shrink:0;background:rgba(34,197,94,.15);color:#22c55e;width:40px;height:40px;border-radius:50%;align-items:center;justify-content:center">
-          <span class="material-icons-round" style="font-size:20px">call</span>
-        </a>
-      </div>
-      <div class="chat-msgs" id="customerChatMsgs"><div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Δεν υπάρχει ενεργή παραγγελία</div></div>
-      <div class="chat-input-row" id="customerChatInput" style="display:none">
-        <input class="chat-input" id="customerMsgBox" placeholder="Μήνυμα στον πελάτη..." onkeydown="if(event.key==='Enter')sendCustomerChatMsg()">
-        <button class="chat-send" onclick="sendCustomerChatMsg()"><span class="material-icons-round">send</span></button>
-      </div>
-    </div>
-
-    <!-- Store Chat -->
-    <div id="chatPane-store" class="chat-wrap" style="display:none">
-      <div id="storeChatHeader" style="background:var(--surface2);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-        <div style="width:38px;height:38px;border-radius:50%;background:#ff9800;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0">🏪</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="storeChatName">Δεν υπάρχει ενεργή παραγγελία</div>
-          <div style="font-size:11px;color:var(--text3)" id="storeChatInfo"></div>
-        </div>
-        <a id="storeCallBtn" href="#" style="display:none;flex-shrink:0;background:rgba(255,152,0,.15);color:#ff9800;width:40px;height:40px;border-radius:50%;align-items:center;justify-content:center">
-          <span class="material-icons-round" style="font-size:20px">call</span>
-        </a>
-      </div>
-      <div class="chat-msgs" id="storeChatMsgs"><div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Δεν υπάρχει ενεργή παραγγελία</div></div>
-      <div class="chat-input-row" id="storeChatInput" style="display:none">
-        <input class="chat-input" id="storeMsgBox" placeholder="Μήνυμα στο κατάστημα..." onkeydown="if(event.key==='Enter')sendStoreChatMsg()">
-        <button class="chat-send" onclick="sendStoreChatMsg()"><span class="material-icons-round">send</span></button>
       </div>
     </div>
   </div>
@@ -469,18 +414,13 @@ function loadDriverApp(){
   setTimeout(startHeartbeat, 1000);
   // Load earnings from Firebase
   if(window._db && window._currentUser) {
-    // Listen to deliveries — recalculate totals automatically
-    window._onValue(window._ref(window._db,'deliveries/'+window._currentUser.uid), snap=>{
-      const all = snap.val()||{};
-      const records = Object.values(all);
-      const today = new Date().toISOString().slice(0,10);
-      const totalEarnings = records.reduce((s,r)=>s+(parseFloat(r.earned)||0), 0);
-      const todayEarnings = records.filter(r=>r.date===today).reduce((s,r)=>s+(parseFloat(r.earned)||0), 0);
-      const totalOrders = records.length;
-      driverData.earnings = totalEarnings;
-      driverData.earningsToday = todayEarnings;
-      driverData.orders = totalOrders;
-      updateEarningsUI(totalEarnings, todayEarnings, totalOrders);
+    window._onValue(window._ref(window._db,'drivers/'+window._currentUser.uid), snap=>{
+      const d = snap.val()||{};
+      // Keep driverData in sync so deliverOrder can use it directly
+      driverData.earnings = d.earnings||0;
+      driverData.earningsToday = d.earningsToday||0;
+      driverData.orders = d.orders||0;
+      updateEarningsUI(d.earnings||0, d.earningsToday||0, d.orders||0);
     });
   }
   const n=driverData.name||'Οδηγός';
@@ -496,15 +436,9 @@ function loadDriverApp(){
     window._onValue(window._ref(window._db,'orders'),snap=>{
       const all=snap.val()||{};
       myOrders={};
-      const myUid  = window._currentUser?.uid || driverData.uid || '';
-      const myName = driverData.name || '';
       for(const[k,v]of Object.entries(all)){
-        // Match by uid OR name (dashboard may store either)
-        const isMyOrder = (myUid && (v.driver===myUid || v.driverUid===myUid)) 
-                       || (myName && v.driverName===myName)
-                       || (myName && v.driver===myName);
-        if(isMyOrder && ['assigned','accepted','picked'].includes(v.status)){
-          myOrders[k]={...v,_key:k};
+        if(v.driver===driverData.uid||v.driverName===driverData.name){
+          if(['assigned','picked','pending_acceptance'].includes(v.status))myOrders[k]={...v,_key:k};
         }
       }
       renderOrders();
@@ -528,17 +462,16 @@ function renderOrders(){
   if(!keys.length){document.getElementById('ordersList').innerHTML='<div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span><span style="font-size:13px">Οι παραγγελίες σου εμφανίζονται εδώ</span></div>';return;}
   document.getElementById('ordersList').innerHTML=keys.map(k=>{
     const o=myOrders[k];
-    const isNew     = o.status==='assigned';        // just assigned → show Accept/Reject
-    const isAccepted= o.status==='accepted';        // accepted → show Pickup
-    const isPicked  = o.status==='picked';          // picked up → show Deliver
-    const isPending = o.status==='pending_acceptance';
-    const needsAction = isNew || isPending;         // pulsing highlight
+    const isAssigned=o.status==='assigned';
+    const isPending=o.status==='pending_acceptance';
+    const isPicked=o.status==='picked';
+    // Calculate driver earnings
     const earnings = calcDriverEarnings(o);
-    const earningsStr = fmtCur(earnings);
-    return`<div class="order-card ${needsAction?'new-order':''}" id="oc_${k}">
+    const earningsStr = earnings > 0 ? fmtCur(earnings) : '—';
+    return`<div class="order-card ${isAssigned||isPending?'new-order':''}" id="oc_${k}">
       <div class="order-card-hd">
         <div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div>
-        <span class="status-pill ${needsAction?'st-new':isPicked?'st-picked':'st-assigned'}">${needsAction?'🔔 Νέα!':isAccepted?'Αποδεκτή':'Σε εξέλιξη'}</span>
+        <span class="status-pill ${isPending?'st-new':isAssigned?'st-assigned':'st-picked'}">${isPending?'Νέα!':isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span>
       </div>
       <div class="order-info-grid">
         <div class="order-info-item"><div class="order-info-label">Πελάτης</div><div class="order-info-val">${o.customerName||'—'}</div></div>
@@ -564,13 +497,13 @@ function renderOrders(){
         </div>
       </div>
       <div class="order-btns">
-        ${needsAction
-          ?`<button class="btn-delivered" style="background:linear-gradient(135deg,#22c55e,#16a34a);flex:2" onclick="acceptOrder('${k}')"><span class="material-icons-round">check_circle</span>Αποδοχή</button>
-            <button style="background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
-          : isPicked
-          ?`<button class="btn-delivered" onclick="deliverOrder('${k}')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>`
-          :`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα από κατάστημα</button>
-            <button style="background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
+        ${isPending
+          ?`<button class="btn-delivered" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="acceptOrder('${k}')"><span class="material-icons-round">check_circle</span>Αποδοχή</button>
+            <button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
+          : isAssigned
+          ?`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα</button>
+            <button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
+          :`<button class="btn-delivered" onclick="deliverOrder('${k}')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>`
         }
       </div>
     </div>`;
@@ -578,8 +511,75 @@ function renderOrders(){
 }
 
 
+let activeCustomerOrderKey = null;
+let customerChatMsgs = [];
 
+function openCustomerChat(orderKey) {
+  const o = myOrders[orderKey];
+  if(!o) return;
+  activeCustomerOrderKey = orderKey;
+  switchNav('chat');
+  setTimeout(()=>renderCustomerChat(o), 100);
+}
 
+function renderCustomerChat(o) {
+  const chatWrap = document.getElementById('chatWrap');
+  if(!chatWrap) return;
+  const msgs = customerChatMsgs;
+  chatWrap.innerHTML = `
+    <div style="display:flex;flex-direction:column;height:100%">
+      <div style="background:var(--surface2);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
+        <div style="width:42px;height:42px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px">${(o.customerName||'Π')[0].toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:14px">${o.customerName||'Πελάτης'}</div>
+          <div style="font-size:12px;color:var(--text3)">📍 ${o.address||''}${o.floor?' · '+o.floor:''}${o.doorbell?' 🔔 '+o.doorbell:''}</div>
+        </div>
+        <a href="tel:${o.phone||''}" style="background:rgba(34,197,94,.15);color:#22c55e;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:4px">
+          <span class="material-icons-round" style="font-size:14px">call</span>Κλήση
+        </a>
+      </div>
+      <div id="customerChatMsgs" style="flex:1;overflow-y:auto;padding:0 4px;min-height:120px;display:flex;flex-direction:column;gap:8px">
+        ${msgs.length===0?'<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">Ξεκίνα τη συνομιλία...</div>':
+          msgs.map(m=>`<div style="display:flex;justify-content:${m.from==='driver'?'flex-end':'flex-start'}">
+            <div style="max-width:75%;background:${m.from==='driver'?'var(--accent)':'var(--surface2)'};color:${m.from==='driver'?'#fff':'var(--text)'};border-radius:14px;padding:10px 14px;font-size:14px">${m.text}<div style="font-size:10px;opacity:.6;margin-top:4px;text-align:right">${new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'})}</div></div>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="customerChatInput" style="flex:1;background:var(--surface2);border:none;border-radius:12px;padding:13px 16px;color:var(--text);font-size:14px;font-family:inherit" placeholder="Μήνυμα...">
+        <button onclick="sendCustomerMsg('${activeCustomerOrderKey}')" style="background:var(--accent);border:none;border-radius:12px;width:48px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">
+          <span class="material-icons-round">send</span>
+        </button>
+      </div>
+    </div>`;
+  // Listen for new messages
+  if(window._db && activeCustomerOrderKey) {
+    window._onValue(window._ref(window._db,'chat/customer/'+activeCustomerOrderKey), snap=>{
+      customerChatMsgs = snap.val() ? Object.values(snap.val()) : [];
+      const chatO = myOrders[activeCustomerOrderKey];
+      if(chatO) renderCustomerChat(chatO);
+    });
+  }
+}
+
+function sendCustomerMsg(orderKey) {
+  const inp = document.getElementById('customerChatInput');
+  if(!inp||!inp.value.trim()) return;
+  const msg = {from:'driver', text:inp.value.trim(), time:Date.now(), driverName:driverData?.name||''};
+  inp.value = '';
+  customerChatMsgs.push(msg);
+  if(window._db) {
+    window._set(window._push(window._ref(window._db,'chat/customer/'+orderKey)), msg);
+  }
+  const o = myOrders[orderKey];
+  if(o) renderCustomerChat(o);
+}
+
+function closeCustomerChat() {
+  activeCustomerOrderKey = null;
+  customerChatMsgs = [];
+  const chatWrap = document.getElementById('chatWrap');
+  if(chatWrap) chatWrap.innerHTML = '<div class="chat-empty"><span class="material-icons-round">chat_bubble_outline</span><span>Δεν υπάρχουν μηνύματα</span></div>';
+}
 
 function updateEarningsUI(total, today, deliveries) {
   const fmtE = v => '€' + parseFloat(v||0).toFixed(2);
@@ -596,7 +596,6 @@ function updateEarningsUI(total, today, deliveries) {
   if(el('earnToday')) el('earnToday').textContent = fmtE(today);
   if(el('earnDeliveries')) el('earnDeliveries').textContent = deliveries||0;
   if(el('earnWeek')) el('earnWeek').textContent = fmtE(total);
-  if(el('topWeek')) el('topWeek').textContent = fmtE(total);
 }
 
 function calcDriverEarnings(order) {
@@ -608,60 +607,58 @@ function calcDriverEarnings(order) {
 }
 
 function acceptOrder(k) {
-  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'accepted'});
-  if(myOrders[k]) myOrders[k].status = 'accepted';
-  activeOrderForChat = k;
-  setActiveOrderForChat(k);  // enable chat immediately after accept
-  renderOrders();
-  showToast('✅ Αποδέχτηκες! Πήγαινε να παραλάβεις.');
+  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'assigned'});
+  showToast('✅ Αποδέχτηκες την παραγγελία!');
 }
 
 function pickupOrder(k){
-  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'picked'});
-  if(myOrders[k]) myOrders[k].status = 'picked';
-  activeOrderForChat = k;
-  setActiveOrderForChat(k);   // opens chat headers + listeners
-  renderOrders();
-  goPage('chat');
-  switchChatTab('customer');
-  showToast('📦 Παρέλαβες! Επικοινώνησε με τον πελάτη αν χρειαστεί.');
+  if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'picked'});
+  else{myOrders[k].status='picked';renderOrders();}
+  showToast('📦 Παρέλαβες την παραγγελία!');
 }
-function closeCustomerChat() {
-  activeOrderForChat = null;
-  ['customer','store'].forEach(t => {
-    const input = document.getElementById(t+'ChatInput');
-    const msgs  = document.getElementById(t+'ChatMsgs');
-    const name  = document.getElementById(t+'ChatName');
-    const info  = document.getElementById(t+'ChatInfo')||document.getElementById(t+'ChatAddr');
-    if(input) input.style.display = 'none';
-    if(msgs)  msgs.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Δεν υπάρχει ενεργή παραγγελία</div>';
-    if(name)  name.textContent = '—';
-    if(info)  info.textContent = 'Δεν υπάρχει ενεργή παραγγελία';
-  });
-}
-
 function deliverOrder(k){
   closeCustomerChat();
   const o = myOrders[k];
   if(!o) return;
   const earned = calcDriverEarnings(o);
   const uid = window._currentUser ? window._currentUser.uid : null;
-
-  // Mark order delivered
+  
+  // 1. Mark order delivered
   if(window._db) {
     window._update(window._ref(window._db,'orders/'+k), {status:'delivered', deliveredAt: Date.now()});
   } else {
     delete myOrders[k]; renderOrders();
   }
-
-  // Save delivery record — one simple write, no read needed
+  
+  // 2. Write delivery record (simple append — no read needed)
   if(window._db && uid) {
-    const today = new Date().toISOString().slice(0,10);
-    window._set(
-      window._ref(window._db, 'deliveries/'+uid+'/'+k),
-      { earned, orderId:k, storeName:o.storeName||'', time:Date.now(), date:today }
-    );
-    // The onValue on deliveries below will auto-recalculate totals
+    const today = new Date().toISOString().slice(0,10); // "2026-03-08"
+    const deliveryRecord = {
+      earned, orderId: k, storeName: o.storeName||'', 
+      address: o.address||'', time: Date.now(), date: today
+    };
+    // Append to deliveries log
+    window._set(window._ref(window._db,'deliveries/'+uid+'/'+k), deliveryRecord);
+    
+    // Update running totals using current driverData (already kept in sync by onValue)
+    const curEarnings = parseFloat(driverData.earnings)||0;
+    const curToday = parseFloat(driverData.earningsToday)||0;
+    const curOrders = parseInt(driverData.orders)||0;
+    const newEarnings = curEarnings + earned;
+    const newToday = curToday + earned;
+    const newOrders = curOrders + 1;
+    
+    window._update(window._ref(window._db,'drivers/'+uid), {
+      earnings: newEarnings,
+      earningsToday: newToday,
+      orders: newOrders,
+      lastDelivery: Date.now()
+    });
+    // Update local cache immediately (onValue will also fire)
+    driverData.earnings = newEarnings;
+    driverData.earningsToday = newToday;
+    driverData.orders = newOrders;
+    updateEarningsUI(newEarnings, newToday, newOrders);
     showToast('✅ +€' + earned.toFixed(2) + ' — Παράδοση ολοκληρώθηκε!');
   } else {
     showToast('✅ Παράδοση ολοκληρώθηκε!');
@@ -685,152 +682,6 @@ function toggleOnline(){
   if(window._db && dUid!=='demo') window._update(window._ref(window._db,'drivers/'+dUid),{online:isOnline});
 }
 
-
-// ============ CHAT SYSTEM ============
-let activeOrderForChat = null; // orderKey of current active order
-let customerChatUnsub = null;
-let storeChatUnsub = null;
-
-function switchChatTab(tab) {
-  activeChatTab = tab;
-  ['admin','customer','store'].forEach(t => {
-    const btn = document.getElementById('chatTab-'+t);
-    const pane = document.getElementById('chatPane-'+t);
-    const isActive = t === tab;
-    if(btn) {
-      btn.style.color = isActive ? 'var(--accent)' : 'var(--text3)';
-      btn.style.borderBottom = isActive ? '2px solid var(--accent)' : 'none';
-      btn.style.marginBottom = isActive ? '-2px' : '0';
-    }
-    if(pane) pane.style.display = isActive ? 'flex' : 'none';
-  });
-  if(tab === 'customer') {
-    document.getElementById('customerChatBadge').style.display = 'none';
-    setupCustomerChat();
-  }
-  if(tab === 'store') {
-    document.getElementById('storeChatBadge').style.display = 'none';
-    setupStoreChat();
-  }
-  if(tab === 'admin') {
-    renderChat();
-  }
-}
-
-function setActiveOrderForChat(orderKey) {
-  activeOrderForChat = orderKey;
-  const o = myOrders[orderKey];
-  if(!o) return;
-
-  // ── Customer header ──
-  const custName = o.customerName || 'Πελάτης';
-  const el = id => document.getElementById(id);
-  if(el('customerChatName')) el('customerChatName').textContent = custName;
-  if(el('customerChatAvatar')) el('customerChatAvatar').textContent = custName[0].toUpperCase();
-  if(el('customerChatAddr')) el('customerChatAddr').textContent =
-    (o.address||'') + (o.floor?' · Όρ.'+o.floor:'') + (o.doorbell?' 🔔 '+o.doorbell:'');
-  if(o.phone) {
-    const btn = el('customerCallBtn');
-    if(btn) { btn.href='tel:'+o.phone; btn.style.display='inline-flex'; }
-  }
-  if(el('customerChatInput')) el('customerChatInput').style.display = 'flex';
-
-  // ── Store header ──
-  const storeName = o.storeName || 'Κατάστημα';
-  if(el('storeChatName')) el('storeChatName').textContent = storeName;
-  const storeAddr = o.storeAddress || getStoreAddress(o.storeId, o.storeName);
-  const storePhone = getStorePhone(o.storeId, o.storeName);
-  if(el('storeChatInfo')) el('storeChatInfo').textContent =
-    (storeAddr ? '📍 '+storeAddr : '') + (storePhone ? '  📞 '+storePhone : '');
-  if(storePhone) {
-    const sBtn = el('storeCallBtn');
-    if(sBtn) { sBtn.href='tel:'+storePhone; sBtn.style.display='inline-flex'; }
-  }
-  if(el('storeChatInput')) el('storeChatInput').style.display = 'flex';
-
-  // ── Start Firebase listeners ──
-  setupCustomerChat();
-  setupStoreChat();
-}
-
-function setupCustomerChat() {
-  if(!activeOrderForChat || !window._db) return;
-  const msgsEl = document.getElementById('customerChatMsgs');
-  window._onValue(window._ref(window._db, 'chat/orders/'+activeOrderForChat+'/customer'), snap => {
-    const msgs = snap.val() ? Object.values(snap.val()) : [];
-    if(!msgsEl) return;
-    if(msgs.length === 0) {
-      msgsEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Ξεκίνα τη συνομιλία με τον πελάτη</div>';
-    } else {
-      msgsEl.innerHTML = msgs.sort((a,b)=>a.time-b.time).map(m => renderChatBubble(m, m.from==='driver')).join('');
-      setTimeout(()=>msgsEl.scrollTop=msgsEl.scrollHeight, 50);
-    }
-    // Badge if not on this tab
-    if(activeChatTab !== 'customer') {
-      const newFromCustomer = msgs.filter(m => m.from==='customer' && !m.read).length;
-      if(newFromCustomer > 0) document.getElementById('customerChatBadge').style.display='block';
-    }
-  });
-}
-
-function setupStoreChat() {
-  if(!activeOrderForChat || !window._db) return;
-  const msgsEl = document.getElementById('storeChatMsgs');
-  window._onValue(window._ref(window._db, 'chat/orders/'+activeOrderForChat+'/store'), snap => {
-    const msgs = snap.val() ? Object.values(snap.val()) : [];
-    if(!msgsEl) return;
-    if(msgs.length === 0) {
-      msgsEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Μπορείς να μιλήσεις με το κατάστημα</div>';
-    } else {
-      msgsEl.innerHTML = msgs.sort((a,b)=>a.time-b.time).map(m => renderChatBubble(m, m.from==='driver')).join('');
-      setTimeout(()=>msgsEl.scrollTop=msgsEl.scrollHeight, 50);
-    }
-    if(activeChatTab !== 'store') {
-      const newFromStore = msgs.filter(m => m.from==='store' && !m.read).length;
-      if(newFromStore > 0) document.getElementById('storeChatBadge').style.display='block';
-    }
-  });
-}
-
-function renderChatBubble(m, isMe) {
-  const time = new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
-  return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};margin:4px 0">
-    <div style="max-width:78%;background:${isMe?'var(--accent)':'var(--surface2)'};color:${isMe?'#fff':'var(--text)'};padding:10px 14px;border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};font-size:14px;line-height:1.4">
-      ${!isMe?'<div style="font-size:10px;font-weight:800;opacity:.7;margin-bottom:3px">'+(m.senderName||m.from)+'</div>':''}
-      ${m.text}
-      <div style="font-size:10px;opacity:.6;margin-top:4px;text-align:right">${time}</div>
-    </div>
-  </div>`;
-}
-
-function sendCustomerChatMsg() {
-  if(!activeOrderForChat) return showToast('Δεν υπάρχει ενεργή παραγγελία');
-  const inp = document.getElementById('customerMsgBox');
-  const text = (inp&&inp.value||'').trim();
-  if(!text) return;
-  inp.value = '';
-  const msg = {from:'driver', senderName:driverData?.name||'Οδηγός', text, time:Date.now(), read:false};
-  if(window._db) window._set(window._push(window._ref(window._db,'chat/orders/'+activeOrderForChat+'/customer')), msg);
-}
-
-function sendStoreChatMsg() {
-  if(!activeOrderForChat) return showToast('Δεν υπάρχει ενεργή παραγγελία');
-  const inp = document.getElementById('storeMsgBox');
-  const text = (inp&&inp.value||'').trim();
-  if(!text) return;
-  inp.value = '';
-  const o = myOrders[activeOrderForChat];
-  const msg = {from:'driver', senderName:driverData?.name||'Οδηγός', text, time:Date.now(), read:false};
-  if(window._db) {
-    window._set(window._push(window._ref(window._db,'chat/orders/'+activeOrderForChat+'/store')), msg);
-    // Also notify the store via their chat node
-    if(o && o.storeId) {
-      window._set(window._push(window._ref(window._db,'chat/storedriver/'+o.storeId)), {...msg, orderId: activeOrderForChat});
-    }
-  }
-}
-// ============ END CHAT SYSTEM ============
-
 function renderChat(){
   const area=document.getElementById('chatMsgs');
   if(!myChat.length){area.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px">Καμία συνομιλία ακόμα</div>';return;}
@@ -851,7 +702,7 @@ function goPage(p){
     document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none';
     document.getElementById('nav-'+x).classList.toggle('active',x===p);
   });
-  if(p==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;});document.getElementById('chatBadge').style.display='none';switchChatTab(activeChatTab);}
+  if(p==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;});document.getElementById('chatBadge').style.display='none';renderChat();}
 }
 
 function doSignOut(){if(window._auth)window._signOut(window._auth);else showScreen('auth');}

@@ -38,91 +38,6 @@ if (FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
     onAuthStateChanged(auth, user => { if(user){window._uid=user.uid;initStorePanel(user);}else{showAuthScreen();} });
   } catch(e) { window._firebaseReady=false; initDemoMode(); }
 } else { window._firebaseReady=false; initDemoMode(); }
-
-// ===== STORE-DRIVER CHAT =====
-let activeDriverOrderKey = null;
-let storeChatTab = 'admin';
-
-function switchStoreChatTab(tab) {
-  storeChatTab = tab;
-  document.getElementById('storeChatPaneAdmin').style.display = tab==='admin'?'block':'none';
-  document.getElementById('storeChatPaneDriver').style.display = tab==='driver'?'block':'none';
-  const adminBtn = document.getElementById('storeTabAdmin');
-  const driverBtn = document.getElementById('storeTabDriver');
-  if(adminBtn) { adminBtn.style.color=tab==='admin'?'var(--accent)':'var(--text3)'; adminBtn.style.borderBottom=tab==='admin'?'2px solid var(--accent)':'none'; adminBtn.style.marginBottom=tab==='admin'?'-2px':'0'; }
-  if(driverBtn) { driverBtn.style.color=tab==='driver'?'var(--accent)':'var(--text3)'; driverBtn.style.borderBottom=tab==='driver'?'2px solid var(--accent)':'none'; driverBtn.style.marginBottom=tab==='driver'?'-2px':'0'; }
-  if(tab==='driver') { document.getElementById('driverChatBadge').style.display='none'; setupDriverChatForStore(); }
-}
-
-function setupDriverChatForStore() {
-  if(!activeDriverOrderKey||!window._db) return;
-  const msgsEl = document.getElementById('driverChatMsgs');
-  window._onValue(window._ref(window._db,'chat/order/'+activeDriverOrderKey+'/store'), snap=>{
-    const msgs = snap.val() ? Object.values(snap.val()) : [];
-    if(!msgsEl) return;
-    if(!msgs.length) { msgsEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Ξεκίνα τη συνομιλία με τον οδηγό</div>'; return; }
-    msgsEl.innerHTML = msgs.sort((a,b)=>a.time-b.time).map(m=>{
-      const isMe = m.from==='store';
-      const time = new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
-      return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};margin:4px 0">
-        <div style="max-width:78%;background:${isMe?'var(--accent)':'var(--surface)'};color:${isMe?'#fff':'var(--text)'};padding:9px 13px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:13px">
-          ${!isMe?'<div style="font-size:10px;font-weight:700;opacity:.6;margin-bottom:2px">'+(m.senderName||'Οδηγός')+'</div>':''}
-          ${m.text}
-          <div style="font-size:10px;opacity:.5;margin-top:3px;text-align:right">${time}</div>
-        </div>
-      </div>`;
-    }).join('');
-    setTimeout(()=>msgsEl.scrollTop=msgsEl.scrollHeight, 50);
-    // Badge
-    if(storeChatTab!=='driver') {
-      const newMsgs = msgs.filter(m=>m.from==='driver'&&!m.read).length;
-      if(newMsgs>0) document.getElementById('driverChatBadge').style.display='block';
-    }
-  });
-}
-
-function sendDriverMsg() {
-  if(!activeDriverOrderKey) return;
-  const inp = document.getElementById('driverChatInput');
-  const text = (inp&&inp.value||'').trim();
-  if(!text) return;
-  inp.value = '';
-  const msg = {from:'store', senderName:currentStore?.name||'Κατάστημα', text, time:Date.now(), read:false};
-  if(window._db) window._set(window._push(window._ref(window._db,'chat/order/'+activeDriverOrderKey+'/store')), msg);
-}
-
-// Watch for active orders to find driver
-function watchActiveOrders() {
-  if(!window._db||!storeId) return;
-  window._onValue(window._ref(window._db,'orders'), snap=>{
-    const all = snap.val()||{};
-    // Find most recent picked order for this store
-    const active = Object.entries(all)
-      .filter(([k,o])=>o.storeId===storeId&&['accepted','picked'].includes(o.status))
-      .sort((a,b)=>b[1].createdAt-a[1].createdAt)[0];
-    if(active) {
-      const [key, o] = active;
-      if(key !== activeDriverOrderKey) {
-        activeDriverOrderKey = key;
-        const nameEl = document.getElementById('activeDriverName');
-        const infoEl = document.getElementById('activeOrderInfo');
-        const inputRow = document.getElementById('driverChatInputRow');
-        if(nameEl) nameEl.textContent = o.driverName||'Οδηγός';
-        if(infoEl) infoEl.textContent = '📦 '+o.id+' · '+o.customerName+' · '+(o.address||'');
-        if(inputRow) inputRow.style.display='flex';
-        // Show driver phone if available
-        const dPhoneBtn = document.getElementById('driverPhoneBtn');
-        const driver = o.driverPhone || '';
-        if(dPhoneBtn && driver) { dPhoneBtn.href='tel:'+driver; dPhoneBtn.style.display='inline-flex'; }
-        // Auto switch to driver tab when order active
-        switchStoreChatTab('driver');
-        setupDriverChatForStore();
-      }
-    }
-  });
-}
-// ===== END STORE-DRIVER CHAT =====
-
 </script>
 <style>
 :root{--bg:#f8f6f3;--surface:#fff;--surface2:#f3f1ed;--border:rgba(0,0,0,.08);--text:#1a1714;--text2:#5c5751;--text3:#9c9590;--accent:#ff4500;--accent-light:rgba(255,69,0,.08);--green:#16a34a;--green-light:rgba(22,163,74,.1);--red:#dc2626;--red-light:rgba(220,38,38,.08);--yellow:#d97706;--yellow-light:rgba(217,119,6,.1);--blue:#2563eb;--blue-light:rgba(37,99,235,.1);--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 32px rgba(0,0,0,.1)}
@@ -200,11 +115,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .st-new{background:var(--blue-light);color:var(--blue)}
 .st-confirmed{background:var(--yellow-light);color:var(--yellow)}
 .st-preparing{background:var(--accent-light);color:var(--accent)}
-.st-ready{background:var(--green-light);color:var(--green)}
-.st-assigned{background:var(--yellow-light);color:var(--yellow)}
 .st-picked{background:rgba(139,92,246,.1);color:#7c3aed}
 .st-delivered{background:var(--green-light);color:var(--green)}
 .st-cancelled{background:var(--red-light);color:var(--red)}
+.st-ready{background:var(--green-light);color:var(--green)}
+.prep-time-btn{width:60px;height:48px;border-radius:12px;border:2px solid var(--border);background:var(--surface2);font-size:16px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif}
+.prep-time-btn:hover,.prep-time-btn.selected{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
 .order-items-text{font-size:12px;color:var(--text3)}
 .order-total{font-family:'Fraunces',serif;font-size:16px;font-weight:700;letter-spacing:-.5px}
 .btn-sm{padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px}
@@ -278,9 +194,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div class="auth-logo-text">Order<span>aki</span> <span style="font-size:14px;font-weight:600;color:var(--text3)">Store Panel</span></div>
     </div>
     <div id="authError" class="auth-error"></div>
-    <div id="firebaseWarn" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:600;color:#856404;margin-bottom:12px;text-align:center">
-      ⚠️ Δεν υπάρχει σύνδεση με Firebase. Έλεγξε το internet σου.
-    </div>
     <div class="auth-tabs">
       <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Σύνδεση</div>
       <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Εγγραφή Νέου Καταστήματος</div>
@@ -424,49 +337,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         </div>
       </div>
       <div class="page" id="page-chat">
-        <!-- Chat Tabs -->
-        <div style="display:flex;border-bottom:2px solid var(--border);margin:-20px -20px 20px">
-          <button id="storeTabAdmin" onclick="switchStoreChatTab('admin')" style="flex:1;padding:12px 6px;background:none;border:none;font-family:inherit;font-size:12px;font-weight:700;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;cursor:pointer">💬 Admin</button>
-          <button id="storeTabDriver" onclick="switchStoreChatTab('driver')" style="flex:1;padding:12px 6px;background:none;border:none;font-family:inherit;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;position:relative">
-            🏍️ Οδηγός
-            <span id="driverChatBadge" style="display:none;position:absolute;top:8px;right:16px;width:8px;height:8px;background:#ef4444;border-radius:50%"></span>
-          </button>
-        </div>
-
-        <!-- Admin Chat -->
-        <div id="storeChatPaneAdmin">
-          <div class="page-title">Chat με Admin</div>
+        <div class="page-title">Chat με Admin</div>
         <div class="page-sub">Επικοινωνία με την ομάδα Orderaki</div>
         <div class="chat-box">
           <div class="chat-msgs" id="chatMsgs"></div>
           <div class="chat-input-row">
             <input class="chat-input" id="chatInput" placeholder="Γράψε μήνυμα..." onkeydown="if(event.key==='Enter')sendChatMsg()">
             <button class="chat-send" onclick="sendChatMsg()"><span class="material-icons-round">send</span></button>
-          </div>
-        </div>
-
-        </div><!-- end admin pane -->
-
-        <!-- Driver Chat Pane -->
-        <div id="storeChatPaneDriver" style="display:none">
-          <div style="background:var(--surface2);border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
-            <div style="width:40px;height:40px;border-radius:50%;background:#ff9800;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏍️</div>
-            <div style="flex:1">
-              <div style="font-size:14px;font-weight:800" id="activeDriverName">Δεν υπάρχει ενεργός οδηγός</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px" id="activeOrderInfo">Εδώ θα δεις το chat όταν ο οδηγός αναλάβει παραγγελία</div>
-            </div>
-            <a id="driverPhoneBtn" href="#" style="display:none;width:36px;height:36px;border-radius:50%;background:rgba(255,152,0,.15);color:#ff9800;align-items:center;justify-content:center;text-decoration:none">
-              <span class="material-icons-round" style="font-size:18px">call</span>
-            </a>
-          </div>
-          <div class="chat-box">
-            <div class="chat-msgs" id="driverChatMsgs">
-              <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Αναμονή για ενεργό οδηγό...</div>
-            </div>
-            <div class="chat-input-row" id="driverChatInputRow" style="display:none">
-              <input class="chat-input" id="driverChatInput" placeholder="Μήνυμα στον οδηγό..." onkeydown="if(event.key==='Enter')sendDriverMsg()">
-              <button class="chat-send" onclick="sendDriverMsg()"><span class="material-icons-round">send</span></button>
-            </div>
           </div>
         </div>
       </div>
@@ -495,6 +372,35 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
 <div class="toast" id="toast"><span class="material-icons-round">check_circle</span><span id="toastMsg">OK</span></div>
 
+<!-- PREP TIME MODAL -->
+<div class="overlay" id="prepOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hd">
+      <div class="modal-title">⏱ Χρόνος Ετοιμασίας</div>
+      <button class="close-btn" onclick="closePrepModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div style="text-align:center;padding:10px 0 20px">
+      <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Σε πόσα λεπτά θα είναι έτοιμη;</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap" id="prepTimeOptions">
+        <button class="prep-time-btn" onclick="selectPrepTime(10)">10'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(15)">15'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(20)">20'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(25)">25'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(30)">30'</button>
+        <button class="prep-time-btn" onclick="selectPrepTime(45)">45'</button>
+      </div>
+      <div style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <input class="f-input" id="customPrepTime" type="number" min="1" max="120" placeholder="Άλλο..." style="width:100px;text-align:center">
+        <span style="font-size:13px;color:var(--text3)">λεπτά</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn-sm" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);padding:10px 16px" onclick="closePrepModal()">Ακύρωση</button>
+      <button class="save-btn" onclick="confirmWithPrepTime()" style="font-size:13px;padding:10px 18px"><span class="material-icons-round">check</span>Αποδοχή</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const DEMO_STORE={name:'Burger House Demo',category:'burger',emoji:'🍔',deliveryCost:1.5,minOrder:10,description:'Demo κατάστημα',open:true};
 const DEMO_MENU={'i1':{name:'Classic Burger',emoji:'🍔',price:8.9,description:'200g μοσχάρι, τυρί, μαρούλι',available:true},'i2':{name:'Double Cheese',emoji:'🧀',price:11.5,description:'Διπλό τυρί',available:true},'i3':{name:'Πατάτες',emoji:'🍟',price:3.5,description:'Τραγανές',available:true}};
@@ -504,51 +410,15 @@ const DEMO_CHAT=[{from:'admin',text:'Καλωσόρισες στο Orderaki! �
 let currentStore=null,storeId=null,myMenu={},myOrders={},myChat=[],editingItemId=null,selectedEmoji='🍔';
 const fmtTime=ts=>ts?new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}):'';
 
-function showAuthScreen(){
-  document.getElementById('authScreen').style.display='flex';
-  document.getElementById('appScreen').classList.remove('visible');
-  // Show warning if Firebase not ready
-  const firebaseWarn = document.getElementById('firebaseWarn');
-  if(firebaseWarn) firebaseWarn.style.display = window._firebaseReady ? 'none' : 'block';
-}
+function showAuthScreen(){document.getElementById('authScreen').style.display='flex';document.getElementById('appScreen').classList.remove('visible');}
 function switchAuthTab(t){document.getElementById('tabLogin').classList.toggle('active',t==='login');document.getElementById('tabRegister').classList.toggle('active',t==='register');document.getElementById('loginForm').style.display=t==='login'?'block':'none';document.getElementById('registerForm').style.display=t==='register'?'block':'none';}
 function showAuthError(msg){const el=document.getElementById('authError');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),4000);}
 
 function doLogin(){
   const email=document.getElementById('lEmail').value.trim(),pass=document.getElementById('lPass').value;
   if(!email||!pass){showAuthError('Συμπλήρωσε email και κωδικό');return;}
-  const btn = document.querySelector('#loginForm .auth-btn');
-  if(btn){btn.textContent='Σύνδεση...';btn.disabled=true;}
-
-  // If Firebase not ready yet, wait up to 3s
-  const tryLogin = (attempt) => {
-    if(!window._auth){
-      if(attempt < 6){ setTimeout(()=>tryLogin(attempt+1), 500); return; }
-      if(btn){btn.textContent='Σύνδεση →';btn.disabled=false;}
-      showAuthError('Δεν φορτώθηκε το Firebase. Ανανέωσε τη σελίδα.');
-      return;
-    }
-    window._signIn(window._auth,email,pass)
-      .then(()=>{
-        if(btn){btn.textContent='Σύνδεση →';btn.disabled=false;}
-      })
-      .catch(e=>{
-        if(btn){btn.textContent='Σύνδεση →';btn.disabled=false;}
-        const code = e.code||'';
-        console.error('Login error:', code, e.message);
-        if(code.includes('user-not-found')||code.includes('wrong-password')||code.includes('invalid-credential'))
-          showAuthError('Λανθασμένο email ή κωδικός. Αν δεν έχεις λογαριασμό, κάνε Εγγραφή.');
-        else if(code.includes('too-many-requests'))
-          showAuthError('Πάρα πολλές προσπάθειες. Δοκίμασε σε λίγα λεπτά.');
-        else if(code.includes('network-request-failed'))
-          showAuthError('Χωρίς internet. Ελέγξε τη σύνδεσή σου.');
-        else if(code.includes('auth/configuration-not-found')||code.includes('operation-not-allowed'))
-          showAuthError('Το login δεν είναι ενεργό. Ενεργοποίησε Email/Password στο Firebase Console → Authentication.');
-        else
-          showAuthError('Σφάλμα ('+code+'): '+e.message);
-      });
-  };
-  tryLogin(0);
+  if(window._auth){window._signIn(window._auth,email,pass).catch(()=>showAuthError('Λανθασμένα στοιχεία'));}
+  else initDemoMode();
 }
 
 function doRegister(){
@@ -573,7 +443,6 @@ function doRegister(){
 function confirmLogout(){if(window._auth)window._signOut(window._auth);else showAuthScreen();}
 
 function initStorePanel(user){
-  setTimeout(watchActiveOrders, 1500);
   storeId=user.uid||'demo_store';
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appScreen').classList.add('visible');
@@ -628,7 +497,7 @@ function toggleStoreStatus(){
 function updateStats(){
   const o=Object.values(myOrders);
   document.getElementById('st-new').textContent=o.filter(x=>x.status==='new').length;
-  document.getElementById('st-active').textContent=o.filter(x=>['accepted_by_store','confirmed','preparing','ready','assigned','accepted','picked'].includes(x.status)).length;
+  document.getElementById('st-active').textContent=o.filter(x=>['confirmed','preparing','ready','assigned','picked'].includes(x.status)).length;
   document.getElementById('st-done').textContent=o.filter(x=>x.status==='delivered').length;
   const rev=o.filter(x=>x.status==='delivered').reduce((s,x)=>s+(x.total||0),0);
   document.getElementById('st-rev').textContent='€'+rev.toFixed(0);
@@ -638,7 +507,7 @@ function updateStats(){
   document.getElementById('newOrderBadge').classList.toggle('show',nc>0);
 }
 
-const STATUS_MAP={new:['Νέα','st-new'],accepted_by_store:['Αποδεκτή','st-confirmed'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],ready:['Έτοιμη','st-ready'],assigned:['Οδηγός ανατέθηκε','st-assigned'],accepted:['Οδηγός αποδέχτηκε','st-assigned'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],cancelled:['Ακυρώθηκε','st-cancelled']};
+const STATUS_MAP={new:['Νέα','st-new'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],ready:['Έτοιμη','st-ready'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],assigned:['Ανατέθηκε','st-confirmed'],cancelled:['Ακυρώθηκε','st-cancelled']};
 
 function renderOrders(){
   const orders=Object.values(myOrders).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
@@ -651,52 +520,79 @@ function renderOrders(){
 function orderRowHTML(o){
   const[sl,sc]=STATUS_MAP[o.status]||['—','st-new'];
   const itemsTxt=(o.items||[]).map(i=>`${i.name}×${i.qty}`).join(', ');
-  const actions=o.status==='new'
-    ?`<div class="order-actions"><button class="btn-sm btn-confirm" onclick="acceptAndChooseTime('${o._key}')"><span class="material-icons-round">check</span>Αποδοχή</button><button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button></div>`
-    :o.status==='accepted_by_store'
-    ?`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <select id="prepTime_${o._key}" class="prep-time-select" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:12px;font-weight:700;font-family:inherit;background:var(--surface2);color:var(--text);cursor:pointer">
-          <option value="10">10 λεπτά</option><option value="15">15 λεπτά</option><option value="20" selected>20 λεπτά</option><option value="25">25 λεπτά</option><option value="30">30 λεπτά</option><option value="40">40 λεπτά</option><option value="45">45 λεπτά</option><option value="60">60 λεπτά</option>
-        </select>
-        <button class="btn-sm btn-confirm" onclick="startPreparing('${o._key}')"><span class="material-icons-round">restaurant</span>Ετοιμάζεται</button>
-      </div>`
-    :o.status==='preparing'
-    ?`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        ${o.prepTime?'<span style="font-size:11px;color:var(--accent);font-weight:700">⏱ '+o.prepTime+' λεπτά</span>':''}
-        <button class="btn-sm btn-confirm" style="background:var(--green-light);color:var(--green);border-color:rgba(22,163,74,.3)" onclick="markReady('${o._key}')"><span class="material-icons-round">check_circle</span>Έτοιμη!</button>
-      </div>`
-    :o.status==='ready'
-    ?`<span style="font-size:11px;color:var(--green);font-weight:700">✅ Έτοιμη — αναμονή οδηγού</span>`
-    :`<span style="font-size:11px;color:var(--text3)">${fmtTime(o.createdAt)}</span>`;
+  let actions='';
+  if(o.status==='new'){
+    actions=`<div class="order-actions">
+      <button class="btn-sm btn-confirm" onclick="openPrepTimeModal('${o._key}')"><span class="material-icons-round">check</span>Αποδοχή</button>
+      <button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button>
+    </div>`;
+  } else if(o.status==='preparing'){
+    const prepMin=o.prepMinutes||0;
+    const elapsed=o.prepStartedAt?Math.floor((Date.now()-o.prepStartedAt)/60000):0;
+    const remaining=Math.max(0,prepMin-elapsed);
+    actions=`<div class="order-actions" style="flex-direction:column;gap:4px;align-items:flex-start">
+      <div style="font-size:11px;color:var(--accent);font-weight:700">⏱ ${remaining>0?remaining+' λεπτά ακόμα':'Ώρα ετοιμασίας πέρασε!'}</div>
+      <button class="btn-sm btn-confirm" style="background:var(--green);color:#fff" onclick="markOrderReady('${o._key}')"><span class="material-icons-round">done_all</span>Έτοιμη!</button>
+    </div>`;
+  } else if(o.status==='ready'){
+    actions=`<div style="font-size:11px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">delivery_dining</span>Αναμονή διανομέα</div>`;
+  } else if(o.status==='assigned'||o.status==='picked'){
+    actions=`<div style="font-size:11px;color:var(--yellow);font-weight:700;display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">two_wheeler</span>${o.driverName||'Διανομέας'}</div>`;
+  } else {
+    actions=`<span style="font-size:11px;color:var(--text3)">${fmtTime(o.createdAt)}</span>`;
+  }
   return`<div class="order-row"><div><span class="order-id">${o.id||o._key}</span></div><div><div style="font-size:13px;font-weight:700">${o.customerName||'—'}</div><div style="font-size:11px;color:var(--text3)">${o.phone||''}</div></div><div class="order-items-text">${itemsTxt}</div><div class="order-total">€${(o.total||0).toFixed(2)}</div><div><span class="order-status ${sc}">${sl}</span></div><div>${actions}</div></div>`;
 }
 
 function setOrderStatus(key,status){
   if(window._db)window._update(window._ref(window._db,'orders/'+key),{status});
   else{if(myOrders[key]){myOrders[key].status=status;renderOrders();updateStats();}}
+  if(status==='confirmed')showToast('✅ Παραγγελία επιβεβαιώθηκε!');
   if(status==='cancelled')showToast('❌ Παραγγελία ακυρώθηκε');
 }
 
-function acceptAndChooseTime(key){
-  if(window._db)window._update(window._ref(window._db,'orders/'+key),{status:'accepted_by_store'});
-  else{if(myOrders[key]){myOrders[key].status='accepted_by_store';renderOrders();updateStats();}}
-  showToast('✅ Αποδοχή! Επίλεξε χρόνο ετοιμασίας.');
+let pendingPrepKey=null, selectedPrepMin=15;
+
+function openPrepTimeModal(key){
+  pendingPrepKey=key;
+  selectedPrepMin=15;
+  document.getElementById('customPrepTime').value='';
+  document.querySelectorAll('.prep-time-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.prep-time-btn')[1]?.classList.add('selected'); // default 15min
+  document.getElementById('prepOverlay').classList.add('open');
 }
 
-function startPreparing(key){
-  const sel=document.getElementById('prepTime_'+key);
-  const prepTime=sel?parseInt(sel.value):20;
-  const readyAt=Date.now()+prepTime*60*1000;
-  if(window._db)window._update(window._ref(window._db,'orders/'+key),{status:'preparing',prepTime,readyAt});
-  else{if(myOrders[key]){myOrders[key].status='preparing';myOrders[key].prepTime=prepTime;myOrders[key].readyAt=readyAt;renderOrders();updateStats();}}
-  showToast('👨‍🍳 Ετοιμάζεται! '+prepTime+' λεπτά');
+function closePrepModal(){document.getElementById('prepOverlay').classList.remove('open');pendingPrepKey=null;}
+
+function selectPrepTime(min){
+  selectedPrepMin=min;
+  document.getElementById('customPrepTime').value='';
+  document.querySelectorAll('.prep-time-btn').forEach(b=>b.classList.remove('selected'));
+  event.target.classList.add('selected');
 }
 
-function markReady(key){
-  if(window._db)window._update(window._ref(window._db,'orders/'+key),{status:'ready',readyTimestamp:Date.now()});
-  else{if(myOrders[key]){myOrders[key].status='ready';renderOrders();updateStats();}}
-  showToast('✅ Έτοιμη! Στέλνεται σε οδηγό...');
+function confirmWithPrepTime(){
+  if(!pendingPrepKey)return;
+  const custom=parseInt(document.getElementById('customPrepTime').value);
+  const mins=custom>0?custom:selectedPrepMin;
+  const data={status:'preparing',prepMinutes:mins,prepStartedAt:Date.now()};
+  if(window._db)window._update(window._ref(window._db,'orders/'+pendingPrepKey),data);
+  else{if(myOrders[pendingPrepKey])Object.assign(myOrders[pendingPrepKey],data);renderOrders();updateStats();}
+  closePrepModal();
+  showToast('✅ Αποδοχή — Ετοιμασία '+mins+' λεπτά');
 }
+
+function markOrderReady(key){
+  const data={status:'ready',readyAt:Date.now()};
+  if(window._db)window._update(window._ref(window._db,'orders/'+key),data);
+  else{if(myOrders[key])Object.assign(myOrders[key],data);renderOrders();updateStats();}
+  showToast('✅ Η παραγγελία είναι έτοιμη! Ειδοποιείται ο διανομέας...');
+}
+
+document.getElementById('prepOverlay').addEventListener('click',function(e){if(e.target===this)closePrepModal();});
+
+// Refresh countdown every 30 seconds
+setInterval(()=>{if(Object.values(myOrders).some(o=>o.status==='preparing'))renderOrders();},30000);
 
 function renderMenu(){
   const items=Object.entries(myMenu);
