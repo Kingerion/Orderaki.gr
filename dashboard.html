@@ -154,10 +154,10 @@ tr:hover td{background:#fdf9f7}
 .addr-text{font-size:12px;color:var(--muted);max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
 .s-new{background:rgba(59,130,246,.1);color:var(--blue)}
+.s-ready{background:rgba(0,179,126,.15);color:var(--green);font-weight:800}
 .s-assigned{background:rgba(245,158,11,.1);color:var(--yellow)}
 .s-picked{background:rgba(255,109,0,.1);color:var(--accent2)}
 .s-delivered{background:rgba(0,179,126,.1);color:var(--green)}
-.s-ready{background:rgba(0,179,126,.2);color:var(--green);font-weight:800}
 .s-failed{background:rgba(239,68,68,.1);color:var(--red)}
 .s-rejected{background:rgba(239,68,68,.08);color:var(--red)}
 .act-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:var(--muted)}
@@ -301,8 +301,8 @@ tr:hover td{background:#fdf9f7}
     <div class="tabs">
       <div class="tab active" onclick="filterTab('all',this)">Όλες</div>
       <div class="tab" onclick="filterTab('new',this)">Νέες</div>
-      <div class="tab" onclick="filterTab('preparing',this)">Ετοιμάζεται</div>
-      <div class="tab" onclick="filterTab('ready',this)">Έτοιμη</div>
+      <div class="tab" onclick="filterTab('preparing',this)">Ετοιμασία</div>
+      <div class="tab" onclick="filterTab('ready',this)">Έτοιμες</div>
       <div class="tab" onclick="filterTab('assigned',this)">Ανατεθ.</div>
       <div class="tab" onclick="filterTab('picked',this)">Σε Διαδρ.</div>
       <div class="tab" onclick="filterTab('delivered',this)">Παραδόθ.</div>
@@ -325,7 +325,7 @@ tr:hover td{background:#fdf9f7}
     <div class="stats">
       <div class="stat">
         <div class="stat-top">
-          <div><div class="stat-label">Νέες</div><div class="stat-value" id="sNew" style="color:var(--blue)">0</div><div class="stat-sub">αναμένουν</div></div>
+          <div><div class="stat-label">Σε Αναμονή</div><div class="stat-value" id="sNew" style="color:var(--blue)">0</div><div class="stat-sub">κατάστημα/έτοιμες</div></div>
           <div class="stat-icon" style="background:rgba(59,130,246,.1)"><span class="material-icons-round" style="color:var(--blue)">pending_actions</span></div>
         </div>
       </div>
@@ -634,11 +634,11 @@ let allStores = {};
 window.setAllStores = d => { allStores=d||{}; };
 window.updateStats = function(data){
   const o = Object.values(data||{});
-  document.getElementById('sNew').textContent = o.filter(x=>x.status==='new'||x.status==='preparing').length;
-  document.getElementById('sActive').textContent = o.filter(x=>x.status==='ready'||x.status==='assigned'||x.status==='picked').length;
+  document.getElementById('sNew').textContent = o.filter(x=>['new','accepted_by_store','preparing','ready'].includes(x.status)).length;
+  document.getElementById('sActive').textContent = o.filter(x=>x.status==='picked'||x.status==='assigned'||x.status==='accepted').length;
   document.getElementById('sDelivered').textContent = o.filter(x=>x.status==='delivered').length;
   document.getElementById('sTotal').textContent = o.length;
-  document.getElementById('navCount').textContent = o.filter(x=>x.status==='ready').length;
+  document.getElementById('navCount').textContent = o.filter(x=>['new','accepted_by_store','preparing','ready'].includes(x.status)).length;
 };
 
 // ══════════════════════════════════════════════════════════
@@ -671,31 +671,29 @@ function updateAutoDispatchUI() {
 
 function runAutoDispatch(orders) {
   if (!autoDispatch) return;
-  const newOrders = Object.entries(orders||{}).filter(([,o]) => o.status === 'ready');
-  // Get online drivers as [uid, driverData] pairs
-  const onlineEntries = Object.entries(allDrivers).filter(([,d]) => d.online && (!d.status || d.status==='approved'));
-  if (!newOrders.length || !onlineEntries.length) return;
+  const readyOrders = Object.entries(orders||{}).filter(([,o]) => o.status === 'ready');
+  const onlineDrivers = Object.values(allDrivers).filter(d => d.online);
+  if (!readyOrders.length || !onlineDrivers.length) return;
 
-  newOrders.forEach(([key, order]) => {
+  readyOrders.forEach(([key, order]) => {
     // Pick driver with fewest active orders
     const driverLoads = {};
-    onlineEntries.forEach(([uid]) => { driverLoads[uid] = 0; });
+    onlineDrivers.forEach(d => { driverLoads[d.name] = 0; });
     Object.values(allOrders).forEach(o => {
       if ((o.status === 'assigned' || o.status === 'picked') && o.driver && driverLoads[o.driver] !== undefined) {
         driverLoads[o.driver]++;
       }
     });
-    const [bestUid, bestDriver] = onlineEntries.reduce((a,b) =>
-      (driverLoads[a[0]]||0) <= (driverLoads[b[0]]||0) ? a : b
+    const bestDriver = onlineDrivers.reduce((a,b) =>
+      (driverLoads[a.name]||0) <= (driverLoads[b.name]||0) ? a : b
     );
 
     setTimeout(() => {
       if (window._db) {
-        window._update(window._ref(window._db,'orders/'+key), { driver: bestUid, driverName: bestDriver.name, status:'assigned' });
+        window._update(window._ref(window._db,'orders/'+key), { driver: bestDriver.uid||bestDriver.name, driverName: bestDriver.name, status:'assigned' });
       } else {
         if (allOrders[key] && allOrders[key].status === 'new') {
-          allOrders[key].driver = bestUid;
-          allOrders[key].driverName = bestDriver.name;
+          allOrders[key].driver = bestDriver.name;
           allOrders[key].status = 'assigned';
           renderTable();
           updateStats(allOrders);
@@ -711,7 +709,19 @@ function runAutoDispatch(orders) {
 // ══════════════════════════════════════════════════════════
 function renderTable() {
   let orders = Object.entries(allOrders).map(([k,v])=>({...v,_key:k}));
-  if (currentFilter !== 'all') orders = orders.filter(o=>o.status===currentFilter);
+  if (currentFilter !== 'all') {
+    const filterMap = {
+      'new': ['new','accepted_by_store'],
+      'preparing': ['preparing'],
+      'ready': ['ready'],
+      'assigned': ['assigned','accepted'],
+      'picked': ['picked'],
+      'delivered': ['delivered'],
+      'rejected': ['rejected'],
+    };
+    const statuses = filterMap[currentFilter] || [currentFilter];
+    orders = orders.filter(o=>statuses.includes(o.status));
+  }
   if (searchQ) orders = orders.filter(o =>
     (o.customerName||'').toLowerCase().includes(searchQ) ||
     (o.id||'').toLowerCase().includes(searchQ) ||
@@ -726,9 +736,12 @@ function renderTable() {
     .map(([uid,d])=>`<option value="${uid}::${d.name}">${d.name} (${d.phone||''})</option>`).join('');
 
   const statusMap = {
-    new:['Νέα','s-new'], preparing:['Ετοιμάζεται','s-assigned'], ready:['Έτοιμη','s-ready'],
-    assigned:['Ανατέθηκε','s-assigned'], picked:['Παρέλαβε','s-picked'], 
-    delivered:['Παραδόθηκε','s-delivered'], failed:['Αποτυχία','s-failed'], rejected:['Απορρίφθηκε','s-rejected'],
+    new:['Νέα','s-new'], accepted_by_store:['Κατάστημα αποδέχτηκε','s-new'],
+    preparing:['Ετοιμάζεται','s-new'], ready:['Έτοιμη — αναμονή οδηγού','s-ready'],
+    assigned:['Ανατέθηκε','s-assigned'],
+    accepted:['Οδηγός αποδέχτηκε','s-assigned'],
+    picked:['Παρέλαβε','s-picked'], delivered:['Παραδόθηκε','s-delivered'],
+    failed:['Αποτυχία','s-failed'], rejected:['Απορρίφθηκε','s-rejected'],
   };
 
   document.getElementById('ordersBody').innerHTML = orders.map((o,i)=>{
@@ -743,16 +756,16 @@ function renderTable() {
       <td><div class="addr-text" title="${o.deliveryAddress||''}">${o.deliveryAddress||'—'}</div></td>
       <td>
         ${o.status==='rejected'
-          ? `<div style="font-size:12px;color:var(--red);font-weight:600">${o.driverName||o.driver||'—'}</div><div class="rejected-reason">↳ ${o.rejectionReason||'Απορρίφθηκε'}</div>`
+          ? `<div style="font-size:12px;color:var(--red);font-weight:600">${o.driver||'—'}</div><div class="rejected-reason">↳ ${o.rejectionReason||'Απορρίφθηκε'}</div>`
           : `<select class="driver-sel" onchange="assignDriver('${o._key}',this.value)">
               <option value="">— Επιλογή —</option>
               ${driverOptions}
-              ${o.driver?`<option selected>${o.driverName||o.driver}</option>`:''}
+              ${o.driver?`<option selected>${o.driver}</option>`:''}
             </select>`
         }
       </td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${fmtTime(o.createdAt)}${o.storeName?'<div style="font-size:10px;color:var(--accent);font-family:Syne,sans-serif;font-weight:600">'+o.storeName+'</div>':''}</td>
-      <td><span class="status-tag ${sc}">${sl}</span>${o.status==='preparing'&&o.prepMinutes?'<div style="font-size:10px;color:var(--muted);margin-top:3px">⏱ '+o.prepMinutes+' λεπτά</div>':''}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${fmtTime(o.createdAt)}</td>
+      <td><span class="status-tag ${sc}">${sl}</span></td>
       <td><div style="display:flex;gap:4px">
         <div class="act-btn" title="Παρέλαβε" onclick="setStatus('${o._key}','picked')"><span class="material-icons-round">inventory_2</span></div>
         <div class="act-btn" title="Παραδόθηκε" onclick="setStatus('${o._key}','delivered')" style="color:var(--green)"><span class="material-icons-round">check_circle</span></div>
@@ -1014,15 +1027,15 @@ function reassignAfterReject(key, rejectedDriverName) {
 }
 
 function reassignOrder(key) {
-  const onlineEntries = Object.entries(allDrivers).filter(([,d])=>d.online);
-  if (!onlineEntries.length) { showToast('⚠️ Κανένας online οδηγός'); return; }
+  const onlineDrivers = Object.values(allDrivers).filter(d=>d.online);
+  if (!onlineDrivers.length) { showToast('⚠️ Κανένας online οδηγός'); return; }
   // Assign to driver with least orders (excluding the one who rejected)
   const oldDriver = allOrders[key]?.driver;
-  const available = onlineEntries.filter(([uid]) => uid !== oldDriver);
+  const available = onlineDrivers.filter(d => d.name !== oldDriver);
   if (!available.length) { showToast('⚠️ Δεν υπάρχει άλλος διαθέσιμος'); return; }
-  const [bestUid, best] = available[0];
-  if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:bestUid,driverName:best.name,status:'assigned',rejectionReason:''});
-  else { allOrders[key].driver=bestUid; allOrders[key].driverName=best.name; allOrders[key].status='assigned'; allOrders[key].rejectionReason=''; renderTable(); updateStats(allOrders); }
+  const best = available[0];
+  if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:best.name,status:'assigned',rejectionReason:''});
+  else { allOrders[key].driver=best.name; allOrders[key].status='assigned'; allOrders[key].rejectionReason=''; renderTable(); updateStats(allOrders); }
   showToast('🔄 Ανα-ανατέθηκε: '+best.name);
 }
 
@@ -1042,7 +1055,7 @@ function submitNewOrder() {
     deliveryAddress:address, pickupAddress:document.getElementById('fPickup').value,
     cost:parseFloat(document.getElementById('fCost').value)||0,
     notes:document.getElementById('fNotes').value,
-    driver:'', status:'ready', source:'admin', createdAt:Date.now()
+    driver:'', status:'new', source:'admin', createdAt:Date.now()
   };
   if(window._db){const r=window._push(window._ref(window._db,'orders'));window._set(r,order);}
   else{const k='order_'+Date.now();allOrders[k]={...order,_key:k};renderTable();updateStats(allOrders);}

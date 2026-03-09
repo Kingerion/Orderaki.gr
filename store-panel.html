@@ -200,6 +200,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .st-new{background:var(--blue-light);color:var(--blue)}
 .st-confirmed{background:var(--yellow-light);color:var(--yellow)}
 .st-preparing{background:var(--accent-light);color:var(--accent)}
+.st-ready{background:var(--green-light);color:var(--green)}
+.st-assigned{background:var(--yellow-light);color:var(--yellow)}
 .st-picked{background:rgba(139,92,246,.1);color:#7c3aed}
 .st-delivered{background:var(--green-light);color:var(--green)}
 .st-cancelled{background:var(--red-light);color:var(--red)}
@@ -626,7 +628,7 @@ function toggleStoreStatus(){
 function updateStats(){
   const o=Object.values(myOrders);
   document.getElementById('st-new').textContent=o.filter(x=>x.status==='new').length;
-  document.getElementById('st-active').textContent=o.filter(x=>['confirmed','preparing'].includes(x.status)).length;
+  document.getElementById('st-active').textContent=o.filter(x=>['accepted_by_store','confirmed','preparing','ready','assigned','accepted','picked'].includes(x.status)).length;
   document.getElementById('st-done').textContent=o.filter(x=>x.status==='delivered').length;
   const rev=o.filter(x=>x.status==='delivered').reduce((s,x)=>s+(x.total||0),0);
   document.getElementById('st-rev').textContent='€'+rev.toFixed(0);
@@ -636,7 +638,7 @@ function updateStats(){
   document.getElementById('newOrderBadge').classList.toggle('show',nc>0);
 }
 
-const STATUS_MAP={new:['Νέα','st-new'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],cancelled:['Ακυρώθηκε','st-cancelled']};
+const STATUS_MAP={new:['Νέα','st-new'],accepted_by_store:['Αποδεκτή','st-confirmed'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],ready:['Έτοιμη','st-ready'],assigned:['Οδηγός ανατέθηκε','st-assigned'],accepted:['Οδηγός αποδέχτηκε','st-assigned'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],cancelled:['Ακυρώθηκε','st-cancelled']};
 
 function renderOrders(){
   const orders=Object.values(myOrders).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
@@ -650,9 +652,21 @@ function orderRowHTML(o){
   const[sl,sc]=STATUS_MAP[o.status]||['—','st-new'];
   const itemsTxt=(o.items||[]).map(i=>`${i.name}×${i.qty}`).join(', ');
   const actions=o.status==='new'
-    ?`<div class="order-actions"><button class="btn-sm btn-confirm" onclick="setOrderStatus('${o._key}','confirmed')"><span class="material-icons-round">check</span>Επιβεβαίωση</button><button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button></div>`
-    :o.status==='confirmed'
-    ?`<button class="btn-sm btn-confirm" onclick="setOrderStatus('${o._key}','preparing')"><span class="material-icons-round">restaurant</span>Ετοιμάζεται</button>`
+    ?`<div class="order-actions"><button class="btn-sm btn-confirm" onclick="acceptAndChooseTime('${o._key}')"><span class="material-icons-round">check</span>Αποδοχή</button><button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button></div>`
+    :o.status==='accepted_by_store'
+    ?`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <select id="prepTime_${o._key}" class="prep-time-select" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:12px;font-weight:700;font-family:inherit;background:var(--surface2);color:var(--text);cursor:pointer">
+          <option value="10">10 λεπτά</option><option value="15">15 λεπτά</option><option value="20" selected>20 λεπτά</option><option value="25">25 λεπτά</option><option value="30">30 λεπτά</option><option value="40">40 λεπτά</option><option value="45">45 λεπτά</option><option value="60">60 λεπτά</option>
+        </select>
+        <button class="btn-sm btn-confirm" onclick="startPreparing('${o._key}')"><span class="material-icons-round">restaurant</span>Ετοιμάζεται</button>
+      </div>`
+    :o.status==='preparing'
+    ?`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${o.prepTime?'<span style="font-size:11px;color:var(--accent);font-weight:700">⏱ '+o.prepTime+' λεπτά</span>':''}
+        <button class="btn-sm btn-confirm" style="background:var(--green-light);color:var(--green);border-color:rgba(22,163,74,.3)" onclick="markReady('${o._key}')"><span class="material-icons-round">check_circle</span>Έτοιμη!</button>
+      </div>`
+    :o.status==='ready'
+    ?`<span style="font-size:11px;color:var(--green);font-weight:700">✅ Έτοιμη — αναμονή οδηγού</span>`
     :`<span style="font-size:11px;color:var(--text3)">${fmtTime(o.createdAt)}</span>`;
   return`<div class="order-row"><div><span class="order-id">${o.id||o._key}</span></div><div><div style="font-size:13px;font-weight:700">${o.customerName||'—'}</div><div style="font-size:11px;color:var(--text3)">${o.phone||''}</div></div><div class="order-items-text">${itemsTxt}</div><div class="order-total">€${(o.total||0).toFixed(2)}</div><div><span class="order-status ${sc}">${sl}</span></div><div>${actions}</div></div>`;
 }
@@ -660,7 +674,28 @@ function orderRowHTML(o){
 function setOrderStatus(key,status){
   if(window._db)window._update(window._ref(window._db,'orders/'+key),{status});
   else{if(myOrders[key]){myOrders[key].status=status;renderOrders();updateStats();}}
-  if(status==='confirmed')showToast('✅ Παραγγελία επιβεβαιώθηκε!');
+  if(status==='cancelled')showToast('❌ Παραγγελία ακυρώθηκε');
+}
+
+function acceptAndChooseTime(key){
+  if(window._db)window._update(window._ref(window._db,'orders/'+key),{status:'accepted_by_store'});
+  else{if(myOrders[key]){myOrders[key].status='accepted_by_store';renderOrders();updateStats();}}
+  showToast('✅ Αποδοχή! Επίλεξε χρόνο ετοιμασίας.');
+}
+
+function startPreparing(key){
+  const sel=document.getElementById('prepTime_'+key);
+  const prepTime=sel?parseInt(sel.value):20;
+  const readyAt=Date.now()+prepTime*60*1000;
+  if(window._db)window._update(window._ref(window._db,'orders/'+key),{status:'preparing',prepTime,readyAt});
+  else{if(myOrders[key]){myOrders[key].status='preparing';myOrders[key].prepTime=prepTime;myOrders[key].readyAt=readyAt;renderOrders();updateStats();}}
+  showToast('👨‍🍳 Ετοιμάζεται! '+prepTime+' λεπτά');
+}
+
+function markReady(key){
+  if(window._db)window._update(window._ref(window._db,'orders/'+key),{status:'ready',readyTimestamp:Date.now()});
+  else{if(myOrders[key]){myOrders[key].status='ready';renderOrders();updateStats();}}
+  showToast('✅ Έτοιμη! Στέλνεται σε οδηγό...');
 }
 
 function renderMenu(){

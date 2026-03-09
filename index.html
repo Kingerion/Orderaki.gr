@@ -68,20 +68,31 @@ function startOrderTracking(orderKey) {
 }
 
 const statusLabels = {
-  new: {icon:'🕐', text:'Ελήφθη', color:'#888'},
+  new: {icon:'🕐', text:'Αναμονή αποδοχής', color:'#888'},
+  accepted_by_store: {icon:'✅', text:'Το κατάστημα αποδέχτηκε!', color:'#f97316'},
   assigned: {icon:'🏍️', text:'Οδηγός σε δρόμο', color:'#f97316'},
   accepted: {icon:'🏍️', text:'Οδηγός ανέλαβε', color:'#f97316'},
   picked: {icon:'🚀', text:'Σε δρόμο προς εσένα!', color:'#22c55e'},
   delivered: {icon:'✅', text:'Παραδόθηκε!', color:'#22c55e'},
-  preparing: {icon:'👨‍🍳', text:'Προετοιμάζεται', color:'#f97316'},
+  preparing: {icon:'👨‍🍳', text:'Ετοιμάζεται', color:'#f97316'},
+  ready: {icon:'📦', text:'Έτοιμη! Αναζήτηση οδηγού...', color:'#3b82f6'},
 };
 
 function renderTrackingUI(o, orderKey) {
   const box = document.getElementById('trackingBox');
   if(!box) return;
   const st = statusLabels[o.status]||{icon:'📦',text:o.status,color:'#888'};
-  const isPicked = o.status==='picked'||o.status==='accepted';
+  const isPicked = o.status==='picked';
+  const isAccepted = o.status==='accepted';
   const isDelivered = o.status==='delivered';
+  const hasDriver = isPicked||isAccepted||o.status==='assigned';
+  const allSteps = ['new','accepted_by_store','preparing','ready','assigned','picked','delivered'];
+  const currentIdx = allSteps.indexOf(o.status);
+  // Map accepted to assigned level for progress
+  const effectiveIdx = o.status==='accepted' ? allSteps.indexOf('assigned') : currentIdx;
+  
+  const prepTimeInfo = o.prepTime ? `<div style="font-size:12px;color:#f97316;margin-top:4px">⏱ Εκτιμώμενος χρόνος: ${o.prepTime} λεπτά</div>` : '';
+  
   box.innerHTML = `
     <div style="background:#f8f9fa;border-radius:16px;padding:16px;border:1px solid #e5e7eb">
       <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:10px">Κατάσταση Παραγγελίας</div>
@@ -90,14 +101,16 @@ function renderTrackingUI(o, orderKey) {
         <div>
           <div style="font-size:16px;font-weight:800;color:${st.color}">${st.text}</div>
           ${o.driverName?'<div style="font-size:12px;color:#666">Οδηγός: '+o.driverName+'</div>':''}
+          ${prepTimeInfo}
         </div>
       </div>
       <!-- Steps -->
-      <div style="display:flex;align-items:center;gap:4px;margin-bottom:${isPicked&&!isDelivered?'16px':'4px'}">
-        ${['new','accepted','picked','delivered'].map((s,i)=>{
-          const past = ['new','assigned','accepted','preparing','picked','delivered'].indexOf(o.status) >= ['new','assigned','accepted','preparing','picked','delivered'].indexOf(s);
-          return '<div style="flex:1;height:4px;border-radius:4px;background:'+(past?st.color:'#e5e7eb')+'"></div>'
-           + (i<3?'<div style="width:4px"></div>':'');
+      <div style="display:flex;align-items:center;gap:3px;margin-bottom:${hasDriver&&!isDelivered?'16px':'4px'}">
+        ${['Παραγγελία','Αποδοχή','Ετοιμασία','Έτοιμη','Οδηγός','Παράδοση'].map((label,i)=>{
+          const stepIdx = [0,1,2,3,5,6]; // map to allSteps indices
+          const past = effectiveIdx >= stepIdx[i];
+          return '<div style="flex:1;text-align:center"><div style="height:4px;border-radius:4px;background:'+(past?st.color:'#e5e7eb')+'"></div><div style="font-size:8px;color:'+(past?st.color:'#ccc')+';margin-top:3px;font-weight:700">'+label+'</div></div>'
+           + (i<5?'<div style="width:2px"></div>':'');
         }).join('')}
       </div>
       ${(isPicked||isAccepted)&&!isDelivered?`
@@ -743,8 +756,9 @@ function showSuccess(order){
         <div style="font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Tracking</div>
         <div class="tracking-steps">
           <div class="t-step"><div class="t-dot done"><span class="material-icons-round">check</span></div><div><div class="t-step-label">Παραγγελία ελήφθη</div><div class="t-step-sub">Μόλις τώρα</div></div></div>
-          <div class="t-step"><div class="t-dot active"><span class="material-icons-round">restaurant</span></div><div><div class="t-step-label">Ετοιμάζεται...</div><div class="t-step-sub">~10 λεπτά</div></div></div>
-          <div class="t-step"><div class="t-dot pending"><span class="material-icons-round">delivery_dining</span></div><div><div class="t-step-label">Σε δρόμο</div><div class="t-step-sub">~${activeStore.deliveryTime||'20-30'}′</div></div></div>
+          <div class="t-step"><div class="t-dot active"><span class="material-icons-round">store</span></div><div><div class="t-step-label">Αναμονή αποδοχής</div><div class="t-step-sub">Το κατάστημα θα αποδεχτεί</div></div></div>
+          <div class="t-step"><div class="t-dot pending"><span class="material-icons-round">restaurant</span></div><div><div class="t-step-label">Ετοιμάζεται</div><div class="t-step-sub">Προετοιμασία</div></div></div>
+          <div class="t-step"><div class="t-dot pending"><span class="material-icons-round">delivery_dining</span></div><div><div class="t-step-label">Σε δρόμο</div><div class="t-step-sub">Οδηγός παραλαμβάνει</div></div></div>
           <div class="t-step"><div class="t-dot pending"><span class="material-icons-round">home</span></div><div><div class="t-step-label">Παράδοση</div><div class="t-step-sub">Στην πόρτα σου</div></div></div>
         </div>
       </div>
