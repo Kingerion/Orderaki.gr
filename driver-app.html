@@ -290,11 +290,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 
     <!-- Customer Chat -->
     <div id="chatPane-customer" class="chat-wrap" style="display:none">
-      <div id="customerChatHeader" style="background:var(--surface2);padding:14px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:800" id="customerChatName">—</div>
-        <div style="font-size:11px;color:var(--text3)" id="customerChatAddr">Δεν υπάρχει ενεργή παραγγελία</div>
-        <a id="customerCallBtn" href="#" style="display:none;margin-top:8px;background:rgba(34,197,94,.15);color:#22c55e;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
-          <span class="material-icons-round" style="font-size:14px">call</span><span id="customerCallNum"></span>
+      <div id="customerChatHeader" style="background:var(--surface2);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0" id="customerChatAvatar">?</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="customerChatName">Δεν υπάρχει ενεργή παραγγελία</div>
+          <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="customerChatAddr"></div>
+        </div>
+        <a id="customerCallBtn" href="#" style="display:none;flex-shrink:0;background:rgba(34,197,94,.15);color:#22c55e;width:40px;height:40px;border-radius:50%;align-items:center;justify-content:center">
+          <span class="material-icons-round" style="font-size:20px">call</span>
         </a>
       </div>
       <div class="chat-msgs" id="customerChatMsgs"><div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Δεν υπάρχει ενεργή παραγγελία</div></div>
@@ -306,9 +309,15 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 
     <!-- Store Chat -->
     <div id="chatPane-store" class="chat-wrap" style="display:none">
-      <div id="storeChatHeader" style="background:var(--surface2);padding:14px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:800" id="storeChatName">—</div>
-        <div style="font-size:11px;color:var(--text3)" id="storeChatInfo">Δεν υπάρχει ενεργή παραγγελία</div>
+      <div id="storeChatHeader" style="background:var(--surface2);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:50%;background:#ff9800;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0">🏪</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="storeChatName">Δεν υπάρχει ενεργή παραγγελία</div>
+          <div style="font-size:11px;color:var(--text3)" id="storeChatInfo"></div>
+        </div>
+        <a id="storeCallBtn" href="#" style="display:none;flex-shrink:0;background:rgba(255,152,0,.15);color:#ff9800;width:40px;height:40px;border-radius:50%;align-items:center;justify-content:center">
+          <span class="material-icons-round" style="font-size:20px">call</span>
+        </a>
       </div>
       <div class="chat-msgs" id="storeChatMsgs"><div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Δεν υπάρχει ενεργή παραγγελία</div></div>
       <div class="chat-input-row" id="storeChatInput" style="display:none">
@@ -598,11 +607,10 @@ function calcDriverEarnings(order) {
 }
 
 function acceptOrder(k) {
-  // Update Firebase status
   if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'accepted'});
-  // Update local cache immediately so UI refreshes without waiting for Firebase
   if(myOrders[k]) myOrders[k].status = 'accepted';
   activeOrderForChat = k;
+  setActiveOrderForChat(k);  // enable chat immediately after accept
   renderOrders();
   showToast('✅ Αποδέχτηκες! Πήγαινε να παραλάβεις.');
 }
@@ -710,28 +718,36 @@ function switchChatTab(tab) {
 
 function setActiveOrderForChat(orderKey) {
   activeOrderForChat = orderKey;
-  // Enable customer & store chat inputs
   const o = myOrders[orderKey];
   if(!o) return;
-  // Update customer header
-  const nameEl = document.getElementById('customerChatName');
-  const addrEl = document.getElementById('customerChatAddr');
-  const callBtn = document.getElementById('customerCallBtn');
-  const callNum = document.getElementById('customerCallNum');
-  if(nameEl) nameEl.textContent = o.customerName || 'Πελάτης';
-  if(addrEl) addrEl.textContent = '📍 ' + (o.address||'') + (o.floor?' · '+o.floor:'') + (o.doorbell?' 🔔 '+o.doorbell:'');
-  if(callBtn && o.phone) { callBtn.href = 'tel:'+o.phone; callBtn.style.display='inline-flex'; }
-  if(callNum) callNum.textContent = o.phone||'';
-  const custInput = document.getElementById('customerChatInput');
-  if(custInput) custInput.style.display = 'flex';
-  // Update store header
-  const storeNameEl = document.getElementById('storeChatName');
-  const storeInfoEl = document.getElementById('storeChatInfo');
-  if(storeNameEl) storeNameEl.textContent = o.storeName || 'Κατάστημα';
-  if(storeInfoEl) storeInfoEl.textContent = 'Παραγγελία ' + (o.id||orderKey);
-  const storeInput = document.getElementById('storeChatInput');
-  if(storeInput) storeInput.style.display = 'flex';
-  // Start listeners
+
+  // ── Customer header ──
+  const custName = o.customerName || 'Πελάτης';
+  const el = id => document.getElementById(id);
+  if(el('customerChatName')) el('customerChatName').textContent = custName;
+  if(el('customerChatAvatar')) el('customerChatAvatar').textContent = custName[0].toUpperCase();
+  if(el('customerChatAddr')) el('customerChatAddr').textContent =
+    (o.address||'') + (o.floor?' · Όρ.'+o.floor:'') + (o.doorbell?' 🔔 '+o.doorbell:'');
+  if(o.phone) {
+    const btn = el('customerCallBtn');
+    if(btn) { btn.href='tel:'+o.phone; btn.style.display='inline-flex'; }
+  }
+  if(el('customerChatInput')) el('customerChatInput').style.display = 'flex';
+
+  // ── Store header ──
+  const storeName = o.storeName || 'Κατάστημα';
+  if(el('storeChatName')) el('storeChatName').textContent = storeName;
+  const storeAddr = o.storeAddress || getStoreAddress(o.storeId, o.storeName);
+  const storePhone = getStorePhone(o.storeId, o.storeName);
+  if(el('storeChatInfo')) el('storeChatInfo').textContent =
+    (storeAddr ? '📍 '+storeAddr : '') + (storePhone ? '  📞 '+storePhone : '');
+  if(storePhone) {
+    const sBtn = el('storeCallBtn');
+    if(sBtn) { sBtn.href='tel:'+storePhone; sBtn.style.display='inline-flex'; }
+  }
+  if(el('storeChatInput')) el('storeChatInput').style.display = 'flex';
+
+  // ── Start Firebase listeners ──
   setupCustomerChat();
   setupStoreChat();
 }
