@@ -488,7 +488,7 @@ function loadDriverApp(){
       myOrders={};
       for(const[k,v]of Object.entries(all)){
         if(v.driver===driverData.uid||v.driverName===driverData.name){
-          if(['assigned','picked','pending_acceptance'].includes(v.status))myOrders[k]={...v,_key:k};
+          if(['assigned','accepted','picked'].includes(v.status))myOrders[k]={...v,_key:k};
         }
       }
       renderOrders();
@@ -512,16 +512,17 @@ function renderOrders(){
   if(!keys.length){document.getElementById('ordersList').innerHTML='<div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span><span style="font-size:13px">Οι παραγγελίες σου εμφανίζονται εδώ</span></div>';return;}
   document.getElementById('ordersList').innerHTML=keys.map(k=>{
     const o=myOrders[k];
-    const isAssigned=o.status==='assigned';
-    const isPending=o.status==='pending_acceptance';
-    const isPicked=o.status==='picked';
-    // Calculate driver earnings
+    const isNew     = o.status==='assigned';        // just assigned → show Accept/Reject
+    const isAccepted= o.status==='accepted';        // accepted → show Pickup
+    const isPicked  = o.status==='picked';          // picked up → show Deliver
+    const isPending = o.status==='pending_acceptance';
+    const needsAction = isNew || isPending;         // pulsing highlight
     const earnings = calcDriverEarnings(o);
-    const earningsStr = earnings > 0 ? fmtCur(earnings) : '—';
-    return`<div class="order-card ${isAssigned||isPending?'new-order':''}" id="oc_${k}">
+    const earningsStr = fmtCur(earnings);
+    return`<div class="order-card ${needsAction?'new-order':''}" id="oc_${k}">
       <div class="order-card-hd">
         <div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div>
-        <span class="status-pill ${isPending?'st-new':isAssigned?'st-assigned':'st-picked'}">${isPending?'Νέα!':isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span>
+        <span class="status-pill ${needsAction?'st-new':isPicked?'st-picked':'st-assigned'}">${needsAction?'🔔 Νέα!':isAccepted?'Αποδεκτή':'Σε εξέλιξη'}</span>
       </div>
       <div class="order-info-grid">
         <div class="order-info-item"><div class="order-info-label">Πελάτης</div><div class="order-info-val">${o.customerName||'—'}</div></div>
@@ -547,13 +548,13 @@ function renderOrders(){
         </div>
       </div>
       <div class="order-btns">
-        ${isPending
-          ?`<button class="btn-delivered" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="acceptOrder('${k}')"><span class="material-icons-round">check_circle</span>Αποδοχή</button>
-            <button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
-          : isAssigned
-          ?`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα</button>
-            <button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
-          :`<button class="btn-delivered" onclick="deliverOrder('${k}')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>`
+        ${needsAction
+          ?`<button class="btn-delivered" style="background:linear-gradient(135deg,#22c55e,#16a34a);flex:2" onclick="acceptOrder('${k}')"><span class="material-icons-round">check_circle</span>Αποδοχή</button>
+            <button style="background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
+          : isPicked
+          ?`<button class="btn-delivered" onclick="deliverOrder('${k}')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>`
+          :`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα από κατάστημα</button>
+            <button style="background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
         }
       </div>
     </div>`;
@@ -576,152 +577,11 @@ function updateEarningsUI(total, today, deliveries) {
   const avg = deliveries > 0 ? (total/deliveries) : 0;
   if(el('earnStatAvg')) el('earnStatAvg').textContent = fmtE(avg);
   // Top bar
-  if(el('topEarnings')) el('topEarnings').textContent = fmtE(today);
-  if(el('topDeliveries')) el('topDeliveries').textContent = deliveries||0;
+  if(el('earnToday')) el('earnToday').textContent = fmtE(today);
+  if(el('earnDeliveries')) el('earnDeliveries').textContent = deliveries||0;
+  if(el('earnWeek')) el('earnWeek').textContent = fmtE(total);
   if(el('topWeek')) el('topWeek').textContent = fmtE(total);
 }
-
-// ═══════════════════════════════════════════════
-//  CHAT SYSTEM — 3 tabs: Admin | Πελάτης | Κατάστημα
-// ═══════════════════════════════════════════════
-let activeChatTab = 'admin';      // current tab
-let activeOrderKey = null;        // order in progress
-let chatListeners = {};           // Firebase listeners to detach
-
-// ── Switch tab ──────────────────────────────────
-function switchChatTab(tab) {
-  activeChatTab = tab;
-  ['admin','customer','store'].forEach(t => {
-    const btn  = document.getElementById('chatTab-'+t);
-    const pane = document.getElementById('chatPane-'+t);
-    const active = t === tab;
-    if(btn)  { btn.style.color = active ? 'var(--accent)' : 'var(--text3)';
-               btn.style.borderBottom = active ? '2px solid var(--accent)' : '2px solid transparent'; }
-    if(pane)  pane.style.display = active ? 'flex' : 'none';
-  });
-}
-
-// ── Called when driver accepts/picks up order ──
-function openCustomerChat(orderKey) {
-  activeOrderKey = orderKey;
-  const o = myOrders[orderKey];
-  if(!o) return;
-
-  // Fill customer tab header
-  const nameEl = document.getElementById('customerChatName');
-  const addrEl = document.getElementById('customerChatAddr');
-  const callBtn = document.getElementById('customerCallBtn');
-  const callNum = document.getElementById('customerCallNum');
-  if(nameEl) nameEl.textContent = o.customerName||'Πελάτης';
-  if(addrEl) addrEl.textContent = '📍 '+(o.address||'')+(o.floor?' · Όρ.'+o.floor:'')+(o.doorbell?' 🔔 '+o.doorbell:'');
-  if(callBtn && o.phone) {
-    callBtn.href = 'tel:'+o.phone;
-    callBtn.style.display = 'inline-flex';
-    if(callNum) callNum.textContent = o.phone;
-  }
-  document.getElementById('customerChatInput').style.display = 'flex';
-
-  // Fill store tab header
-  const storeNameEl = document.getElementById('storeChatName');
-  const storeInfoEl = document.getElementById('storeChatInfo');
-  if(storeNameEl) storeNameEl.textContent = o.storeName||'Κατάστημα';
-  const storeAddr = o.storeAddress || getStoreAddress(o.storeId, o.storeName);
-  const storePhone = getStorePhone(o.storeId, o.storeName);
-  if(storeInfoEl) storeInfoEl.innerHTML = (storeAddr?'📍 '+storeAddr:'')+(storePhone?'<br>📞 '+storePhone:'');
-  document.getElementById('storeChatInput').style.display = 'flex';
-
-  // Attach Firebase listeners for both chats
-  attachChatListener('customer', 'chat/order/'+orderKey+'/customer', 'customerChatMsgs');
-  attachChatListener('store',    'chat/order/'+orderKey+'/store',    'storeChatMsgs');
-
-  // Switch to customer tab and navigate to chat
-  switchNav('chat');
-  switchChatTab('customer');
-}
-
-function closeCustomerChat() {
-  activeOrderKey = null;
-  // Reset headers
-  ['customer','store'].forEach(t => {
-    const name = document.getElementById(t+'ChatName');
-    const info = document.getElementById(t+'ChatInfo')||document.getElementById(t+'ChatAddr');
-    const input = document.getElementById(t+'ChatInput');
-    if(name)  name.textContent = '—';
-    if(info)  { info.textContent = 'Δεν υπάρχει ενεργή παραγγελία'; }
-    if(input) input.style.display = 'none';
-    const msgs = document.getElementById(t+'ChatMsgs');
-    if(msgs)  msgs.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Δεν υπάρχει ενεργή παραγγελία</div>';
-  });
-  // Detach listeners
-  Object.values(chatListeners).forEach(unsub => { try{unsub();}catch(e){} });
-  chatListeners = {};
-}
-
-// ── Attach a Firebase listener and render messages ──
-function attachChatListener(key, path, elId) {
-  if(chatListeners[key]) { try{chatListeners[key]();}catch(e){} }
-  if(!window._db) return;
-  chatListeners[key] = window._onValue(window._ref(window._db, path), snap => {
-    const msgs = snap.val() ? Object.values(snap.val()).sort((a,b)=>a.time-b.time) : [];
-    renderChatMessages(elId, msgs);
-  });
-}
-
-function renderChatMessages(elId, msgs) {
-  const el = document.getElementById(elId);
-  if(!el) return;
-  if(msgs.length === 0) {
-    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Ξεκίνα τη συνομιλία...</div>';
-    return;
-  }
-  el.innerHTML = msgs.map(m => {
-    const mine = m.from === 'driver';
-    const time = new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
-    return `<div style="display:flex;justify-content:${mine?'flex-end':'flex-start'};margin-bottom:6px">
-      <div style="max-width:78%;background:${mine?'var(--accent)':'var(--surface3)'};color:${mine?'#fff':'var(--text)'};border-radius:${mine?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:10px 14px;font-size:14px;line-height:1.4">
-        ${!mine?'<div style="font-size:10px;font-weight:800;opacity:.7;margin-bottom:3px">'+(m.senderName||'')+' </div>':''}
-        ${m.text}
-        <div style="font-size:10px;opacity:.55;margin-top:4px;text-align:right">${time}</div>
-      </div>
-    </div>`;
-  }).join('');
-  el.scrollTop = el.scrollHeight;
-}
-
-// ── Send to customer ─────────────────────────────
-function sendCustomerChatMsg() {
-  const inp = document.getElementById('customerMsgBox');
-  if(!inp || !inp.value.trim() || !activeOrderKey) return;
-  const msg = {from:'driver', text:inp.value.trim(), time:Date.now(), senderName:driverData?.name||'Οδηγός'};
-  inp.value = '';
-  if(window._db) {
-    window._set(window._push(window._ref(window._db,'chat/order/'+activeOrderKey+'/customer')), msg);
-    // Also notify customer — write to customerNotif for the orderaki.html to pick up
-    window._set(window._ref(window._db,'chat/customerNotif/'+activeOrderKey), {
-      from: driverData?.name||'Οδηγός', text: msg.text, time: msg.time, read: false
-    });
-  }
-}
-
-// ── Send to store ─────────────────────────────
-function sendStoreChatMsg() {
-  const inp = document.getElementById('storeMsgBox');
-  if(!inp || !inp.value.trim() || !activeOrderKey) return;
-  const o = myOrders[activeOrderKey];
-  const storeId = o?.storeId || '';
-  const msg = {from:'driver', text:inp.value.trim(), time:Date.now(), senderName:driverData?.name||'Οδηγός'};
-  inp.value = '';
-  if(window._db) {
-    window._set(window._push(window._ref(window._db,'chat/order/'+activeOrderKey+'/store')), msg);
-    // Also write to store chat so store-panel picks it up
-    if(storeId) {
-      window._set(window._push(window._ref(window._db,'chat/stores/'+storeId)), {
-        ...msg, orderId: activeOrderKey, type:'driver_message'
-      });
-    }
-  }
-}
-
 
 function calcDriverEarnings(order) {
   // 2.50€ for first 500m, then 0.30€/km after that
@@ -739,9 +599,14 @@ function acceptOrder(k) {
 }
 
 function pickupOrder(k){
-  if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'picked'});
-  else{myOrders[k].status='picked';renderOrders();}
-  showToast('📦 Παρέλαβες την παραγγελία!');
+  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'picked'});
+  if(myOrders[k]) myOrders[k].status = 'picked';
+  activeOrderForChat = k;
+  setActiveOrderForChat(k);   // opens chat headers + listeners
+  renderOrders();
+  goPage('chat');
+  switchChatTab('customer');
+  showToast('📦 Παρέλαβες! Επικοινώνησε με τον πελάτη αν χρειαστεί.');
 }
 function deliverOrder(k){
   closeCustomerChat();
