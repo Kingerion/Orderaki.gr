@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-  <!-- PWA -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Orderaki">
-  <meta name="theme-color" content="#ff4500">
-  <link rel="apple-touch-icon" href="/icon-orderaki.png">
-  <link rel="icon" type="image/png" href="/icon-orderaki.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orderaki">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="apple-touch-icon" href="/icon-orderaki.png">
+<link rel="icon" type="image/png" href="/icon-orderaki.png">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orderaki — Παράγγειλε από το αγαπημένο σου</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,700;0,900;1,300;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Orderaki.gr — Delivery</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <script type="module">
 const FIREBASE_CONFIG = {
@@ -28,377 +28,300 @@ const FIREBASE_CONFIG = {
 if (FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY"){
   try{
     const{initializeApp}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const{getDatabase,ref,push,set,onValue}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const{getDatabase,ref,push,set,onValue,update}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-    const app=initializeApp(FIREBASE_CONFIG);const db=getDatabase(app);
-    const auth=getAuth(app);
-    window._db=db;window._ref=ref;window._push=push;window._set=set;window._onValue=onValue;window._firebaseReady=true;
+    const app=initializeApp(FIREBASE_CONFIG);const db=getDatabase(app);const auth=getAuth(app);
+    window._db=db;window._ref=ref;window._push=push;window._set=set;window._onValue=onValue;window._update=update;window._firebaseReady=true;
     window._auth=auth;window._createUser=createUserWithEmailAndPassword;window._signIn=signInWithEmailAndPassword;window._signOut=signOut;
-    window._update=(await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js")).update;
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth,user=>{
       if(user){window._currentUser=user;window._uid=user.uid;if(typeof onUserLoggedIn==='function')onUserLoggedIn(user);}
       else{window._currentUser=null;if(typeof onUserLoggedOut==='function')onUserLoggedOut();}
     });
     onValue(ref(db,'stores'),snap=>{
-      const all=snap.val()||{};
-      const d={};
-      for(const [k,v] of Object.entries(all)){if(!v.status||v.status==='approved')d[k]=v;}
+      const all=snap.val()||{};const d={};
+      for(const[k,v]of Object.entries(all)){if(!v.status||v.status==='approved')d[k]=v;}
       window._firebaseStores=d;
-      if(Object.keys(d).length>0){loadStoresFromFirebase(d);}
+      if(Object.keys(d).length>0)loadStoresFromFirebase(d);
     });
   }catch(e){window._firebaseReady=false;}
 }else{window._firebaseReady=false;}
 </script>
 <style>
-:root{--white:#fff;--off:#faf9f7;--cream:#f4f0e8;--stone:#e8e2d9;--text:#1a1714;--text2:#5c5751;--text3:#9c9590;--accent:#ff4500;--accent2:#ff6b35;--accent-light:rgba(255,69,0,.08);--border:rgba(26,23,20,.08);--border2:rgba(26,23,20,.14);--green:#16a34a;--green-light:rgba(22,163,74,.1);--shadow:0 4px 20px rgba(26,23,20,.08);--shadow-lg:0 12px 40px rgba(26,23,20,.12);--shadow-xl:0 24px 64px rgba(26,23,20,.14)}
-*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);color:var(--text);font-size:15px;line-height:1.6;overflow-x:hidden}
-.display{font-family:'Fraunces',serif;font-weight:900;line-height:1.0;letter-spacing:-2px}
-.display-lg{font-size:clamp(52px,8vw,96px)}.display-md{font-size:clamp(36px,5vw,58px)}
-.container{max-width:1180px;margin:0 auto;padding:0 24px}
-section{padding:90px 0}
+:root{--bg:#fafafa;--surface:#fff;--surface2:#f5f5f5;--text:#1a1a1a;--text2:#666;--text3:#999;--accent:#d42300;--accent2:#ff6b35;--accent-bg:rgba(212,35,0,.06);--border:rgba(0,0,0,.06);--border2:rgba(0,0,0,.1);--green:#00a651;--green-bg:rgba(0,166,81,.08);--shadow:0 2px 12px rgba(0,0,0,.06);--shadow-lg:0 8px 30px rgba(0,0,0,.1);--radius:16px;--nav-h:56px;--bot-h:60px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow-x:hidden;padding-bottom:calc(var(--bot-h) + 10px)}
 
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);transition:box-shadow .3s}
-nav.scrolled{box-shadow:var(--shadow)}
-.nav-inner{max-width:1180px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:28px}
-.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
-.nav-logo-mark{width:36px;height:36px;background:var(--accent);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 4px 12px rgba(255,69,0,.35);transition:transform .2s}
-.nav-logo:hover .nav-logo-mark{transform:rotate(-8deg) scale(1.05)}
-.nav-logo-text{font-family:'Fraunces',serif;font-size:21px;font-weight:900;color:var(--text);letter-spacing:-1px}
-.nav-logo-text span{color:var(--accent)}
-.nav-links{display:flex;align-items:center;gap:4px;margin-left:auto}
-.nav-link{padding:8px 14px;border-radius:10px;font-size:14px;font-weight:600;color:var(--text2);text-decoration:none;transition:all .15s}
-.nav-link:hover{background:var(--off);color:var(--text)}
-.nav-cta{background:var(--accent);color:#fff;padding:9px 18px;border-radius:11px;font-size:14px;font-weight:700;text-decoration:none;transition:all .2s;box-shadow:0 4px 12px rgba(255,69,0,.3)}
-.nav-cta:hover{background:#e03d00;transform:translateY(-1px)}
+/* TOP BAR */
+.topbar{position:sticky;top:0;z-index:80;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px}
+.top-location{display:flex;align-items:center;gap:6px;margin-bottom:10px;cursor:pointer}
+.top-location .material-icons-round{font-size:18px;color:var(--accent)}
+.top-loc-text{font-size:13px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-loc-arrow{font-size:16px;color:var(--text3)}
+.top-user-btn{width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0}
+.top-user-btn.logged-in{background:var(--accent);color:#fff;border-color:var(--accent)}
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px}
+.search-bar .material-icons-round{font-size:18px;color:var(--text3)}
+.search-bar input{flex:1;border:none;background:none;outline:none;font-family:inherit;font-size:14px;color:var(--text)}
+.search-bar input::placeholder{color:var(--text3)}
 
-.hero{min-height:100vh;background:var(--off);display:flex;align-items:center;padding-top:64px;position:relative;overflow:hidden}
-.hero-bg{position:absolute;inset:0;pointer-events:none}
-.hero-blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.5}
-.hero-blob-1{width:600px;height:600px;background:radial-gradient(circle,rgba(255,69,0,.12) 0%,transparent 70%);top:-100px;right:-100px}
-.hero-blob-2{width:400px;height:400px;background:radial-gradient(circle,rgba(255,107,53,.1) 0%,transparent 70%);bottom:0;left:20%}
-.hero-inner{max-width:1180px;margin:0 auto;padding:80px 24px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;position:relative;z-index:1}
-.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--white);border:1.5px solid var(--border2);padding:7px 16px;border-radius:20px;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:26px;box-shadow:0 2px 8px rgba(0,0,0,.06);animation:fadeUp .8s both}
-.hero-tag-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
-.hero-title{margin-bottom:22px;animation:fadeUp .8s .1s both}
-.hero-title em{font-style:italic;color:var(--accent)}
-.hero-sub{font-size:17px;color:var(--text2);line-height:1.65;margin-bottom:38px;max-width:480px;animation:fadeUp .8s .2s both}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;animation:fadeUp .8s .3s both}
-.btn-primary{display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:15px 26px;border-radius:13px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 6px 22px rgba(255,69,0,.35);transition:all .2s;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif}
-.btn-primary:hover{background:#e03d00;transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,69,0,.4)}
-.btn-secondary{display:flex;align-items:center;gap:8px;background:var(--white);color:var(--text);padding:15px 26px;border-radius:13px;font-size:15px;font-weight:700;text-decoration:none;border:1.5px solid var(--border2);transition:all .2s;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif}
-.btn-secondary:hover{background:var(--cream);transform:translateY(-2px)}
-.hero-stats{display:flex;gap:32px;margin-top:48px;animation:fadeUp .8s .4s both}
-.hero-stat-value{font-family:'Fraunces',serif;font-size:30px;font-weight:900;letter-spacing:-1.5px}
-.hero-stat-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+/* CATEGORIES SCROLL */
+.cat-scroll{padding:14px 0 6px;overflow:hidden}
+.cat-scroll-inner{display:flex;gap:10px;padding:0 16px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.cat-scroll-inner::-webkit-scrollbar{display:none}
+.cat-pill{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:64px;cursor:pointer;transition:transform .15s}
+.cat-pill:active{transform:scale(.95)}
+.cat-pill-icon{width:56px;height:56px;border-radius:14px;background:var(--surface);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.cat-pill.active .cat-pill-icon{border-color:var(--accent);background:var(--accent-bg);box-shadow:0 2px 8px rgba(212,35,0,.12)}
+.cat-pill-label{font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap}
+.cat-pill.active .cat-pill-label{color:var(--accent)}
 
-.hero-phone{background:var(--white);border-radius:30px;box-shadow:var(--shadow-xl),0 0 0 1px rgba(0,0,0,.06);overflow:hidden;max-width:320px;margin:0 auto;animation:fadeUp .8s .2s both}
-.phone-topbar{background:var(--white);padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.phone-logo{font-family:'Fraunces',serif;font-size:17px;font-weight:900;color:var(--accent)}
-.phone-search{margin:12px 18px;background:var(--off);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text3)}
-.phone-search .material-icons-round{font-size:15px}
-.phone-cats{display:flex;gap:7px;padding:0 18px 12px;overflow:hidden}
-.phone-cat{background:var(--off);border-radius:20px;padding:6px 13px;font-size:11px;font-weight:700;white-space:nowrap;color:var(--text2);border:1.5px solid var(--border)}
-.phone-cat.active{background:var(--accent);color:#fff;border-color:transparent}
-.phone-card{margin:0 18px 12px;border:1.5px solid var(--border);border-radius:14px;overflow:hidden}
-.phone-card-img{height:90px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative}
-.phone-card-badge{position:absolute;top:8px;left:8px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:7px;font-size:10px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif}
-.phone-card-body{padding:10px 13px}
-.phone-card-name{font-size:13px;font-weight:800}
-.phone-card-meta{display:flex;gap:10px;margin-top:4px}
-.phone-card-meta span{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:3px}
-.phone-card-meta .material-icons-round{font-size:11px}
-.phone-order-btn{margin:0 18px 18px;background:var(--accent);color:#fff;border-radius:12px;padding:12px;text-align:center;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(255,69,0,.3)}
-.hero-float{position:absolute;background:var(--white);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;white-space:nowrap;border:1px solid var(--border)}
-.hero-float-1{top:20px;left:-40px;animation:float1 4s ease-in-out infinite}
-.hero-float-2{bottom:50px;right:-30px;animation:float2 4s ease-in-out infinite .5s}
-@keyframes float1{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-@keyframes float2{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+/* BANNERS */
+.banners{padding:12px 0;overflow:hidden}
+.banners-inner{display:flex;gap:12px;padding:0 16px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory}
+.banners-inner::-webkit-scrollbar{display:none}
+.banner-card{min-width:85vw;max-width:360px;height:140px;border-radius:var(--radius);overflow:hidden;position:relative;flex-shrink:0;scroll-snap-align:start;cursor:pointer}
+.banner-card img,.banner-bg{width:100%;height:100%;object-fit:cover}
+.banner-bg{display:flex;align-items:center;padding:20px}
+.banner-text{color:#fff;position:relative;z-index:1}
+.banner-text h3{font-size:18px;font-weight:800;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.3)}
+.banner-text p{font-size:12px;opacity:.9;text-shadow:0 1px 4px rgba(0,0,0,.3)}
 
-.section-label{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--accent);background:var(--accent-light);padding:6px 14px;border-radius:20px;margin-bottom:14px}
-.section-title{margin-bottom:10px}
-.section-sub{font-size:16px;color:var(--text2);max-width:520px;line-height:1.65}
+/* SECTION */
+.sec{padding:16px}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-title{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.sec-more{font-size:13px;font-weight:700;color:var(--accent);text-decoration:none;cursor:pointer}
 
-.how{background:var(--white)}
-.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px}
-.step-card{background:var(--off);border-radius:22px;padding:34px 30px;border:1.5px solid var(--border);transition:all .3s;cursor:default;position:relative;overflow:hidden}
-.step-card::before{content:'';position:absolute;top:0;right:0;width:120px;height:120px;background:radial-gradient(circle at top right,var(--accent-light),transparent 70%);opacity:0;transition:opacity .3s}
-.step-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:rgba(255,69,0,.2)}
-.step-card:hover::before{opacity:1}
-.step-num{font-family:'Fraunces',serif;font-size:52px;font-weight:900;color:rgba(255,69,0,.1);line-height:1;margin-bottom:18px;letter-spacing:-3px}
-.step-icon{width:48px;height:48px;background:var(--accent-light);border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
-.step-icon .material-icons-round{font-size:24px;color:var(--accent)}
-.step-title{font-size:18px;font-weight:800;margin-bottom:8px;letter-spacing:-.5px}
-.step-text{font-size:14px;color:var(--text2);line-height:1.65}
-
-.categories-sec{background:var(--off)}
-.cat-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-top:44px}
-.cat-item{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px 12px;text-align:center;cursor:pointer;transition:all .2s;text-decoration:none;color:var(--text)}
-.cat-item:hover,.cat-item.active-cat{border-color:rgba(255,69,0,.4);background:var(--accent-light);transform:translateY(-3px);box-shadow:var(--shadow)}
-.cat-emoji{font-size:32px;display:block;margin-bottom:8px;transition:transform .2s}
-.cat-item:hover .cat-emoji{transform:scale(1.15) rotate(-5deg)}
-.cat-name{font-size:11px;font-weight:700;color:var(--text2)}
-
-.stores-section{background:var(--white)}
-.stores-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
-.stores-filter-label{font-size:14px;font-weight:700;color:var(--text2)}
-.clear-filter{background:var(--accent-light);color:var(--accent);border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;display:none}
-.clear-filter.show{display:inline-flex;align-items:center;gap:4px}
-.stores-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.store-card{background:var(--white);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;transition:all .25s}
-.store-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:rgba(255,69,0,.2)}
-.store-card-cover{height:130px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-.store-open-badge{position:absolute;top:10px;left:10px;background:var(--white);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-.store-open-badge.open{color:var(--green)}.store-open-badge.closed{color:var(--text3)}
-.open-dot{width:6px;height:6px;border-radius:50%}
-.store-open-badge.open .open-dot{background:var(--green)}.store-open-badge.closed .open-dot{background:var(--text3)}
-.store-body{padding:16px 18px 18px}
-.store-name{font-size:16px;font-weight:800;margin-bottom:6px}
+/* STORE CARDS */
+.stores-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.store-card{background:var(--surface);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);cursor:pointer;transition:transform .2s}
+.store-card:active{transform:scale(.98)}
+.store-card-cover{height:140px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.store-card-cover span{font-size:56px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.1))}
+.store-badge{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.store-badge.open{color:var(--green)}.store-badge.closed{color:var(--text3)}
+.store-badge .dot{width:6px;height:6px;border-radius:50%}
+.store-badge.open .dot{background:var(--green)}.store-badge.closed .dot{background:var(--text3)}
+.store-delivery-badge{position:absolute;top:10px;right:10px;background:var(--accent);color:#fff;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700}
+.store-info{padding:14px 16px}
+.store-name{font-size:15px;font-weight:800;margin-bottom:6px}
 .store-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.store-meta span{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px;font-weight:600}
-.store-meta .material-icons-round{font-size:13px}
-.store-rating{color:var(--text)!important}.store-rating .material-icons-round{color:#f59e0b!important}
-.store-tag{background:var(--off);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;color:var(--text2)!important}
-.stores-empty{text-align:center;padding:60px;color:var(--text3);grid-column:span 3}
-.stores-empty .material-icons-round{font-size:48px;opacity:.25;display:block;margin:0 auto 12px}
-.stores-loading{grid-column:span 3;text-align:center;padding:60px;color:var(--text3)}
+.store-meta span{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:3px;font-weight:600}
+.store-meta .material-icons-round{font-size:14px}
+.store-meta .star{color:var(--text)}.store-meta .star .material-icons-round{color:#f5a623}
+.store-desc{font-size:12px;color:var(--text3);margin-top:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.stores-empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:14px}
 
-.modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(26,23,20,.5);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+/* HORIZONTAL STORE SCROLL */
+.store-hscroll{display:flex;gap:12px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.store-hscroll::-webkit-scrollbar{display:none}
+.store-hcard{min-width:220px;max-width:260px;background:var(--surface);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);cursor:pointer;flex-shrink:0}
+.store-hcard .store-card-cover{height:110px}
+.store-hcard .store-info{padding:10px 12px}
+.store-hcard .store-name{font-size:13px}
+.store-hcard .store-meta span{font-size:11px}
+
+/* PROMO STRIP */
+.promo-strip{background:linear-gradient(135deg,var(--accent),#ff6b35);margin:0 16px;border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:14px;color:#fff}
+.promo-strip-icon{font-size:32px}
+.promo-strip h4{font-size:14px;font-weight:800}
+.promo-strip p{font-size:11px;opacity:.85}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:90;background:var(--surface);border-top:1px solid var(--border);display:flex;height:var(--bot-h);box-shadow:0 -2px 12px rgba(0,0,0,.06);padding-bottom:env(safe-area-inset-bottom)}
+.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--text3);transition:color .15s;text-decoration:none;position:relative}
+.bottom-nav-item.active{color:var(--accent)}
+.bottom-nav-item .material-icons-round{font-size:22px}
+.bottom-nav-label{font-size:10px;font-weight:700}
+
+/* ORDER MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal-box{background:var(--white);border-radius:28px;width:100%;max-width:660px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-xl);transform:translateY(30px) scale(.97);transition:transform .3s cubic-bezier(.34,1.56,.64,1);border:1px solid var(--border)}
-.modal-overlay.open .modal-box{transform:translateY(0) scale(1)}
-.modal-hd{padding:26px 30px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:14px;position:sticky;top:0;background:var(--white);z-index:1}
-.modal-store-icon{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
-.modal-store-name{font-size:20px;font-weight:800;letter-spacing:-.5px}
-.modal-store-meta{font-size:13px;color:var(--text3);margin-top:3px}
-.modal-close{margin-left:auto;width:36px;height:36px;border-radius:10px;background:var(--off);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;transition:all .15s}
-.modal-close:hover{background:var(--stone)}.modal-close .material-icons-round{font-size:18px}
-.modal-body{padding:26px 30px;display:flex;flex-direction:column;gap:26px}
-.order-section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:14px}
-.menu-items{display:flex;flex-direction:column;gap:9px}
-.menu-item{display:flex;align-items:center;justify-content:space-between;background:var(--off);border:1.5px solid var(--border);border-radius:13px;padding:13px 15px;cursor:pointer;transition:all .15s}
-.menu-item:hover{border-color:rgba(255,69,0,.3);background:var(--accent-light)}
-.menu-item.selected{border-color:var(--accent);background:var(--accent-light)}
-.menu-item.unavailable{opacity:.45;cursor:not-allowed}
-.menu-item-left{display:flex;align-items:center;gap:11px}
-.menu-item-emoji{font-size:24px}
-.menu-item-name{font-size:14px;font-weight:700}
-.menu-item-desc{font-size:12px;color:var(--text3);margin-top:2px}
-.menu-item-price{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--accent);letter-spacing:-1px}
-.qty-control{display:flex;align-items:center;gap:9px}
-.qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-size:17px;font-weight:700;color:var(--text2)}
+.modal-box{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg);transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1)}
+.modal-overlay.open .modal-box{transform:translateY(0)}
+.modal-hd{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;background:var(--surface);z-index:1;border-radius:24px 24px 0 0}
+.modal-store-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.modal-store-name{font-size:16px;font-weight:800}
+.modal-store-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.modal-close{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--surface2);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2)}
+.modal-close .material-icons-round{font-size:18px}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:20px}
+.order-section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px}
+.menu-items{display:flex;flex-direction:column;gap:8px}
+.menu-item{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:all .15s}
+.menu-item:hover,.menu-item.selected{border-color:var(--accent);background:var(--accent-bg)}
+.menu-item.unavailable{opacity:.4;cursor:not-allowed}
+.menu-item-left{display:flex;align-items:center;gap:10px}
+.menu-item-emoji{font-size:24px}.menu-item-name{font-size:13px;font-weight:700}
+.menu-item-desc{font-size:11px;color:var(--text3);margin-top:1px}
+.menu-item-price{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--accent)}
+.qty-control{display:flex;align-items:center;gap:8px}
+.qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border2);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;font-weight:700;color:var(--text2)}
 .qty-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
-.qty-num{font-size:14px;font-weight:800;min-width:18px;text-align:center}
-.form-group{display:flex;flex-direction:column;gap:5px}
-.form-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text3)}
-.form-input{width:100%;background:var(--off);border:1.5px solid var(--border);border-radius:11px;padding:12px 15px;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;font-family:'Plus Jakarta Sans',sans-serif}
-.form-input:focus{border-color:var(--accent);background:var(--white)}
+.qty-num{font-size:13px;font-weight:800;min-width:16px;text-align:center}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text3)}
+.form-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--text);outline:none;font-family:inherit}
+.form-input:focus{border-color:var(--accent);background:var(--surface)}
 .form-input::placeholder{color:var(--text3)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.pay-options{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.pay-opt{border:1.5px solid var(--border);border-radius:11px;padding:13px 9px;text-align:center;cursor:pointer;transition:all .15s;font-size:12px;font-weight:700;color:var(--text2);display:flex;flex-direction:column;align-items:center;gap:5px}
-.pay-opt .material-icons-round{font-size:21px;color:var(--text3)}
-.pay-opt:hover,.pay-opt.selected{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pay-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pay-opt{border:1.5px solid var(--border);border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;font-size:11px;font-weight:700;color:var(--text2);display:flex;flex-direction:column;align-items:center;gap:4px}
+.pay-opt .material-icons-round{font-size:20px;color:var(--text3)}
+.pay-opt.selected{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
 .pay-opt.selected .material-icons-round{color:var(--accent)}
-.order-summary{background:var(--off);border-radius:14px;padding:18px;border:1.5px solid var(--border)}
-.summary-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13px}
+.order-summary{background:var(--surface2);border-radius:12px;padding:14px;border:1px solid var(--border)}
+.summary-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}
 .summary-row+.summary-row{border-top:1px solid var(--border)}
-.summary-row.total{font-size:16px;font-weight:800}
-.summary-row.total .summary-val{font-family:'Fraunces',serif;color:var(--accent);font-size:20px;letter-spacing:-1px}
-.btn-order-submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:13px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 22px rgba(255,69,0,.35);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:9px;font-family:'Plus Jakarta Sans',sans-serif}
-.btn-order-submit:hover{background:#e03d00;transform:translateY(-2px)}
-.btn-order-submit .material-icons-round{font-size:20px}
+.summary-row.total{font-size:15px;font-weight:800}
+.summary-row.total .summary-val{font-family:'Fraunces',serif;color:var(--accent);font-size:18px}
+.btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:#fff;padding:14px;border-radius:12px;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(212,35,0,.3);width:100%}
+.btn-primary:active{transform:scale(.98)}
+.btn-secondary{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);color:var(--text);padding:14px;border-radius:12px;font-size:15px;font-weight:700;border:1.5px solid var(--border2);cursor:pointer;font-family:inherit;width:100%}
+.order-success{display:none;flex-direction:column;align-items:center;padding:40px 20px;text-align:center;gap:14px}
+.success-icon{width:64px;height:64px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center}
+.success-icon .material-icons-round{font-size:32px;color:var(--green)}
+.success-title{font-size:22px;font-weight:900;font-family:'Fraunces',serif}
+.success-sub{font-size:13px;color:var(--text2)}
+.tracking-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;width:100%}
+.tracking-steps{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.t-step{display:flex;align-items:center;gap:10px}
+.t-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.t-dot.done{background:var(--green-bg)}.t-dot.done .material-icons-round{font-size:13px;color:var(--green)}
+.t-dot.active{background:var(--accent-bg)}.t-dot.active .material-icons-round{font-size:13px;color:var(--accent)}
+.t-dot.pending{background:var(--surface2);border:1px solid var(--border)}.t-dot.pending .material-icons-round{font-size:13px;color:var(--text3)}
+.t-step-label{font-size:12px;font-weight:700}.t-step-sub{font-size:10px;color:var(--text3)}
 
-.order-success{display:none;flex-direction:column;align-items:center;justify-content:center;padding:56px 30px;text-align:center;gap:18px}
-.success-icon{width:76px;height:76px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center}
-.success-icon .material-icons-round{font-size:38px;color:var(--green)}
-.success-title{font-size:26px;font-weight:900;font-family:'Fraunces',serif;letter-spacing:-1px}
-.success-sub{font-size:15px;color:var(--text2)}
-.tracking-card{background:var(--off);border:1.5px solid var(--border);border-radius:14px;padding:18px 22px;width:100%}
-.tracking-steps{display:flex;flex-direction:column;gap:14px;margin-top:10px}
-.t-step{display:flex;align-items:center;gap:12px}
-.t-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.t-dot.done{background:var(--green-light)}.t-dot.done .material-icons-round{font-size:15px;color:var(--green)}
-.t-dot.active{background:var(--accent-light)}.t-dot.active .material-icons-round{font-size:15px;color:var(--accent)}
-.t-dot.pending{background:var(--stone)}.t-dot.pending .material-icons-round{font-size:15px;color:var(--text3)}
-.t-step-label{font-size:13px;font-weight:700}
-.t-step-sub{font-size:11px;color:var(--text3)}
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--bot-h) + 12px);left:50%;transform:translateX(-50%) translateY(60px);z-index:999;background:var(--text);color:#fff;border-radius:12px;padding:11px 16px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);opacity:0;transition:all .3s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast .material-icons-round{font-size:16px;color:var(--accent)}
 
-.features{background:var(--off)}
-.features-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:52px}
-.feat{text-align:center;padding:30px 18px;border-radius:20px;border:1.5px solid var(--border);transition:all .2s;background:var(--white)}
-.feat:hover{border-color:rgba(255,69,0,.25);transform:translateY(-4px);box-shadow:var(--shadow)}
-.feat-emoji{font-size:38px;margin-bottom:14px}
-.feat-title{font-size:15px;font-weight:800;margin-bottom:7px}
-.feat-text{font-size:13px;color:var(--text2);line-height:1.6}
+/* DESKTOP */
+@media(min-width:768px){
+  body{max-width:480px;margin:0 auto;box-shadow:-1px 0 0 var(--border),1px 0 0 var(--border)}
+  .bottom-nav{max-width:480px;left:50%;transform:translateX(-50%)}
+  .banner-card{min-width:80%}
+  .stores-grid{grid-template-columns:1fr 1fr}
+}
 
-footer{background:var(--text);color:rgba(255,255,255,.5);padding:56px 0 28px}
-.footer-inner{max-width:1180px;margin:0 auto;padding:0 24px}
-.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:44px}
-.footer-brand{font-family:'Fraunces',serif;font-size:24px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:10px}
-.footer-brand span{color:var(--accent)}
-.footer-desc{font-size:13px;line-height:1.7;max-width:240px}
-.footer-col-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.8);margin-bottom:14px}
-.footer-link{display:block;font-size:13px;padding:4px 0;text-decoration:none;color:rgba(255,255,255,.45);transition:color .15s}
-.footer-link:hover{color:#fff}
-.footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;font-size:12px}
-.footer-links-row{display:flex;gap:20px}
-.for-biz-link{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:10px 18px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
-.for-biz-link:hover{background:rgba(255,255,255,.15);color:#fff}
-
-.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--text);color:#fff;border-radius:13px;padding:13px 18px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);min-width:240px}
-.toast.show{transform:translateY(0);opacity:1}
-.toast .material-icons-round{font-size:17px;color:var(--accent)}
-
-@media(max-width:1024px){.cat-grid{grid-template-columns:repeat(4,1fr)}.stores-grid{grid-template-columns:repeat(2,1fr)}.features-grid{grid-template-columns:repeat(2,1fr)}.footer-top{grid-template-columns:1fr 1fr}}
-@media(max-width:768px){section{padding:64px 0}.hero-inner{grid-template-columns:1fr;gap:44px;padding:56px 24px}.hero-visual{order:-1}.hero-float-1{display:none}.steps-grid{grid-template-columns:1fr}.cat-grid{grid-template-columns:repeat(4,1fr)}.stores-grid{grid-template-columns:1fr}.features-grid{grid-template-columns:1fr 1fr}.nav-links .nav-link{display:none}.modal-box{border-radius:22px 22px 0 0;max-height:95vh;margin-top:auto}.modal-overlay{align-items:flex-end;padding:0}.form-row{grid-template-columns:1fr}.footer-top{grid-template-columns:1fr}}
-@media(max-width:480px){.cat-grid{grid-template-columns:repeat(3,1fr)}.stores-grid{grid-column:span 1}}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--stone);border-radius:10px}
+::-webkit-scrollbar{width:0;height:0}
 </style>
 </head>
 <body>
 
-<nav id="mainNav">
-  <div class="nav-inner">
-    <a href="#" class="nav-logo"><div class="nav-logo-mark">🍔</div><div class="nav-logo-text">Order<span>aki</span></div></a>
-    <div class="nav-links">
-      <a href="#how" class="nav-link">Πώς λειτουργεί</a>
-      <a href="#stores-sec" class="nav-link">Καταστήματα</a>
-      <a href="store-panel.html" class="nav-link">Για Καταστήματα</a>
-      <div id="navAuth"><a href="javascript:void(0)" class="nav-cta" onclick="openAuthModal()" style="gap:6px"><span class="material-icons-round" style="font-size:16px">person</span>Σύνδεση</a></div>
-      <a href="#stores-sec" class="nav-cta">Παράγγειλε τώρα →</a>
-    </div>
-  </div>
-</nav>
-
-<section class="hero" id="hero">
-  <div class="hero-bg"><div class="hero-blob hero-blob-1"></div><div class="hero-blob hero-blob-2"></div></div>
-  <div class="hero-inner">
-    <div>
-      <div class="hero-tag"><div class="hero-tag-dot"></div>Αθήνα, Πειραιάς & γύρω περιοχές</div>
-      <h1 class="display display-lg hero-title">Φαγητό<br>στην <em>πόρτα σου</em><br>σε 30′</h1>
-      <p class="hero-sub">Παράγγελνε από εκατοντάδες καταστήματα. Γρήγορα, εύκολα, αξιόπιστα.</p>
-      <div class="hero-actions">
-        <button class="btn-primary" onclick="document.getElementById('stores-sec').scrollIntoView({behavior:'smooth'})"><span class="material-icons-round">restaurant</span>Δες τα καταστήματα</button>
-        <button class="btn-secondary" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">Πώς λειτουργεί</button>
-      </div>
-      <div class="hero-stats">
-        <div><div class="hero-stat-value" id="heroStoreCount">—</div><div class="hero-stat-label">Καταστήματα</div></div>
-        <div style="border-left:2px solid var(--border);padding-left:32px"><div class="hero-stat-value">28′</div><div class="hero-stat-label">Μέση παράδοση</div></div>
-        <div style="border-left:2px solid var(--border);padding-left:32px"><div class="hero-stat-value">4.8★</div><div class="hero-stat-label">Βαθμολογία</div></div>
+<!-- TOP BAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <div style="flex:1">
+      <div class="top-location">
+        <span class="material-icons-round">location_on</span>
+        <span class="top-loc-text">Αθήνα, Αττική</span>
+        <span class="material-icons-round top-loc-arrow">expand_more</span>
       </div>
     </div>
-    <div class="hero-visual" style="position:relative;display:flex;flex-direction:column;gap:16px;justify-content:center">
-      <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.08);display:flex;align-items:center;gap:16px">
-        <div style="width:56px;height:56px;background:#fff5f0;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px">🏍️</div>
-        <div><div style="font-size:16px;font-weight:800;color:var(--text)">Γρήγορη παράδοση</div><div style="font-size:13px;color:var(--text3)">Μέσος χρόνος 25-35 λεπτά</div></div>
-      </div>
-      <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.08);display:flex;align-items:center;gap:16px">
-        <div style="width:56px;height:56px;background:#f0fdf4;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px">🏪</div>
-        <div><div style="font-size:16px;font-weight:800;color:var(--text)">Τοπικά καταστήματα</div><div style="font-size:13px;color:var(--text3)">Υποστηρίζουμε την τοπική αγορά</div></div>
-      </div>
-      <div style="background:#fff;border-radius:20px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.08);display:flex;align-items:center;gap:16px">
-        <div style="width:56px;height:56px;background:#fffbeb;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px">⭐</div>
-        <div><div style="font-size:16px;font-weight:800;color:var(--text)">4.8★ Αξιολόγηση</div><div style="font-size:13px;color:var(--text3)">Χιλιάδες ευχαριστημένοι πελάτες</div></div>
-      </div>
-    </div>
+    <div class="top-user-btn" id="navAuth" onclick="openAuthModal()"><span class="material-icons-round" style="font-size:18px">person_outline</span></div>
   </div>
-</section>
-
-<section class="how" id="how">
-  <div class="container">
-    <div class="section-label">Πώς λειτουργεί</div>
-    <h2 class="display display-md section-title">Παράγγειλε σε<br><em style="color:var(--accent)">3 βήματα</em></h2>
-    <p class="section-sub">Από την επιλογή μέχρι την πόρτα σου — γρήγορο, απλό, αξιόπιστο.</p>
-    <div class="steps-grid">
-      <div class="step-card"><div class="step-num">01</div><div class="step-icon"><span class="material-icons-round">store</span></div><div class="step-title">Επίλεξε κατάστημα</div><div class="step-text">Βρες το αγαπημένο σου από εκατοντάδες επιλογές — burger, pizza, souvlaki, σούσι και πολλά άλλα.</div></div>
-      <div class="step-card"><div class="step-num">02</div><div class="step-icon"><span class="material-icons-round">shopping_cart</span></div><div class="step-title">Φτιάξε το καλάθι σου</div><div class="step-text">Διάλεξε τα προϊόντα, πρόσθεσε σχόλια και επέλεξε τρόπο πληρωμής.</div></div>
-      <div class="step-card"><div class="step-num">03</div><div class="step-icon"><span class="material-icons-round">delivery_dining</span></div><div class="step-title">Παράδοση στην πόρτα σου</div><div class="step-text">Παρακολούθησε real-time την παραγγελία σου. Ο courier φτάνει σε 25-35 λεπτά.</div></div>
-    </div>
+  <div class="search-bar">
+    <span class="material-icons-round">search</span>
+    <input type="text" placeholder="Αναζήτηση καταστημάτων..." oninput="searchStores(this.value)">
   </div>
-</section>
+</div>
 
-<section class="categories-sec" id="categories">
-  <div class="container">
-    <div class="section-label">Κατηγορίες</div>
-    <h2 class="display display-md section-title">Τι <em style="color:var(--accent)">πεινάς</em> σήμερα;</h2>
-    <div class="cat-grid">
-      <div class="cat-item" onclick="filterByCategory('all',this)"><span class="cat-emoji">🍽️</span><div class="cat-name">Όλα</div></div>
-      <div class="cat-item" onclick="filterByCategory('burger',this)"><span class="cat-emoji">🍔</span><div class="cat-name">Burger</div></div>
-      <div class="cat-item" onclick="filterByCategory('pizza',this)"><span class="cat-emoji">🍕</span><div class="cat-name">Pizza</div></div>
-      <div class="cat-item" onclick="filterByCategory('souvlaki',this)"><span class="cat-emoji">🌯</span><div class="cat-name">Souvlaki</div></div>
-      <div class="cat-item" onclick="filterByCategory('sushi',this)"><span class="cat-emoji">🍣</span><div class="cat-name">Sushi</div></div>
-      <div class="cat-item" onclick="filterByCategory('coffee',this)"><span class="cat-emoji">☕</span><div class="cat-name">Καφές</div></div>
-      <div class="cat-item" onclick="filterByCategory('desserts',this)"><span class="cat-emoji">🍰</span><div class="cat-name">Γλυκά</div></div>
-    </div>
+<!-- CATEGORIES -->
+<div class="cat-scroll">
+  <div class="cat-scroll-inner">
+    <div class="cat-pill active" onclick="filterByCategory('all',this)"><div class="cat-pill-icon">🍽️</div><div class="cat-pill-label">Όλα</div></div>
+    <div class="cat-pill" onclick="filterByCategory('burger',this)"><div class="cat-pill-icon">🍔</div><div class="cat-pill-label">Burger</div></div>
+    <div class="cat-pill" onclick="filterByCategory('pizza',this)"><div class="cat-pill-icon">🍕</div><div class="cat-pill-label">Pizza</div></div>
+    <div class="cat-pill" onclick="filterByCategory('souvlaki',this)"><div class="cat-pill-icon">🌯</div><div class="cat-pill-label">Souvlaki</div></div>
+    <div class="cat-pill" onclick="filterByCategory('sushi',this)"><div class="cat-pill-icon">🍣</div><div class="cat-pill-label">Sushi</div></div>
+    <div class="cat-pill" onclick="filterByCategory('coffee',this)"><div class="cat-pill-icon">☕</div><div class="cat-pill-label">Καφές</div></div>
+    <div class="cat-pill" onclick="filterByCategory('desserts',this)"><div class="cat-pill-icon">🍰</div><div class="cat-pill-label">Γλυκά</div></div>
+    <div class="cat-pill" onclick="filterByCategory('greek',this)"><div class="cat-pill-icon">🥗</div><div class="cat-pill-label">Ελληνική</div></div>
   </div>
-</section>
+</div>
 
-<section class="stores-section" id="stores-sec">
-  <div class="container">
-    <div class="stores-hd">
-      <div><div class="section-label" style="margin-bottom:8px">Παράγγελνε τώρα</div><h2 class="display display-md">Τα <em style="color:var(--accent)">καταστήματα</em></h2></div>
-      <button class="clear-filter" id="clearFilter" onclick="filterByCategory('all',null)"><span class="material-icons-round" style="font-size:14px">close</span>Εμφάνιση όλων</button>
-    </div>
-    <div class="stores-grid" id="storesGrid">
-      <div class="stores-loading"><span class="material-icons-round" style="font-size:40px;opacity:.3;display:block;margin:0 auto 10px">hourglass_empty</span>Φόρτωση καταστημάτων...</div>
-    </div>
+<!-- BANNERS -->
+<div class="banners">
+  <div class="banners-inner">
+    <div class="banner-card"><div class="banner-bg" style="background:linear-gradient(135deg,#d42300,#ff6b35)"><div class="banner-text"><h3>🛵 Δωρεάν Delivery</h3><p>Για παραγγελίες άνω των €15</p></div></div></div>
+    <div class="banner-card"><div class="banner-bg" style="background:linear-gradient(135deg,#1a1a1a,#444)"><div class="banner-text"><h3>⭐ Orderaki Pro</h3><p>Αποκλειστικές προσφορές κάθε μέρα</p></div></div></div>
+    <div class="banner-card"><div class="banner-bg" style="background:linear-gradient(135deg,#00a651,#4ecb71)"><div class="banner-text"><h3>🥗 Υγιεινές Επιλογές</h3><p>Φαγητό που σε κάνει να νιώθεις καλά</p></div></div></div>
   </div>
-</section>
+</div>
 
-<section class="features">
-  <div class="container">
-    <div style="text-align:center;max-width:540px;margin:0 auto">
-      <div class="section-label">Γιατί Orderaki</div>
-      <h2 class="display display-md">Φαγητό με <em style="color:var(--accent)">χαρά</em></h2>
-    </div>
-    <div class="features-grid">
-      <div class="feat"><div class="feat-emoji">⚡</div><div class="feat-title">Υπερ-γρήγορο</div><div class="feat-text">Μέση παράδοση 28 λεπτά. Live tracking σε κάθε βήμα.</div></div>
-      <div class="feat"><div class="feat-emoji">💸</div><div class="feat-title">Χωρίς κρυφές χρεώσεις</div><div class="feat-text">Βλέπεις το ακριβές κόστος πριν επιβεβαιώσεις.</div></div>
-      <div class="feat"><div class="feat-emoji">🔒</div><div class="feat-title">Ασφαλής πληρωμή</div><div class="feat-text">Κάρτα, μετρητά ή αντικαταβολή. 100% ασφαλές.</div></div>
-      <div class="feat"><div class="feat-emoji">⭐</div><div class="feat-title">Επιλεγμένα καταστήματα</div><div class="feat-text">Μόνο καταστήματα με βαθμολογία 4+ ώστε να τρώτε πάντα καλά.</div></div>
-    </div>
+<!-- PROMO STRIP -->
+<div style="padding:0 0 8px">
+  <div class="promo-strip">
+    <div class="promo-strip-icon">🏍️</div>
+    <div><h4>Γρήγορη παράδοση 25-35'</h4><p>Σε όλη την Αθήνα & Πειραιά</p></div>
   </div>
-</section>
+</div>
 
-<footer>
-  <div class="footer-inner">
-    <div class="footer-top">
-      <div><div class="footer-brand">Order<span>aki</span></div><p class="footer-desc">Το αγαπημένο delivery app. Φαγητό από τα καλύτερα καταστήματα, γρήγορα και αξιόπιστα.</p><br><a href="store-panel.html" class="for-biz-link"><span class="material-icons-round" style="font-size:16px">store</span>Για Καταστήματα →</a></div>
-      <div><div class="footer-col-title">Εταιρεία</div><a href="#" class="footer-link">Σχετικά με εμάς</a><a href="#" class="footer-link">Καριέρα</a><a href="#" class="footer-link">Blog</a></div>
-      <div><div class="footer-col-title">Υποστήριξη</div><a href="#" class="footer-link">Κέντρο βοήθειας</a><a href="#" class="footer-link">Επικοινωνία</a><a href="#" class="footer-link">Γίνε courier</a></div>
-      <div><div class="footer-col-title">Νομικά</div><a href="#" class="footer-link">Όροι χρήσης</a><a href="#" class="footer-link">Απόρρητο</a><a href="#" class="footer-link">GDPR</a></div>
-    </div>
-    <div class="footer-bottom"><div>© 2025 Orderaki.gr — Με ❤️ από την Αθήνα</div><div style="background:rgba(255,255,255,.06);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:rgba(255,255,255,.55)">🇬🇷 Made in Greece</div></div>
+<!-- POPULAR STORES SCROLL -->
+<div class="sec" style="padding-bottom:4px">
+  <div class="sec-hd"><div class="sec-title">🔥 Δημοφιλή</div><span class="sec-more" onclick="document.getElementById('allStores').scrollIntoView({behavior:'smooth'})">Δες όλα →</span></div>
+  <div class="store-hscroll" id="popularScroll"></div>
+</div>
+
+<!-- ALL STORES -->
+<div class="sec" id="allStores">
+  <div class="sec-hd">
+    <div class="sec-title">Καταστήματα</div>
+    <span id="storeCount" style="font-size:12px;color:var(--text3);font-weight:600"></span>
   </div>
-</footer>
+  <div class="stores-grid" id="storesGrid">
+    <div class="stores-empty"><span class="material-icons-round" style="font-size:36px;opacity:.3;display:block;margin:0 auto 8px">hourglass_empty</span>Φόρτωση...</div>
+  </div>
+</div>
 
+<!-- FOR BIZ -->
+<div style="padding:8px 16px 20px">
+  <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:14px;cursor:pointer" onclick="window.open('store-panel.html')">
+    <div style="width:48px;height:48px;border-radius:12px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:24px">🏪</div>
+    <div style="flex:1"><div style="font-size:14px;font-weight:800">Για Καταστήματα</div><div style="font-size:12px;color:var(--text3)">Πρόσθεσε το κατάστημά σου στο Orderaki</div></div>
+    <span class="material-icons-round" style="color:var(--text3)">chevron_right</span>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <a class="bottom-nav-item active" href="#"><span class="material-icons-round">home</span><span class="bottom-nav-label">Αρχική</span></a>
+  <a class="bottom-nav-item" href="#allStores"><span class="material-icons-round">search</span><span class="bottom-nav-label">Αναζήτηση</span></a>
+  <a class="bottom-nav-item" href="javascript:void(0)" onclick="openProfile()"><span class="material-icons-round">receipt_long</span><span class="bottom-nav-label">Παραγγελίες</span></a>
+  <a class="bottom-nav-item" href="javascript:void(0)" id="navProfileBtn" onclick="window._currentUser?openProfile():openAuthModal()"><span class="material-icons-round">person_outline</span><span class="bottom-nav-label">Προφίλ</span></a>
+</div>
+
+<!-- ORDER MODAL -->
 <div class="modal-overlay" id="orderModal"><div class="modal-box" id="orderModalBox"></div></div>
-<div class="toast" id="toast"><span class="material-icons-round">check_circle</span><span id="toastMsg">OK</span></div>
 
 <!-- AUTH MODAL -->
-<div class="modal-overlay" id="authOverlay" style="z-index:500" onclick="if(event.target===this)closeAuthModal()">
-  <div class="modal-box" style="max-width:420px;border-radius:24px">
-    <div style="padding:36px">
-      <div style="text-align:center;margin-bottom:20px"><div style="font-family:'Fraunces',serif;font-size:24px;font-weight:900">Order<span style="color:var(--accent)">aki</span></div><div style="font-size:13px;color:var(--text3);margin-top:4px">Σύνδεση ή εγγραφή</div></div>
-      <div id="authErr" style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);color:#dc2626;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;display:none;margin-bottom:12px"></div>
-      <div style="display:flex;background:var(--off);border-radius:10px;padding:3px;gap:2px;margin-bottom:20px">
-        <div id="authTabL" style="flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:var(--white);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)" onclick="switchAuthTab('login')">Σύνδεση</div>
+<div class="modal-overlay" id="authOverlay" style="z-index:500;align-items:center" onclick="if(event.target===this)closeAuthModal()">
+  <div class="modal-box" style="max-width:420px;border-radius:20px;max-height:90vh;margin:auto">
+    <div style="padding:32px 24px">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:28px;margin-bottom:6px">🍔</div>
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900">Order<span style="color:var(--accent)">aki</span></div>
+        <div style="font-size:13px;color:var(--text3);margin-top:4px">Σύνδεση ή εγγραφή</div>
+      </div>
+      <div id="authErr" style="background:rgba(212,35,0,.06);border:1px solid rgba(212,35,0,.2);color:var(--accent);border-radius:10px;padding:10px;font-size:13px;font-weight:600;display:none;margin-bottom:12px"></div>
+      <div style="display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px;margin-bottom:18px">
+        <div id="authTabL" style="flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.06)" onclick="switchAuthTab('login')">Σύνδεση</div>
         <div id="authTabR" style="flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text3)" onclick="switchAuthTab('register')">Εγγραφή</div>
       </div>
       <div id="authLoginForm">
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Email</label><input class="form-input" id="aLoginEmail" type="email" placeholder="email@example.com"></div>
         <div class="form-group" style="margin-bottom:16px"><label class="form-label">Κωδικός</label><input class="form-input" id="aLoginPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doCustomerLogin()"></div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="doCustomerLogin()">Σύνδεση</button>
+        <button class="btn-primary" onclick="doCustomerLogin()">Σύνδεση</button>
       </div>
       <div id="authRegForm" style="display:none">
         <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Όνομα</label><input class="form-input" id="aRegName" placeholder="Γιώργης"></div><div class="form-group"><label class="form-label">Τηλέφωνο</label><input class="form-input" id="aRegPhone" type="tel" placeholder="69..."></div></div>
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Email</label><input class="form-input" id="aRegEmail" type="email" placeholder="email@example.com"></div>
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Διεύθυνση</label><input class="form-input" id="aRegAddress" placeholder="Πατησίων 42, Αθήνα"></div>
         <div class="form-group" style="margin-bottom:16px"><label class="form-label">Κωδικός (min 6)</label><input class="form-input" id="aRegPass" type="password" placeholder="••••••••"></div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="doCustomerRegister()">Δημιουργία λογαριασμού</button>
+        <button class="btn-primary" onclick="doCustomerRegister()">Δημιουργία λογαριασμού</button>
       </div>
       <div style="text-align:center;margin-top:16px"><button style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:inherit" onclick="closeAuthModal()">Συνέχεια χωρίς λογαριασμό →</button></div>
     </div>
@@ -407,14 +330,14 @@ footer{background:var(--text);color:rgba(255,255,255,.5);padding:56px 0 28px}
 
 <!-- PROFILE PANEL -->
 <div id="profileBackdrop" style="position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:240;display:none" onclick="closeProfile()"></div>
-<div id="profilePanel" style="position:fixed;top:0;right:-380px;width:360px;max-width:90vw;height:100vh;background:var(--white);z-index:250;box-shadow:-8px 0 40px rgba(0,0,0,.12);transition:right .3s;display:flex;flex-direction:column;border-left:1px solid var(--border)">
-  <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-    <div id="profAvatarLg" style="width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800">?</div>
-    <div style="flex:1"><div id="profDisplayName" style="font-size:16px;font-weight:800">—</div><div id="profDisplayEmail" style="font-size:12px;color:var(--text3)">—</div></div>
-    <button onclick="closeProfile()" style="background:var(--off);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3)"><span class="material-icons-round" style="font-size:18px">close</span></button>
+<div id="profilePanel" style="position:fixed;top:0;right:-380px;width:360px;max-width:90vw;height:100vh;background:var(--surface);z-index:250;box-shadow:-8px 0 40px rgba(0,0,0,.12);transition:right .3s;display:flex;flex-direction:column">
+  <div style="padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+    <div id="profAvatarLg" style="width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800">?</div>
+    <div style="flex:1"><div id="profDisplayName" style="font-size:15px;font-weight:800">—</div><div id="profDisplayEmail" style="font-size:12px;color:var(--text3)">—</div></div>
+    <button onclick="closeProfile()" style="background:var(--surface2);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3)"><span class="material-icons-round" style="font-size:18px">close</span></button>
   </div>
-  <div style="flex:1;overflow-y:auto;padding:20px 24px">
-    <div style="margin-bottom:24px"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px">Οι παραγγελίες μου</div><div id="profOrders" style="font-size:13px;color:var(--text3);text-align:center;padding:20px">Δεν υπάρχουν παραγγελίες</div></div>
+  <div style="flex:1;overflow-y:auto;padding:20px">
+    <div style="margin-bottom:24px"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px">Οι παραγγελίες μου</div><div id="profOrders"><div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Δεν υπάρχουν παραγγελίες</div></div></div>
     <div><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px">Στοιχεία</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div class="form-group"><label class="form-label">Όνομα</label><input class="form-input" id="profName" oninput="saveProfileToFB()"></div>
@@ -423,278 +346,178 @@ footer{background:var(--text);color:rgba(255,255,255,.5);padding:56px 0 28px}
       </div>
     </div>
   </div>
-  <div style="padding:16px 24px;border-top:1px solid var(--border)"><button onclick="doCustomerLogout()" style="width:100%;background:var(--off);color:#dc2626;border:1.5px solid rgba(220,38,38,.2);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><span class="material-icons-round" style="font-size:18px">logout</span>Αποσύνδεση</button></div>
+  <div style="padding:16px 20px;border-top:1px solid var(--border)"><button onclick="doCustomerLogout()" style="width:100%;background:var(--surface2);color:var(--accent);border:1.5px solid rgba(212,35,0,.2);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><span class="material-icons-round" style="font-size:18px">logout</span>Αποσύνδεση</button></div>
 </div>
 
 <!-- CUSTOMER CHAT -->
-<div id="chatFloat" style="position:fixed;bottom:20px;right:20px;z-index:400;display:none">
-  <button onclick="toggleCustChat()" style="width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(255,69,0,.4)"><span class="material-icons-round" style="font-size:26px">chat</span></button>
+<div id="chatFloat" style="position:fixed;bottom:calc(var(--bot-h) + 16px);right:16px;z-index:400;display:none">
+  <button onclick="toggleCustChat()" style="width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(212,35,0,.4)"><span class="material-icons-round" style="font-size:24px">chat</span></button>
 </div>
-<div id="chatPanel" style="position:fixed;bottom:84px;right:20px;width:340px;max-height:440px;background:var(--white);border-radius:20px;box-shadow:0 24px 64px rgba(26,23,20,.14);border:1px solid var(--border);display:none;flex-direction:column;overflow:hidden;z-index:400">
-  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--off)">
+<div id="chatPanel" style="position:fixed;bottom:calc(var(--bot-h) + 76px);right:16px;width:320px;max-height:400px;background:var(--surface);border-radius:20px;box-shadow:var(--shadow-lg);border:1px solid var(--border);display:none;flex-direction:column;overflow:hidden;z-index:400">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface2)">
     <span class="material-icons-round" style="font-size:18px;color:var(--accent)">delivery_dining</span>
-    <div id="chatDriverName" style="font-size:14px;font-weight:800;flex:1">Chat με Courier</div>
-    <button onclick="toggleCustChat()" style="width:28px;height:28px;border-radius:8px;background:var(--white);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3)"><span class="material-icons-round" style="font-size:16px">close</span></button>
+    <div id="chatDriverName" style="font-size:13px;font-weight:800;flex:1">Chat με Courier</div>
+    <button onclick="toggleCustChat()" style="width:26px;height:26px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3)"><span class="material-icons-round" style="font-size:14px">close</span></button>
   </div>
-  <div id="custChatMsgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;min-height:200px"><div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Ξεκίνα τη συνομιλία!</div></div>
-  <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px">
-    <input id="custChatInput" style="flex:1;background:var(--off);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;font-family:inherit" placeholder="Γράψε μήνυμα..." onkeydown="if(event.key==='Enter')sendCustChat()">
-    <button onclick="sendCustChat()" style="width:38px;height:38px;background:var(--accent);border:none;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff"><span class="material-icons-round" style="font-size:18px">send</span></button>
+  <div id="custChatMsgs" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;min-height:180px"><div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Ξεκίνα τη συνομιλία!</div></div>
+  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px">
+    <input id="custChatInput" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;font-family:inherit" placeholder="Γράψε μήνυμα..." onkeydown="if(event.key==='Enter')sendCustChat()">
+    <button onclick="sendCustChat()" style="width:36px;height:36px;background:var(--accent);border:none;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff"><span class="material-icons-round" style="font-size:16px">send</span></button>
   </div>
 </div>
 
+<div class="toast" id="toast"><span class="material-icons-round">check_circle</span><span id="toastMsg">OK</span></div>
 <script>
-// ═══════════════════════════════════════════════
-// DEMO STORES (shown when Firebase not connected)
-// ═══════════════════════════════════════════════
-const BG_MAP={burger:'linear-gradient(135deg,#ffecd2,#fcb69f)',pizza:'linear-gradient(135deg,#ff9a9e,#fecfef)',souvlaki:'linear-gradient(135deg,#a1c4fd,#c2e9fb)',sushi:'linear-gradient(135deg,#d299c2,#fef9d7)',coffee:'linear-gradient(135deg,#c8a97e,#f5deb3)',desserts:'linear-gradient(135deg,#fbc2eb,#a6c1ee)',greek:'linear-gradient(135deg,#d4fc79,#96e6a1)',chinese:'linear-gradient(135deg,#f093fb,#f5576c)'};
-const CAT_E={burger:'🍔',pizza:'🍕',souvlaki:'🌯',sushi:'🍣',coffee:'☕',desserts:'🍰',greek:'🥗',chinese:'🥡'};
+const BG_MAP={burger:'linear-gradient(135deg,#ffecd2,#fcb69f)',pizza:'linear-gradient(135deg,#ff9a9e,#fecfef)',souvlaki:'linear-gradient(135deg,#a1c4fd,#c2e9fb)',sushi:'linear-gradient(135deg,#d299c2,#fef9d7)',coffee:'linear-gradient(135deg,#c8a97e,#f5deb3)',desserts:'linear-gradient(135deg,#fbc2eb,#a6c1ee)',greek:'linear-gradient(135deg,#d4fc79,#96e6a1)'};
+const CAT_E={burger:'🍔',pizza:'🍕',souvlaki:'🌯',sushi:'🍣',coffee:'☕',desserts:'🍰',greek:'🥗'};
 const DEMO_STORES={
-  's1':{name:'Burger House',emoji:'🍔',category:'burger',rating:4.8,deliveryTime:'20-25',deliveryCost:1.5,minOrder:10,open:true,description:'Τα καλύτερα smash burgers της πόλης',menu:{m1:{name:'Classic Smash Burger',emoji:'🍔',price:8.9,description:'200g μοσχάρι, τυρί, μαρούλι, ντομάτα',available:true},m2:{name:'Double Cheese',emoji:'🧀',price:11.5,description:'Διπλό μοσχάρι, διπλό τυρί',available:true},m3:{name:'Crispy Chicken',emoji:'🍗',price:9.5,description:'Τραγανό κοτόπουλο, coleslaw',available:true},m4:{name:'Τηγανητές Πατάτες',emoji:'🍟',price:3.5,description:'Τραγανές, χοντρές',available:true},m5:{name:'Milkshake',emoji:'🥤',price:4.5,description:'Βανίλια, σοκολάτα ή φράουλα',available:true}}},
-  's2':{name:'Pizza Napoli',emoji:'🍕',category:'pizza',rating:4.7,deliveryTime:'25-35',deliveryCost:2.0,minOrder:15,open:true,description:'Authentic ναπολιτάνικη πίτσα',menu:{m1:{name:'Margherita',emoji:'🍕',price:9.0,description:'Σάλτσα ντομάτας, mozzarella, βασιλικός',available:true},m2:{name:'Quattro Formaggi',emoji:'🧀',price:12.5,description:'4 τυριά, τρούφα',available:true},m3:{name:'Diavola',emoji:'🌶️',price:11.0,description:'Σαλάμι πικάντε, jalapeños',available:true}}},
-  's3':{name:'Souvlaki Station',emoji:'🌯',category:'souvlaki',rating:4.9,deliveryTime:'15-20',deliveryCost:1.0,minOrder:8,open:true,description:'Φρέσκα καλαμάκια & γύρος',menu:{m1:{name:'Πίτα Γύρος',emoji:'🌯',price:3.5,description:'Χοιρινό ή κοτόπουλο, τζατζίκι',available:true},m2:{name:'Καλαμάκι Χοιρινό',emoji:'🍢',price:2.5,description:'Φρέσκο χοιρινό στα κάρβουνα',available:true},m3:{name:'Σπεσιάλ Πιάτο',emoji:'🍽️',price:9.5,description:'3 καλαμάκια, πατάτες, τζατζίκι',available:true}}},
-  's4':{name:'Sushi Kyoto',emoji:'🍣',category:'sushi',rating:4.6,deliveryTime:'30-40',deliveryCost:2.5,minOrder:20,open:false,description:'Αυθεντικό ιαπωνικό sushi',menu:{m1:{name:'Salmon Nigiri (2τμχ)',emoji:'🍣',price:6.0,description:'Φρέσκος σολομός',available:true},m2:{name:'California Roll',emoji:'🥟',price:9.5,description:'Καβούρι, αβοκάντο, αγγούρι',available:true}}},
-  's5':{name:'Coffee Lab',emoji:'☕',category:'coffee',rating:4.8,deliveryTime:'10-15',deliveryCost:0.5,minOrder:5,open:true,description:'Specialty καφές & brunch',menu:{m1:{name:'Freddo Espresso',emoji:'☕',price:3.5,description:'Κλασικός παγωμένος',available:true},m2:{name:'Cold Brew',emoji:'🧊',price:4.0,description:'18ωρη εκχύλιση',available:true},m3:{name:'Croissant',emoji:'🥐',price:2.5,description:'Βουτύρου, φρέσκο',available:true}}},
-  's6':{name:'Sweet Dreams',emoji:'🍰',category:'desserts',rating:4.7,deliveryTime:'20-30',deliveryCost:1.5,minOrder:10,open:true,description:'Γλυκά & επιδόρπια premium',menu:{m1:{name:'Τσίζκεϊκ Φράουλα',emoji:'🍓',price:6.0,description:'Κρεμώδης, με coulis φράουλας',available:true},m2:{name:'Σοκολατένια Τούρτα',emoji:'🎂',price:5.5,description:'Υγρό κέντρο, σαντιγί',available:true}}}
+  's1':{name:'Burger House',emoji:'🍔',category:'burger',rating:4.8,deliveryTime:'20-25',deliveryCost:1.5,minOrder:10,open:true,description:'Τα καλύτερα smash burgers',menu:{m1:{name:'Classic Smash Burger',emoji:'🍔',price:8.9,description:'200g μοσχάρι, τυρί',available:true},m2:{name:'Double Cheese',emoji:'🧀',price:11.5,description:'Διπλό',available:true},m3:{name:'Πατάτες',emoji:'🍟',price:3.5,description:'Τραγανές',available:true},m4:{name:'Milkshake',emoji:'🥤',price:4.5,description:'Βανίλια/Σοκολάτα',available:true}}},
+  's2':{name:'Pizza Napoli',emoji:'🍕',category:'pizza',rating:4.7,deliveryTime:'25-35',deliveryCost:2.0,minOrder:15,open:true,description:'Ναπολιτάνικη πίτσα',menu:{m1:{name:'Margherita',emoji:'🍕',price:9.0,description:'Κλασική',available:true},m2:{name:'Diavola',emoji:'🌶️',price:11.0,description:'Πικάντικη',available:true}}},
+  's3':{name:'Souvlaki Station',emoji:'🌯',category:'souvlaki',rating:4.9,deliveryTime:'15-20',deliveryCost:1.0,minOrder:8,open:true,description:'Καλαμάκια & γύρος',menu:{m1:{name:'Πίτα Γύρος',emoji:'🌯',price:3.5,description:'Χοιρινό/Κοτόπουλο',available:true},m2:{name:'Καλαμάκι',emoji:'🍢',price:2.5,description:'Κάρβουνα',available:true}}},
+  's4':{name:'Sushi Kyoto',emoji:'🍣',category:'sushi',rating:4.6,deliveryTime:'30-40',deliveryCost:2.5,minOrder:20,open:false,description:'Ιαπωνικό sushi',menu:{m1:{name:'Salmon Nigiri',emoji:'🍣',price:6.0,description:'Φρέσκος',available:true}}},
+  's5':{name:'Coffee Lab',emoji:'☕',category:'coffee',rating:4.8,deliveryTime:'10-15',deliveryCost:0.5,minOrder:5,open:true,description:'Specialty καφές',menu:{m1:{name:'Freddo Espresso',emoji:'☕',price:3.5,description:'Παγωμένος',available:true},m2:{name:'Croissant',emoji:'🥐',price:2.5,description:'Βουτύρου',available:true}}},
+  's6':{name:'Sweet Dreams',emoji:'🍰',category:'desserts',rating:4.7,deliveryTime:'20-30',deliveryCost:1.5,minOrder:10,open:true,description:'Γλυκά premium',menu:{m1:{name:'Cheesecake',emoji:'🍓',price:6.0,description:'Φράουλα',available:true}}}
 };
 
-let allStores={};let filteredCat='all';let cart={};let activeStore=null;let selectedPay='cash';
+let allStores={},filteredCat='all',cart={},activeStore=null,selectedPay='cash',searchQ='';
 
-// ═══════════════════════════════════════════════
-// LOAD STORES
-// ═══════════════════════════════════════════════
 function loadStoresFromFirebase(data){
-  if(!data||!Object.keys(data).length){allStores=DEMO_STORES;}
-  else{
-    allStores={};
-    for(const[k,s]of Object.entries(data)){
-      allStores[k]={...s,_key:k,deliveryTime:s.deliveryTime||'20-30'};
-    }
-  }
-  updateHeroCount();
-  renderStores();
+  if(!data||!Object.keys(data).length) allStores=DEMO_STORES;
+  else{allStores={};for(const[k,s]of Object.entries(data))allStores[k]={...s,_key:k,deliveryTime:s.deliveryTime||'20-30'};}
+  renderStores();renderPopular();
 }
-
 window.loadStoresFromFirebase=loadStoresFromFirebase;
-
-// Show demo stores immediately so page is never blank
 loadStoresFromFirebase(null);
-// Firebase will override with real data when ready
 
-function updateHeroCount(){
-  const n=Object.keys(allStores).length;
-  document.getElementById('heroStoreCount').textContent=n>0?n+'+':'—';
+function searchStores(q){searchQ=q.toLowerCase();renderStores();}
+
+function makeStoreCardHTML(s, isSmall){
+  const bg=BG_MAP[s.category]||'linear-gradient(135deg,#eee,#ddd)';
+  const cls=isSmall?'store-hcard':'store-card';
+  return `<div class="${cls}" onclick="openOrderModal('${s._key}')">
+    <div class="store-card-cover" style="background:${bg}">
+      <span style="font-size:${isSmall?'40px':'56px'}">${s.emoji||'🍴'}</span>
+      <div class="store-badge ${s.open?'open':'closed'}"><div class="dot"></div>${s.open?'Ανοιχτό':'Κλειστό'}</div>
+      ${!isSmall&&s.deliveryCost<=1?'<div class="store-delivery-badge">Δωρεάν delivery</div>':''}
+    </div>
+    <div class="store-info">
+      <div class="store-name">${s.name}</div>
+      <div class="store-meta">
+        <span class="star"><span class="material-icons-round">star</span>${s.rating||'4.5'}</span>
+        <span><span class="material-icons-round">schedule</span>${s.deliveryTime||'20-30'}′</span>
+        <span><span class="material-icons-round">delivery_dining</span>€${(s.deliveryCost||2).toFixed(2)}</span>
+      </div>
+      ${!isSmall?'<div class="store-desc">'+(s.description||'')+'</div>':''}
+    </div>
+  </div>`;
 }
 
 function renderStores(){
   const grid=document.getElementById('storesGrid');
   let stores=Object.entries(allStores).map(([k,s])=>({...s,_key:k}));
   if(filteredCat!=='all')stores=stores.filter(s=>s.category===filteredCat);
-  document.getElementById('clearFilter').className='clear-filter'+(filteredCat!=='all'?' show':'');
-  if(!stores.length){grid.innerHTML='<div class="stores-empty"><span class="material-icons-round">store_off</span>Δεν βρέθηκαν καταστήματα σε αυτή την κατηγορία</div>';return;}
-  grid.innerHTML=stores.map(s=>{
-    const bg=BG_MAP[s.category]||'linear-gradient(135deg,#f0ede8,#e8e2d9)';
-    return`<div class="store-card" onclick="openOrderModal('${s._key}')">
-      <div class="store-card-cover" style="background:${bg}">
-        <span style="font-size:46px">${s.emoji||CAT_E[s.category]||'🍴'}</span>
-        <div class="store-open-badge ${s.open?'open':'closed'}"><div class="open-dot"></div>${s.open?'Ανοιχτό':'Κλειστό'}</div>
-      </div>
-      <div class="store-body">
-        <div class="store-name">${s.name}</div>
-        <div class="store-meta">
-          <span class="store-rating"><span class="material-icons-round">star</span>${s.rating||'4.5'}</span>
-          <span><span class="material-icons-round">schedule</span>${s.deliveryTime||'20-30'}′</span>
-          <span><span class="material-icons-round">delivery_dining</span>€${(s.deliveryCost||2).toFixed(2)}</span>
-          <span class="store-tag">${s.description||''}</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  if(searchQ)stores=stores.filter(s=>(s.name||'').toLowerCase().includes(searchQ)||(s.category||'').includes(searchQ)||(s.description||'').toLowerCase().includes(searchQ));
+  document.getElementById('storeCount').textContent=stores.length+' καταστήματα';
+  if(!stores.length){grid.innerHTML='<div class="stores-empty"><span class="material-icons-round" style="font-size:36px;opacity:.3;display:block;margin:0 auto 8px">store_off</span>Δεν βρέθηκαν καταστήματα</div>';return;}
+  // Sort: open first
+  stores.sort((a,b)=>(b.open?1:0)-(a.open?1:0));
+  grid.innerHTML=stores.map(s=>makeStoreCardHTML(s,false)).join('');
+}
+
+function renderPopular(){
+  const el=document.getElementById('popularScroll');
+  const stores=Object.entries(allStores).map(([k,s])=>({...s,_key:k})).filter(s=>s.open).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,6);
+  el.innerHTML=stores.map(s=>makeStoreCardHTML(s,true)).join('');
 }
 
 function filterByCategory(cat,el){
-  filteredCat=cat;
-  document.querySelectorAll('.cat-item').forEach(c=>c.classList.remove('active-cat'));
-  if(el)el.classList.add('active-cat');
+  filteredCat=cat;searchQ='';
+  document.querySelectorAll('.cat-pill').forEach(c=>c.classList.remove('active'));
+  if(el)el.classList.add('active');
   renderStores();
-  document.getElementById('stores-sec').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// ═══════════════════════════════════════════════
-// ORDER MODAL — reads menu from store data
-// ═══════════════════════════════════════════════
+// ORDER MODAL
 function openOrderModal(storeKey){
   const s=allStores[storeKey];if(!s)return;
   activeStore={...s,_key:storeKey};cart={};
   if(window._db&&window._firebaseReady){
-    window._onValue(window._ref(window._db,'stores/'+storeKey+'/menu'),snap=>{
-      activeStore.menu=snap.val()||{};renderModal();
-    },{onlyOnce:true});
-  } else { renderModal(); }
+    window._onValue(window._ref(window._db,'stores/'+storeKey+'/menu'),snap=>{activeStore.menu=snap.val()||{};renderModal();},{onlyOnce:true});
+  }else{renderModal();}
   document.getElementById('orderModal').classList.add('open');
-  // Auto-fill saved profile
   setTimeout(()=>{
-    const p = customerProfile.name ? customerProfile : JSON.parse(localStorage.getItem('orderakiProfile')||'{}');
-    if(p.name) document.getElementById('oName').value=p.name;
-    if(p.phone) document.getElementById('oPhone').value=p.phone;
-    if(p.email) document.getElementById('oEmail').value=p.email;
-    else if(window._currentUser?.email) document.getElementById('oEmail').value=window._currentUser.email;
-    if(p.address) document.getElementById('oAddress').value=p.address;
-    if(p.floor) document.getElementById('oFloor').value=p.floor;
-    if(p.doorbell) document.getElementById('oDoorbell').value=p.doorbell;
+    const p=customerProfile.name?customerProfile:JSON.parse(localStorage.getItem('orderakiProfile')||'{}');
+    if(p.name&&document.getElementById('oName'))document.getElementById('oName').value=p.name;
+    if(p.phone&&document.getElementById('oPhone'))document.getElementById('oPhone').value=p.phone;
+    if(document.getElementById('oEmail'))document.getElementById('oEmail').value=p.email||window._currentUser?.email||'';
+    if(p.address&&document.getElementById('oAddress'))document.getElementById('oAddress').value=p.address;
+    if(p.floor&&document.getElementById('oFloor'))document.getElementById('oFloor').value=p.floor;
+    if(p.doorbell&&document.getElementById('oDoorbell'))document.getElementById('oDoorbell').value=p.doorbell;
     updateSummary();
-  }, 50);
+  },50);
   document.body.style.overflow='hidden';
 }
-
 function closeOrderModal(){document.getElementById('orderModal').classList.remove('open');document.body.style.overflow='';}
 document.getElementById('orderModal').addEventListener('click',function(e){if(e.target===this)closeOrderModal();});
 
 function renderModal(){
-  const s=activeStore;
-  const bg=BG_MAP[s.category]||'linear-gradient(135deg,#f0ede8,#e8e2d9)';
+  const s=activeStore;const bg=BG_MAP[s.category]||'linear-gradient(135deg,#eee,#ddd)';
   const menuItems=Object.entries(s.menu||{}).map(([k,item])=>{
-    if(!item.available)return`<div class="menu-item unavailable"><div class="menu-item-left"><span class="menu-item-emoji">${item.emoji||'🍴'}</span><div><div class="menu-item-name">${item.name}</div><div class="menu-item-desc">${item.description||''} — <em>Μη διαθέσιμο</em></div></div></div><span class="menu-item-price">€${(item.price||0).toFixed(2)}</span></div>`;
-    return`<div class="menu-item" id="mi_${k}" onclick="addItem('${k}')">
-      <div class="menu-item-left"><span class="menu-item-emoji">${item.emoji||'🍴'}</span><div><div class="menu-item-name">${item.name}</div><div class="menu-item-desc">${item.description||''}</div></div></div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <span class="menu-item-price">€${(item.price||0).toFixed(2)}</span>
-        <div class="qty-control" id="qc_${k}" style="display:none" onclick="event.stopPropagation()">
-          <div class="qty-btn" onclick="changeQty('${k}',-1)">−</div>
-          <div class="qty-num" id="qn_${k}">0</div>
-          <div class="qty-btn" onclick="changeQty('${k}',1)">+</div>
-        </div>
-      </div>
-    </div>`;
+    if(!item.available)return `<div class="menu-item unavailable"><div class="menu-item-left"><span class="menu-item-emoji">${item.emoji||'🍴'}</span><div><div class="menu-item-name">${item.name}</div><div class="menu-item-desc">${item.description||''} — Μη διαθέσιμο</div></div></div><span class="menu-item-price">€${(item.price||0).toFixed(2)}</span></div>`;
+    return `<div class="menu-item" id="mi_${k}" onclick="addItem('${k}')"><div class="menu-item-left"><span class="menu-item-emoji">${item.emoji||'🍴'}</span><div><div class="menu-item-name">${item.name}</div><div class="menu-item-desc">${item.description||''}</div></div></div><div style="display:flex;align-items:center;gap:10px"><span class="menu-item-price">€${(item.price||0).toFixed(2)}</span><div class="qty-control" id="qc_${k}" style="display:none" onclick="event.stopPropagation()"><div class="qty-btn" onclick="changeQty('${k}',-1)">−</div><div class="qty-num" id="qn_${k}">0</div><div class="qty-btn" onclick="changeQty('${k}',1)">+</div></div></div></div>`;
   }).join('');
   document.getElementById('orderModalBox').innerHTML=`
-    <div class="modal-hd">
-      <div class="modal-store-icon" style="background:${bg}">${s.emoji||'🍴'}</div>
-      <div><div class="modal-store-name">${s.name}</div><div class="modal-store-meta">⭐ ${s.rating||'4.5'} · ${s.deliveryTime||'20-30'}′ · Min €${s.minOrder||10}</div></div>
-      <button class="modal-close" onclick="closeOrderModal()"><span class="material-icons-round">close</span></button>
-    </div>
+    <div class="modal-hd"><div class="modal-store-icon" style="background:${bg}">${s.emoji||'🍴'}</div><div><div class="modal-store-name">${s.name}</div><div class="modal-store-meta">⭐ ${s.rating||'4.5'} · ${s.deliveryTime||'20-30'}′ · Min €${s.minOrder||10}</div></div><button class="modal-close" onclick="closeOrderModal()"><span class="material-icons-round">close</span></button></div>
     <div class="modal-body">
-      <div><div class="order-section-title">Μενού</div><div class="menu-items">${menuItems||'<div style="text-align:center;padding:20px;color:var(--text3)">Δεν υπάρχουν προϊόντα ακόμα</div>'}</div></div>
-      <div>
-        <div class="order-section-title">Στοιχεία Παράδοσης</div>
-        <div style="display:flex;flex-direction:column;gap:11px">
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Το όνομά σου" oninput="saveProfile()"></div>
-            <div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="+30 69..." type="tel" oninput="saveProfile()"></div>
-          </div>
-          <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="oEmail" placeholder="email@example.com" type="email" oninput="saveProfile()"></div>
-          <div class="form-group"><label class="form-label">Διεύθυνση Παράδοσης *</label><input class="form-input" id="oAddress" placeholder="π.χ. Πατησίων 42, Αθήνα" oninput="saveProfile()"></div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Όροφος</label><input class="form-input" id="oFloor" placeholder="π.χ. 3ος" oninput="saveProfile()"></div>
-            <div class="form-group"><label class="form-label">Κουδούνι</label><input class="form-input" id="oDoorbell" placeholder="π.χ. Παπαδόπουλος" oninput="saveProfile()"></div>
-          </div>
-          <div class="form-group"><label class="form-label">Σχόλια παραγγελίας</label><input class="form-input" id="oNotes" placeholder="π.χ. χωρίς κρεμμύδι, extra σάλτσα..."></div>
-        </div>
-      </div>
-      <div>
-        <div class="order-section-title">Τρόπος Πληρωμής</div>
-        <div class="pay-options">
-          <div class="pay-opt selected" id="pay_cash" onclick="selectPay('cash')"><span class="material-icons-round">payments</span>Μετρητά</div>
-          <div class="pay-opt" id="pay_card" onclick="selectPay('card')"><span class="material-icons-round">credit_card</span>Κάρτα</div>
-          <div class="pay-opt" id="pay_online" onclick="selectPay('online')"><span class="material-icons-round">phone_iphone</span>Online</div>
-        </div>
-      </div>
-      <div class="order-summary" id="orderSummary">
-        <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Σύνοψη</div>
-        <div id="summaryLines"></div>
-        <div class="summary-row"><span>Παράδοση</span><span>€${(s.deliveryCost||2).toFixed(2)}</span></div>
-        <div class="summary-row total"><span>Σύνολο</span><span class="summary-val" id="summaryTotal">€${(s.deliveryCost||2).toFixed(2)}</span></div>
-      </div>
-      <button class="btn-order-submit" onclick="submitOrder()"><span class="material-icons-round">rocket_launch</span>Παράγγειλε τώρα!</button>
+      <div><div class="order-section-title">Μενού</div><div class="menu-items">${menuItems||'<div style="text-align:center;padding:20px;color:var(--text3)">Δεν υπάρχουν προϊόντα</div>'}</div></div>
+      <div><div class="order-section-title">Στοιχεία Παράδοσης</div><div style="display:flex;flex-direction:column;gap:10px"><div class="form-row"><div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Όνομα" oninput="saveProfile()"></div><div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="69..." type="tel" oninput="saveProfile()"></div></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="oEmail" placeholder="email@example.com" type="email" oninput="saveProfile()"></div><div class="form-group"><label class="form-label">Διεύθυνση *</label><input class="form-input" id="oAddress" placeholder="Πατησίων 42, Αθήνα" oninput="saveProfile()"></div><div class="form-row"><div class="form-group"><label class="form-label">Όροφος</label><input class="form-input" id="oFloor" placeholder="3ος" oninput="saveProfile()"></div><div class="form-group"><label class="form-label">Κουδούνι</label><input class="form-input" id="oDoorbell" placeholder="Παπαδόπουλος" oninput="saveProfile()"></div></div><div class="form-group"><label class="form-label">Σχόλια</label><input class="form-input" id="oNotes" placeholder="χωρίς κρεμμύδι..."></div></div></div>
+      <div><div class="order-section-title">Πληρωμή</div><div class="pay-options"><div class="pay-opt selected" id="pay_cash" onclick="selectPay('cash')"><span class="material-icons-round">payments</span>Μετρητά</div><div class="pay-opt" id="pay_card" onclick="selectPay('card')"><span class="material-icons-round">credit_card</span>Κάρτα</div><div class="pay-opt" id="pay_online" onclick="selectPay('online')"><span class="material-icons-round">phone_iphone</span>Online</div></div></div>
+      <div class="order-summary"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Σύνοψη</div><div id="summaryLines"></div><div class="summary-row"><span>Παράδοση</span><span>€${(s.deliveryCost||2).toFixed(2)}</span></div><div class="summary-row total"><span>Σύνολο</span><span class="summary-val" id="summaryTotal">€${(s.deliveryCost||2).toFixed(2)}</span></div></div>
+      <button class="btn-primary" onclick="submitOrder()"><span class="material-icons-round">rocket_launch</span>Παράγγειλε τώρα!</button>
     </div>`;
 }
 
-function addItem(k){
-  const menu=activeStore.menu||{};const item=menu[k];if(!item)return;
-  if(!cart[k])cart[k]={item,qty:0};cart[k].qty++;updateCartUI(k);updateSummary();
-}
-function changeQty(k,d){
-  if(!cart[k])return;cart[k].qty+=d;if(cart[k].qty<=0)delete cart[k];updateCartUI(k);updateSummary();
-}
-function updateCartUI(k){
-  const qty=cart[k]?.qty||0;
-  const qc=document.getElementById('qc_'+k),qn=document.getElementById('qn_'+k),mi=document.getElementById('mi_'+k);
-  if(!qc)return;
-  if(qty>0){qc.style.display='flex';qn.textContent=qty;mi?.classList.add('selected');}
-  else{qc.style.display='none';mi?.classList.remove('selected');}
-}
-function updateSummary(){
-  const items=Object.values(cart);const sub=items.reduce((s,{item,qty})=>s+item.price*qty,0);const total=sub+(activeStore.deliveryCost||2);
-  document.getElementById('summaryLines').innerHTML=items.map(({item,qty})=>`<div class="summary-row"><span>${item.emoji||''} ${item.name} ×${qty}</span><span>€${(item.price*qty).toFixed(2)}</span></div>`).join('');
-  document.getElementById('summaryTotal').textContent='€'+total.toFixed(2);
-}
+function addItem(k){const menu=activeStore.menu||{};const item=menu[k];if(!item)return;if(!cart[k])cart[k]={item,qty:0};cart[k].qty++;updateCartUI(k);updateSummary();}
+function changeQty(k,d){if(!cart[k])return;cart[k].qty+=d;if(cart[k].qty<=0)delete cart[k];updateCartUI(k);updateSummary();}
+function updateCartUI(k){const qty=cart[k]?.qty||0;const qc=document.getElementById('qc_'+k),qn=document.getElementById('qn_'+k),mi=document.getElementById('mi_'+k);if(!qc)return;if(qty>0){qc.style.display='flex';qn.textContent=qty;mi?.classList.add('selected');}else{qc.style.display='none';mi?.classList.remove('selected');}}
+function updateSummary(){const items=Object.values(cart);const sub=items.reduce((s,{item,qty})=>s+item.price*qty,0);const total=sub+(activeStore.deliveryCost||2);document.getElementById('summaryLines').innerHTML=items.map(({item,qty})=>`<div class="summary-row"><span>${item.emoji||''} ${item.name} ×${qty}</span><span>€${(item.price*qty).toFixed(2)}</span></div>`).join('');document.getElementById('summaryTotal').textContent='€'+total.toFixed(2);}
 function selectPay(t){selectedPay=t;['cash','card','online'].forEach(x=>document.getElementById('pay_'+x).classList.toggle('selected',x===t));}
 
 function saveProfile(){
-  const p={
-    name:document.getElementById('oName')?.value||'',
-    phone:document.getElementById('oPhone')?.value||'',
-    email:document.getElementById('oEmail')?.value||'',
-    address:document.getElementById('oAddress')?.value||'',
-    floor:document.getElementById('oFloor')?.value||'',
-    doorbell:document.getElementById('oDoorbell')?.value||''
-  };
-  localStorage.setItem('orderakiProfile', JSON.stringify(p));
+  const p={name:document.getElementById('oName')?.value||'',phone:document.getElementById('oPhone')?.value||'',email:document.getElementById('oEmail')?.value||'',address:document.getElementById('oAddress')?.value||'',floor:document.getElementById('oFloor')?.value||'',doorbell:document.getElementById('oDoorbell')?.value||''};
+  localStorage.setItem('orderakiProfile',JSON.stringify(p));
   if(window._db&&window._uid&&window._update)window._update(window._ref(window._db,'customers/'+window._uid),p);
 }
-
 function submitOrder(){
   const name=document.getElementById('oName')?.value.trim(),phone=document.getElementById('oPhone')?.value.trim(),address=document.getElementById('oAddress')?.value.trim();
-  const floor=document.getElementById('oFloor')?.value.trim()||'';
-  const doorbell=document.getElementById('oDoorbell')?.value.trim()||'';
-  const email=document.getElementById('oEmail')?.value.trim()||'';
+  const floor=document.getElementById('oFloor')?.value.trim()||'',doorbell=document.getElementById('oDoorbell')?.value.trim()||'',email=document.getElementById('oEmail')?.value.trim()||'';
   if(!name||!phone||!address){showToast('⚠️ Συμπλήρωσε όνομα, τηλέφωνο & διεύθυνση');return;}
   if(!Object.keys(cart).length){showToast('🛒 Πρόσθεσε τουλάχιστον ένα προϊόν');return;}
   saveProfile();
   const items=Object.values(cart);const sub=items.reduce((s,{item,qty})=>s+item.price*qty,0);
-  const order={
-    id:'#ORD'+(1000+Math.floor(Math.random()*9000)),
-    storeId:activeStore._key,storeName:activeStore.name,storeAddress:activeStore.address||'',
-    customerName:name,phone,email,address,floor,doorbell,notes:document.getElementById('oNotes')?.value||'',
-    customerUid:window._uid||'',
-    items:items.map(({item,qty})=>({name:item.name,emoji:item.emoji||'',price:item.price,qty})),
-    subtotal:sub,deliveryCost:activeStore.deliveryCost||2,total:sub+(activeStore.deliveryCost||2),
-    payment:selectedPay,status:'new',createdAt:Date.now()
-  };
+  const order={id:'#ORD'+(1000+Math.floor(Math.random()*9000)),storeId:activeStore._key,storeName:activeStore.name,storeAddress:activeStore.address||'',customerName:name,phone,email,address,floor,doorbell,notes:document.getElementById('oNotes')?.value||'',customerUid:window._uid||'',items:items.map(({item,qty})=>({name:item.name,emoji:item.emoji||'',price:item.price,qty})),subtotal:sub,deliveryCost:activeStore.deliveryCost||2,total:sub+(activeStore.deliveryCost||2),payment:selectedPay,status:'new',createdAt:Date.now()};
   if(window._db){const r=window._push(window._ref(window._db,'orders'));window._set(r,order);}
   showSuccess(order);
 }
-
 function showSuccess(order){
   document.getElementById('orderModalBox').innerHTML=`
     <div class="order-success" style="display:flex">
       <div class="success-icon"><span class="material-icons-round">check_circle</span></div>
-      <h3 class="success-title">Παραγγελία επιβεβαιώθηκε!</h3>
-      <p class="success-sub">Η παραγγελία ${order.id} ελήφθη. Θα σε καλέσουν σύντομα.</p>
-      <div class="tracking-card">
-        <div style="font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Tracking</div>
-        <div class="tracking-steps">
-          <div class="t-step"><div class="t-dot done"><span class="material-icons-round">check</span></div><div><div class="t-step-label">Παραγγελία ελήφθη</div><div class="t-step-sub">Μόλις τώρα</div></div></div>
-          <div class="t-step"><div class="t-dot active"><span class="material-icons-round">restaurant</span></div><div><div class="t-step-label">Ετοιμάζεται...</div><div class="t-step-sub">~10 λεπτά</div></div></div>
-          <div class="t-step"><div class="t-dot pending"><span class="material-icons-round">delivery_dining</span></div><div><div class="t-step-label">Σε δρόμο</div><div class="t-step-sub">~${activeStore.deliveryTime||'20-30'}′</div></div></div>
-          <div class="t-step"><div class="t-dot pending"><span class="material-icons-round">home</span></div><div><div class="t-step-label">Παράδοση</div><div class="t-step-sub">Στην πόρτα σου</div></div></div>
-        </div>
-      </div>
-      <button class="btn-secondary" style="width:100%" onclick="closeOrderModal()">Κλείσιμο</button>
+      <h3 class="success-title">Η παραγγελία καταχωρήθηκε!</h3>
+      <p class="success-sub">${order.id} — Θα ειδοποιηθείς σε κάθε βήμα</p>
+      <div class="tracking-card"><div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Tracking</div><div class="tracking-steps"><div class="t-step"><div class="t-dot done"><span class="material-icons-round">check</span></div><div><div class="t-step-label">Ελήφθη</div><div class="t-step-sub">Μόλις τώρα</div></div></div><div class="t-step"><div class="t-dot active"><span class="material-icons-round">restaurant</span></div><div><div class="t-step-label">Ετοιμάζεται</div><div class="t-step-sub">Αναμονή καταστήματος</div></div></div><div class="t-step"><div class="t-dot pending"><span class="material-icons-round">delivery_dining</span></div><div><div class="t-step-label">Σε δρόμο</div><div class="t-step-sub">Chat με courier</div></div></div><div class="t-step"><div class="t-dot pending"><span class="material-icons-round">home</span></div><div><div class="t-step-label">Παράδοση</div><div class="t-step-sub">Στην πόρτα σου</div></div></div></div></div>
+      <button class="btn-secondary" onclick="closeOrderModal()">Κλείσιμο</button>
     </div>`;
 }
 
-window.addEventListener('scroll',()=>{document.getElementById('mainNav').classList.toggle('scrolled',window.scrollY>20);},{passive:true});
-
+// AUTH
 let toastT;
 function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3500);}
-
-// ═══ AUTH ═══
 function openAuthModal(){document.getElementById('authOverlay').classList.add('open');}
 function closeAuthModal(){document.getElementById('authOverlay').classList.remove('open');}
 function switchAuthTab(t){
-  document.getElementById('authTabL').style.cssText='flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;'+(t==='login'?'background:var(--white);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)':'color:var(--text3)');
-  document.getElementById('authTabR').style.cssText='flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;'+(t==='register'?'background:var(--white);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)':'color:var(--text3)');
+  document.getElementById('authTabL').style.cssText='flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;'+(t==='login'?'background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.06)':'color:var(--text3)');
+  document.getElementById('authTabR').style.cssText='flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;'+(t==='register'?'background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.06)':'color:var(--text3)');
   document.getElementById('authLoginForm').style.display=t==='login'?'block':'none';
   document.getElementById('authRegForm').style.display=t==='register'?'block':'none';
 }
@@ -714,8 +537,10 @@ function doCustomerLogout(){if(window._auth)window._signOut(window._auth);closeP
 let customerProfile={};
 function onUserLoggedIn(user){
   closeAuthModal();
-  const init=(user.email||'?').charAt(0).toUpperCase();
-  document.getElementById('navAuth').innerHTML='<a href="javascript:void(0)" onclick="openProfile()" style="display:flex;align-items:center;gap:8px;background:var(--off);border:1.5px solid rgba(26,23,20,.14);padding:6px 14px 6px 8px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;color:var(--text)"><div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">'+init+'</div>'+(user.email?.split('@')[0]||'Λογαριασμός')+'</a>';
+  const el=document.getElementById('navAuth');
+  el.className='top-user-btn logged-in';
+  el.innerHTML='<span style="font-size:14px;font-weight:800">'+(user.email||'?').charAt(0).toUpperCase()+'</span>';
+  el.onclick=function(){openProfile();};
   if(window._db){
     window._onValue(window._ref(window._db,'customers/'+user.uid),function(snap){
       var d=snap.val()||{};customerProfile=d;
@@ -725,6 +550,7 @@ function onUserLoggedIn(user){
       if(d.name)document.getElementById('profName').value=d.name;
       if(d.phone)document.getElementById('profPhone').value=d.phone;
       if(d.address)document.getElementById('profAddress').value=d.address;
+      if(d.address)document.querySelector('.top-loc-text').textContent=d.address;
     });
     window._onValue(window._ref(window._db,'orders'),function(snap){
       var all=snap.val()||{},uid=window._uid,myO={};
@@ -734,7 +560,10 @@ function onUserLoggedIn(user){
   }
 }
 function onUserLoggedOut(){
-  document.getElementById('navAuth').innerHTML='<a href="javascript:void(0)" class="nav-cta" onclick="openAuthModal()" style="gap:6px"><span class="material-icons-round" style="font-size:16px">person</span>Σύνδεση</a>';
+  const el=document.getElementById('navAuth');
+  el.className='top-user-btn';
+  el.innerHTML='<span class="material-icons-round" style="font-size:18px">person_outline</span>';
+  el.onclick=function(){openAuthModal();};
   document.getElementById('chatFloat').style.display='none';
   document.getElementById('chatPanel').style.display='none';
 }
@@ -751,11 +580,11 @@ function renderMyOrders(orders){
   var el=document.getElementById('profOrders');
   if(!entries.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Δεν υπάρχουν παραγγελίες</div>';return;}
   var sm={new:'Νέα',preparing:'Ετοιμάζεται',ready:'Έτοιμη',assigned:'Σε δρόμο',picked:'Σε δρόμο',delivered:'Παραδόθηκε',cancelled:'Ακυρώθηκε'};
-  var sc={new:'#ff4500',preparing:'#d97706',ready:'#16a34a',assigned:'#ff6b35',picked:'#ff6b35',delivered:'#16a34a',cancelled:'#dc2626'};
-  el.innerHTML=entries.slice(0,10).map(function(e){var k=e[0],o=e[1],c=sc[o.status]||'#999';return '<div style="background:var(--off);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--accent)">'+(o.id||k)+'</span><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+c+'18;color:'+c+'">'+(sm[o.status]||o.status)+'</span></div><div style="font-size:12px;color:var(--text2)">'+(o.storeName||'—')+'</div><div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;margin-top:6px">€'+(o.total||0).toFixed(2)+'</div></div>';}).join('');
+  var sc={new:'#d42300',preparing:'#d97706',ready:'#00a651',assigned:'#ff6b35',picked:'#ff6b35',delivered:'#00a651',cancelled:'#dc2626'};
+  el.innerHTML=entries.slice(0,10).map(function(e){var k=e[0],o=e[1],c=sc[o.status]||'#999';return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--accent)">'+(o.id||k)+'</span><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+c+'12;color:'+c+'">'+(sm[o.status]||o.status)+'</span></div><div style="font-size:12px;color:var(--text2)">'+(o.storeName||'—')+'</div><div style="font-family:Fraunces,serif;font-size:15px;font-weight:700;margin-top:4px">€'+(o.total||0).toFixed(2)+'</div></div>';}).join('');
 }
 
-// ═══ CHAT customer ↔ driver ═══
+// CHAT
 var activeOrderKey=null,custChatMsgs=[],custChatListener=null;
 function checkActiveChat(orders){
   activeOrderKey=null;
@@ -779,7 +608,7 @@ function listenCustChat(orderKey){
 function renderCustChatMsgs(){
   var el=document.getElementById('custChatMsgs');
   if(!custChatMsgs.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Ξεκίνα τη συνομιλία!</div>';return;}
-  el.innerHTML=custChatMsgs.map(function(m){var cls=m.from==='customer'?'background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px':'background:var(--off);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)';return '<div style="max-width:80%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.45;word-break:break-word;'+cls+'">'+m.text+'<span style="font-size:9px;opacity:.6;margin-top:3px;display:block">'+new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'})+'</span></div>';}).join('');
+  el.innerHTML=custChatMsgs.map(function(m){var cls=m.from==='customer'?'background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px':'background:var(--surface2);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)';return '<div style="max-width:80%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.4;'+cls+'">'+m.text+'<span style="font-size:9px;opacity:.5;margin-top:2px;display:block">'+new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'})+'</span></div>';}).join('');
   setTimeout(function(){el.scrollTop=el.scrollHeight;},50);
 }
 function toggleCustChat(){var p=document.getElementById('chatPanel');p.style.display=p.style.display==='flex'?'none':'flex';}
@@ -790,24 +619,11 @@ function sendCustChat(){
   if(window._db)window._set(window._push(window._ref(window._db,'chat/customer/'+activeOrderKey)),msg);
 }
 </script>
-  <script>
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('/sw.js').catch(()=>{});
-    }
-    // Install prompt
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const btn = document.getElementById('installBtn');
-      if(btn) btn.style.display = 'flex';
-    });
-    window.installApp = function(){
-      if(deferredPrompt){
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; const b=document.getElementById('installBtn'); if(b) b.style.display='none'; });
-      }
-    };
-  </script>
+<script>
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;});
+window.installApp=function(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;});}};
+</script>
 </body>
 </html>
