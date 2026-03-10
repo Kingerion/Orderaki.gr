@@ -44,11 +44,9 @@ if (CFG.apiKey !== "YOUR_API_KEY") {
 <style>
 :root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--surface3:#2e2e2e;--border:rgba(255,255,255,.08);--text:#f5f5f5;--text2:#a0a0a0;--text3:#666;--accent:#ff4500;--accent2:#ff6b35;--green:#22c55e;--green-dark:#16a34a;--red:#ef4444;--yellow:#f59e0b;--shadow:0 4px 20px rgba(0,0,0,.4)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:15px;min-height:100vh;max-width:430px;margin:0 auto;position:relative;overflow-x:hidden}
-/* ── SCREENS ── */
-.screen{display:none;min-height:100vh;flex-direction:column}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:15px;min-height:100dvh;max-width:430px;margin:0 auto;position:relative;overflow-x:hidden}
+.screen{display:none;min-height:100dvh;flex-direction:column}
 .screen.active{display:flex}
-/* ── AUTH ── */
 .auth-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:32px 24px;background:radial-gradient(ellipse at 50% 0%,rgba(255,69,0,.15),transparent 60%)}
 .auth-logo{text-align:center;margin-bottom:36px}
 .auth-logo-icon{width:64px;height:64px;background:var(--accent);border-radius:20px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 8px 24px rgba(255,69,0,.4)}
@@ -66,17 +64,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:13px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(255,69,0,.4);transition:all .2s;font-family:'Outfit',sans-serif;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px}
 .auth-btn:hover{background:#e03d00}
-.auth-btn .material-icons-round{font-size:20px}
 .auth-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:10px;padding:11px 14px;font-size:13px;font-weight:600;display:none;margin-bottom:12px}
 .auth-error.show{display:block}
-/* ── PENDING SCREEN ── */
 .pending-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;gap:16px}
 .pending-icon{width:80px;height:80px;border-radius:50%;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center}
 .pending-icon .material-icons-round{font-size:40px;color:var(--yellow)}
 .pending-title{font-size:22px;font-weight:800;letter-spacing:-.5px}
 .pending-sub{font-size:14px;color:var(--text2);line-height:1.6;max-width:280px}
 .pending-badge{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--yellow);padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700}
-/* ── TOPBAR ── */
 .topbar{background:var(--surface);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
 .top-driver-info{display:flex;align-items:center;gap:12px}
 .top-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
@@ -88,18 +83,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .online-toggle.on .online-dot{background:var(--green);box-shadow:0 0 8px var(--green)}
 .online-label{font-size:12px;font-weight:800;color:var(--text3)}
 .online-toggle.on .online-label{color:var(--green)}
-/* ── EARNINGS BAR ── */
 .earnings-bar{background:var(--accent);padding:12px 20px;display:flex;justify-content:space-around}
 .earn-item{text-align:center}
 .earn-val{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.5px}
 .earn-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.7);margin-top:2px}
-/* ── CONTENT ── */
 .content{flex:1;overflow-y:auto;padding:16px}
-/* ── ORDER CARD ── */
 .order-card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden}
 .order-card.new-order{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,69,0,.15),var(--shadow)}
 .order-card.new-order::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
-.new-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
 .order-card-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .order-id{font-size:13px;font-weight:800;color:var(--accent)}
 .order-store{font-size:14px;font-weight:700;margin-top:2px}
@@ -107,26 +98,17 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .order-info-item{background:var(--surface2);border-radius:10px;padding:10px 12px}
 .order-info-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:3px}
 .order-info-val{font-size:13px;font-weight:700}
-.order-addr{background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
-.order-addr .material-icons-round{font-size:18px;color:var(--accent);flex-shrink:0;margin-top:1px}
-.order-addr-text{font-size:13px;font-weight:600;line-height:1.4}
-.order-total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.order-total-label{font-size:13px;color:var(--text2)}
-.order-total-val{font-size:20px;font-weight:900;letter-spacing:-1px;color:var(--text)}
 .order-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .btn-accept{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
 .btn-accept:hover{background:var(--green-dark)}
-.btn-accept .material-icons-round{font-size:18px}
 .btn-delivered{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;grid-column:span 2;display:flex;align-items:center;justify-content:center;gap:6px}
-.btn-delivered .material-icons-round{font-size:18px}
 .status-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700}
 .st-assigned{background:rgba(245,158,11,.15);color:var(--yellow)}
 .st-picked{background:rgba(139,92,246,.15);color:#a78bfa}
 .st-delivered{background:rgba(34,197,94,.12);color:var(--green)}
 .empty-orders{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;color:var(--text3)}
 .empty-orders .material-icons-round{font-size:48px;opacity:.25}
-/* ── CHAT ── */
-.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 120px)}
+.chat-wrap{display:flex;flex-direction:column;height:calc(100dvh - 120px)}
 .chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
 .msg{max-width:78%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.45;word-break:break-word}
 .msg.me{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
@@ -137,8 +119,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .chat-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;color:var(--text);outline:none;font-family:'Outfit',sans-serif}
 .chat-input:focus{border-color:var(--accent)}
 .chat-send{width:42px;height:42px;background:var(--accent);border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0}
-.chat-send .material-icons-round{font-size:20px}
-/* ── EARNINGS PAGE ── */
 .earn-page{padding:20px}
 .earn-big-card{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:20px;padding:28px;text-align:center;margin-bottom:20px}
 .earn-big-val{font-size:48px;font-weight:900;color:#fff;letter-spacing:-3px}
@@ -147,7 +127,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .earn-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center}
 .earn-card-val{font-size:26px;font-weight:900;letter-spacing:-1px}
 .earn-card-label{font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
-/* ── PROFILE PAGE ── */
 .profile-page{padding:20px}
 .profile-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;text-align:center;margin-bottom:16px}
 .profile-avatar{width:70px;height:70px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 12px;box-shadow:0 6px 20px rgba(255,69,0,.35)}
@@ -156,22 +135,17 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .profile-status{margin-top:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.12);color:var(--green);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700}
 .profile-menu-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
 .profile-menu-item:hover{background:var(--surface2)}
-.profile-menu-item .material-icons-round{font-size:20px;color:var(--text2)}
 .profile-menu-item.danger .material-icons-round{color:var(--red)}
 .profile-menu-item.danger span:last-child{color:var(--red)}
 .profile-menu-label{flex:1;font-size:14px;font-weight:600}
-.profile-menu-item .material-icons-round:last-child{font-size:16px;color:var(--text3)}
-/* ── BOTTOM NAV ── */
 .bottom-nav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom));flex-shrink:0}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;cursor:pointer;color:var(--text3);transition:color .15s;position:relative}
 .nav-item.active{color:var(--accent)}
-.nav-item .material-icons-round{font-size:22px}
 .nav-label{font-size:10px;font-weight:700}
 .nav-badge{position:absolute;top:4px;right:calc(50% - 18px);background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center}
-/* ── OVERLAY SHEETS ── */
 .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
 .sheet-overlay.open{opacity:1;pointer-events:all}
-.sheet{background:var(--surface);border-radius:24px 24px 0 0;width:100%;padding:20px;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.2,.64,1)}
+.sheet{background:var(--surface);border-radius:24px 24px 0 0;width:100%;padding:20px;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.2,.64,1);max-height:90dvh;}
 .sheet-overlay.open .sheet{transform:translateY(0)}
 .sheet-title{font-size:16px;font-weight:800;margin-bottom:16px;text-align:center}
 .reject-opt{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;margin-bottom:8px;text-align:center}
@@ -211,6 +185,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     </div>
   </div>
 </div>
+
 <div class="screen" id="screenPending">
   <div class="pending-wrap">
     <div class="pending-icon"><span class="material-icons-round">hourglass_top</span></div>
@@ -220,6 +195,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <button style="background:transparent;border:1.5px solid var(--border);color:var(--text2);border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;margin-top:8px" onclick="doSignOut()">Αποσύνδεση</button>
   </div>
 </div>
+
 <div class="screen" id="screenApp">
   <div class="topbar">
     <div class="top-driver-info">
@@ -236,35 +212,43 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <div class="earn-item"><div class="earn-val" id="earnDeliveries">0</div><div class="earn-label">Παραδόσεις</div></div>
     <div class="earn-item"><div class="earn-val" id="earnWeek">€0</div><div class="earn-label">Εβδομάδα</div></div>
   </div>
+
   <div class="content" id="pageOrders" style="display:block">
-    <div id="ordersList"><div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span><span style="font-size:13px">Οι παραγγελίες σου εμφανίζονται εδώ</span></div></div>
+    <div id="ordersList"><div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span></div></div>
   </div>
+
   <div class="content" id="pageChat" style="display:none;padding:0">
     <div class="chat-wrap">
-      <div style="background:var(--surface2); padding:12px; text-align:center; font-size:12px; color:var(--text3); border-bottom:1px solid var(--border);">
-        Εδώ μιλάς απευθείας με το τηλεφωνικό κέντρο / Admin.
-      </div>
+      <div style="background:var(--surface2); padding:12px; text-align:center; font-size:12px; color:var(--text3); border-bottom:1px solid var(--border);">Εδώ μιλάς απευθείας με τον Admin.</div>
       <div class="chat-msgs" id="chatMsgs"></div>
       <div class="chat-input-row">
-        <input class="chat-input" id="chatInput" placeholder="Μήνυμα στον admin..." onkeydown="if(event.key==='Enter')sendMsg()">
+        <input class="chat-input" id="chatInput" placeholder="Μήνυμα στον admin..." onfocus="setTimeout(()=>this.scrollIntoView({behavior:'smooth',block:'center'}),300)" onkeydown="if(event.key==='Enter')sendMsg()">
         <button class="chat-send" onclick="sendMsg()"><span class="material-icons-round">send</span></button>
       </div>
     </div>
   </div>
   <div class="content" id="pageEarnings" style="display:none">
     <div class="earn-page">
+      <div style="font-size:16px; font-weight:800; margin-bottom:12px; color:var(--text);">Τα Κέρδη σου</div>
       <div class="earn-big-card">
-        <div class="earn-big-val" id="earnBigMonth">€0</div>
+        <div class="earn-big-val" id="earnBigMonth">€0.00</div>
         <div class="earn-big-label">Σύνολο Μήνα</div>
       </div>
-      <div class="earn-grid">
-        <div class="earn-card"><div class="earn-card-val" id="earnStatToday" style="color:var(--accent)">€0</div><div class="earn-card-label">Σήμερα</div></div>
+      <div class="earn-grid" style="margin-bottom:24px;">
+        <div class="earn-card"><div class="earn-card-val" id="earnStatToday" style="color:var(--accent)">€0.00</div><div class="earn-card-label">Σήμερα</div></div>
         <div class="earn-card"><div class="earn-card-val" id="earnStatDeliveries" style="color:var(--green)">0</div><div class="earn-card-label">Παραδόσεις</div></div>
-        <div class="earn-card"><div class="earn-card-val" id="earnStatWeek" style="color:var(--yellow)">€0</div><div class="earn-card-label">Εβδομάδα</div></div>
-        <div class="earn-card"><div class="earn-card-val" id="earnStatAvg" style="color:var(--text)">€0</div><div class="earn-card-label">Μέσος Όρος</div></div>
+        <div class="earn-card"><div class="earn-card-val" id="earnStatWeek" style="color:var(--yellow)">€0.00</div><div class="earn-card-label">Εβδομάδα</div></div>
+        <div class="earn-card"><div class="earn-card-val" id="earnStatAvg" style="color:var(--text)">€0.00</div><div class="earn-card-label">Μέσος Όρος</div></div>
+      </div>
+
+      <div style="font-size:16px; font-weight:800; margin-bottom:12px; color:var(--text); border-top:1px solid var(--border); padding-top:20px;">Ταμείο Καταστήματος (Μετρητά)</div>
+      <div class="earn-big-card" style="background:linear-gradient(135deg, #16a34a, #22c55e);">
+        <div class="earn-big-val" id="cashToHandOver">€0.00</div>
+        <div class="earn-big-label">Μετρητά που εισέπραξες σήμερα</div>
       </div>
     </div>
   </div>
+
   <div class="content" id="pageProfile" style="display:none">
     <div class="profile-page">
       <div class="profile-card">
@@ -277,6 +261,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
       <div class="profile-menu-item danger" onclick="doSignOut()"><span class="material-icons-round">logout</span><span class="profile-menu-label">Αποσύνδεση</span><span class="material-icons-round">chevron_right</span></div>
     </div>
   </div>
+
   <div class="bottom-nav">
     <div class="nav-item active" id="nav-orders" onclick="goPage('orders')"><span class="material-icons-round">receipt_long</span><span class="nav-label">Παραγγελίες</span><div class="nav-badge" id="navBadge" style="display:none">0</div></div>
     <div class="nav-item" id="nav-chat" onclick="goPage('chat')"><span class="material-icons-round">chat</span><span class="nav-label">Chat</span><div class="nav-badge" id="chatBadge" style="display:none">!</div></div>
@@ -284,6 +269,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <div class="nav-item" id="nav-profile" onclick="goPage('profile')"><span class="material-icons-round">person</span><span class="nav-label">Προφίλ</span></div>
   </div>
 </div>
+
 <div class="sheet-overlay" id="rejectSheet">
   <div class="sheet">
     <div class="sheet-title">Απόρριψη Παραγγελίας</div>
@@ -294,21 +280,19 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <div class="reject-opt" style="color:var(--text3)" onclick="closeSheet()">Ακύρωση</div>
   </div>
 </div>
+
 <div class="sheet-overlay" id="customerChatSheet" style="z-index:200;">
-  <div class="sheet" style="height:85vh; display:flex; flex-direction:column; padding:0; border-radius:24px 24px 0 0;">
+  <div class="sheet" style="height:85dvh; display:flex; flex-direction:column; padding:0; border-radius:24px 24px 0 0;">
     <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface2); border-radius:24px 24px 0 0;">
       <div style="display:flex; align-items:center; gap:10px;">
          <div style="width:36px; height:36px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff;" id="ccAvatar">Π</div>
-         <div>
-           <div style="font-size:14px; font-weight:800;" id="ccName">Πελάτης</div>
-           <div style="font-size:11px; color:var(--text3);" id="ccAddr">Διεύθυνση</div>
-         </div>
+         <div><div style="font-size:14px; font-weight:800;" id="ccName">Πελάτης</div><div style="font-size:11px; color:var(--text3);" id="ccAddr">Διεύθυνση</div></div>
       </div>
       <button onclick="closeCustomerChat()" style="background:none; border:none; color:var(--text3); display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="material-icons-round">close</span></button>
     </div>
     <div id="customerChatMsgsArea" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px;"></div>
     <div style="padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; background:var(--surface);">
-      <input id="ccInput" style="flex:1; background:var(--surface2); border:1.5px solid var(--border); border-radius:12px; padding:11px 14px; font-size:14px; color:var(--text); outline:none; font-family:'Outfit',sans-serif;" placeholder="Μήνυμα στον πελάτη..." onkeydown="if(event.key==='Enter')sendCustomerMsg()">
+      <input id="ccInput" style="flex:1; background:var(--surface2); border:1.5px solid var(--border); border-radius:12px; padding:11px 14px; font-size:14px; color:var(--text); outline:none; font-family:'Outfit',sans-serif;" placeholder="Μήνυμα στον πελάτη..." onfocus="setTimeout(()=>this.scrollIntoView({behavior:'smooth',block:'center'}),300)" onkeydown="if(event.key==='Enter')sendCustomerMsg()">
       <button onclick="sendCustomerMsg()" style="width:42px; height:42px; background:var(--accent); border:none; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; cursor:pointer;"><span class="material-icons-round" style="font-size:20px">send</span></button>
     </div>
   </div>
@@ -318,139 +302,98 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 let driverData=null, myOrders={}, myChat=[], isOnline=true, rejectingKey=null;
 const fmtTime=ts=>ts?new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}):'';
 const fmtCur=v=>`€${(v||0).toFixed(2)}`;
+
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen'+id.charAt(0).toUpperCase()+id.slice(1))?.classList.add('active');}
 function showErr(msg){const e=document.getElementById('authErr');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),4000);}
 function switchTab(t){document.getElementById('tabL').classList.toggle('active',t==='login');document.getElementById('tabR').classList.toggle('active',t==='register');document.getElementById('loginForm').style.display=t==='login'?'block':'none';document.getElementById('registerForm').style.display=t==='register'?'block':'none';}
-function doLogin(){
-  const email=document.getElementById('lEmail').value.trim(),pass=document.getElementById('lPass').value;
-  if(!email||!pass){showErr('Συμπλήρωσε email και κωδικό');return;}
-  if(window._auth)window._signIn(window._auth,email,pass).catch(()=>showErr('Λανθασμένα στοιχεία'));
-  else initDemo();
-}
+
+function doLogin(){const email=document.getElementById('lEmail').value.trim(),pass=document.getElementById('lPass').value;if(!email||!pass){showErr('Συμπλήρωσε email και κωδικό');return;}if(window._auth)window._signIn(window._auth,email,pass).catch(()=>showErr('Λανθασμένα στοιχεία'));else initDemo();}
 function doRegister(){
-  const first=document.getElementById('rFirst').value.trim(),last=document.getElementById('rLast').value.trim(),
-        phone=document.getElementById('rPhone').value.trim(),email=document.getElementById('rEmail').value.trim(),
-        pass=document.getElementById('rPass').value;
+  const first=document.getElementById('rFirst').value.trim(),last=document.getElementById('rLast').value.trim(),phone=document.getElementById('rPhone').value.trim(),email=document.getElementById('rEmail').value.trim(),pass=document.getElementById('rPass').value;
   if(!first||!last||!phone||!email||!pass){showErr('Συμπλήρωσε όλα τα πεδία');return;}
   if(pass.length<6){showErr('Κωδικός min 6 χαρακτήρες');return;}
   if(window._auth){
     window._createUser(window._auth,email,pass).then(uc=>{
-      const uid=uc.user.uid;
-      window._set(window._ref(window._db,'drivers/'+uid),{
-        name:first+' '+last,firstName:first,lastName:last,phone,email,
-        online:false,orders:0,earnings:0,status:'pending',createdAt:Date.now(),uid
-      });
-      window._push(window._ref(window._db,'notifications'),{
-        type:'new_driver',driverId:uid,name:first+' '+last,phone,email,time:Date.now(),read:false
-      });
+      const uid=uc.user.uid; window._set(window._ref(window._db,'drivers/'+uid),{name:first+' '+last,firstName:first,lastName:last,phone,email,online:false,orders:0,earnings:0,cashToday:0,status:'pending',createdAt:Date.now(),uid});
+      window._push(window._ref(window._db,'notifications'),{type:'new_driver',driverId:uid,name:first+' '+last,phone,email,time:Date.now(),read:false});
     }).catch(e=>showErr(e.message));
   } else initDemo();
 }
 function checkDriverStatus(user){
   if(!window._db){initDemo();return;}
   window._onValue(window._ref(window._db,'drivers/'+user.uid),snap=>{
-    const d=snap.val();
-    if(!d){showScreen('auth');return;}
+    const d=snap.val(); if(!d){showScreen('auth');return;}
     driverData={...d,uid:user.uid};
-    if(d.status==='pending'||d.status==='rejected'){showScreen('pending');}
-    else{loadDriverApp();}
+    if(d.status==='pending'||d.status==='rejected'){showScreen('pending');}else{loadDriverApp();}
   });
 }
-function startHeartbeat() {
-  const uid = window._currentUser ? window._currentUser.uid : null;
-  if(!uid || !window._db) return;
+function startHeartbeat(){
+  const uid=window._currentUser?window._currentUser.uid:null; if(!uid||!window._db)return;
   window._update(window._ref(window._db,'drivers/'+uid), {online:true, lastSeen:Date.now()});
-  setInterval(()=>{
-    if(window._currentUser && window._db) {
-      window._update(window._ref(window._db,'drivers/'+window._currentUser.uid), {online:true, lastSeen:Date.now()});
-    }
-  }, 30000);
+  setInterval(()=>{if(window._currentUser&&window._db)window._update(window._ref(window._db,'drivers/'+window._currentUser.uid), {online:true, lastSeen:Date.now()});},30000);
 }
-window._storesCache = {};
-function loadStoresCache() {
-  if(!window._db) return;
-  window._onValue(window._ref(window._db,'stores'), snap => { window._storesCache = snap.val()||{}; });
+window._storesCache={};
+function loadStoresCache(){if(window._db)window._onValue(window._ref(window._db,'stores'),snap=>{window._storesCache=snap.val()||{};});}
+function getStoreAddress(storeId,storeName){
+  if(storeId&&window._storesCache[storeId])return window._storesCache[storeId].address||'';
+  const found=Object.values(window._storesCache).find(s=>s.name===storeName); return found?(found.address||''):'';
 }
-function getStoreAddress(storeId, storeName) {
-  if(storeId && window._storesCache[storeId]) return window._storesCache[storeId].address||'';
-  const found = Object.values(window._storesCache).find(s=>s.name===storeName);
-  return found ? (found.address||'') : '';
-}
+
 function loadDriverApp(){
-  showScreen('app');
-  setTimeout(startHeartbeat, 1000);
-  if(window._db && window._currentUser) {
+  showScreen('app'); setTimeout(startHeartbeat, 1000);
+  if(window._db&&window._currentUser){
     window._onValue(window._ref(window._db,'drivers/'+window._currentUser.uid), snap=>{
-      const d = snap.val()||{};
-      driverData.earnings = d.earnings||0;
-      driverData.earningsToday = d.earningsToday||0;
-      driverData.orders = d.orders||0;
-      updateEarningsUI(d.earnings||0, d.earningsToday||0, d.orders||0);
+      const d=snap.val()||{}; driverData.earnings=d.earnings||0; driverData.earningsToday=d.earningsToday||0; driverData.orders=d.orders||0; driverData.cashToday=d.cashToday||0;
+      updateEarningsUI(d.earnings||0, d.earningsToday||0, d.orders||0, d.cashToday||0);
     });
   }
-  const n=driverData.name||'Οδηγός';
-  const init=n.charAt(0).toUpperCase();
-  document.getElementById('topAvatar').textContent=init;
-  document.getElementById('topName').textContent=n;
-  document.getElementById('profAvatar').textContent=init;
-  document.getElementById('profName').textContent=n;
-  document.getElementById('profEmail').textContent=driverData.email||'—';
-  document.getElementById('profPhone').textContent=driverData.phone||'—';
+  const n=driverData.name||'Οδηγός'; const init=n.charAt(0).toUpperCase();
+  document.getElementById('topAvatar').textContent=init; document.getElementById('topName').textContent=n; document.getElementById('profAvatar').textContent=init; document.getElementById('profName').textContent=n; document.getElementById('profEmail').textContent=driverData.email||'—'; document.getElementById('profPhone').textContent=driverData.phone||'—';
   if(window._db){
     window._onValue(window._ref(window._db,'orders'),snap=>{
-      const all=snap.val()||{};
-      myOrders={};
-      for(const[k,v]of Object.entries(all)){
-        if(v.driver===driverData.uid||v.driverName===driverData.name){
-          if(['assigned','picked','pending_acceptance'].includes(v.status))myOrders[k]={...v,_key:k};
-        }
-      }
+      const all=snap.val()||{}; myOrders={};
+      for(const[k,v]of Object.entries(all)){if(v.driver===driverData.uid||v.driverName===driverData.name){if(['assigned','picked','pending_acceptance'].includes(v.status))myOrders[k]={...v,_key:k};}}
       renderOrders();
     });
     const dUid=window._currentUser?window._currentUser.uid:(window._driverUid||'demo');
-      window._onValue(window._ref(window._db,'chat/drivers/'+dUid),snap=>{
-      const d=snap.val();
-      myChat=d?Object.values(d):[];
-      renderChat();
-      const u=myChat.filter(m=>m.from==='admin'&&!m.read).length;
-      document.getElementById('chatBadge').style.display=u>0?'flex':'none';
+    window._onValue(window._ref(window._db,'chat/drivers/'+dUid),snap=>{
+      const d=snap.val(); myChat=d?Object.values(d):[]; renderChat();
+      const u=myChat.filter(m=>m.from==='admin'&&!m.read).length; document.getElementById('chatBadge').style.display=u>0?'flex':'none';
     });
   }
 }
+
 function renderOrders(){
-  const keys=Object.keys(myOrders);
-  const badge=document.getElementById('navBadge');
+  const keys=Object.keys(myOrders); const badge=document.getElementById('navBadge');
   badge.textContent=keys.length;badge.style.display=keys.length>0?'flex':'none';
-  if(!keys.length){document.getElementById('ordersList').innerHTML='<div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span><span style="font-size:13px">Οι παραγγελίες σου εμφανίζονται εδώ</span></div>';return;}
+  if(!keys.length){document.getElementById('ordersList').innerHTML='<div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span></div>';return;}
   document.getElementById('ordersList').innerHTML=keys.map(k=>{
-    const o=myOrders[k];
-    const isAssigned=o.status==='assigned';
-    const isPending=o.status==='pending_acceptance';
-    const isPicked=o.status==='picked';
-    const earnings = calcDriverEarnings(o);
-    const earningsStr = earnings > 0 ? fmtCur(earnings) : '—';
+    const o=myOrders[k]; const isAssigned=o.status==='assigned'; const isPending=o.status==='pending_acceptance'; const isPicked=o.status==='picked';
+    const earnings=calcDriverEarnings(o); const earningsStr=earnings>0?fmtCur(earnings):'—';
+    const storeAddrStr=o.storeAddress||getStoreAddress(o.storeId,o.storeName)||o.storeName; const custAddrStr=`${o.address||''}`;
+    const mapsStore=`http://maps.google.com/?q=${encodeURIComponent(storeAddrStr)}`; const mapsCust=`http://maps.google.com/?q=${encodeURIComponent(custAddrStr)}`;
+
     return`<div class="order-card ${isAssigned||isPending?'new-order':''}" id="oc_${k}">
-      <div class="order-card-hd">
-        <div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div>
-        <span class="status-pill ${isPending?'st-new':isAssigned?'st-assigned':'st-picked'}">${isPending?'Νέα!':isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span>
-      </div>
+      <div class="order-card-hd"><div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div><span class="status-pill ${isPending?'st-new':isAssigned?'st-assigned':'st-picked'}">${isPending?'Νέα!':isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span></div>
       <div class="order-info-grid">
         <div class="order-info-item" style="grid-column: span 2; display:flex; justify-content:space-between; align-items:center;">
           <div><div class="order-info-label">Πελάτης</div><div class="order-info-val">${o.customerName||'—'}</div></div>
-          ${(isAssigned||isPicked) ? `<button onclick="openCustomerChat('${k}')" style="background:var(--accent); color:#fff; border:none; border-radius:10px; padding:8px 14px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer;"><span class="material-icons-round" style="font-size:16px">chat</span>Chat</button>` : ''}
+          ${(isAssigned||isPicked)?`<button onclick="openCustomerChat('${k}')" style="background:var(--accent); color:#fff; border:none; border-radius:10px; padding:8px 14px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer;"><span class="material-icons-round" style="font-size:16px">chat</span>Chat</button>`:''}
         </div>
         <div class="order-info-item" style="grid-column: span 2; display:flex; justify-content:space-between; align-items:center;">
           <div><div class="order-info-label">Τηλέφωνο</div><div class="order-info-val">${o.phone||'—'}</div></div>
           <a href="tel:${o.phone||''}" style="background:rgba(34,197,94,.15); color:var(--green); border-radius:10px; padding:8px 14px; font-size:12px; font-weight:700; text-decoration:none; display:flex; align-items:center; gap:6px;"><span class="material-icons-round" style="font-size:16px">call</span>Κλήση</a>
         </div>
       </div>
-      <div class="order-addr" style="background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);border-radius:10px;padding:10px 12px;margin:6px 0;gap:8px">
+      <div class="order-addr" style="background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);border-radius:10px;padding:10px 12px;margin:6px 0;display:flex;align-items:center;gap:8px">
         <span class="material-icons-round" style="color:#ff9800;font-size:18px">storefront</span>
-        <div class="order-addr-text"><div style="font-size:10px;font-weight:800;color:#ff9800;text-transform:uppercase;margin-bottom:2px">Παραλαβή από</div><div style="font-weight:700">${o.storeName||'Κατάστημα'}</div>${(()=>{const addr=o.storeAddress||getStoreAddress(o.storeId,o.storeName);return addr?'<div style="font-size:12px;color:#ffb347;margin-top:3px">📍 '+addr+'</div>':''})()}</div>
+        <div class="order-addr-text" style="flex:1"><div style="font-size:10px;font-weight:800;color:#ff9800;text-transform:uppercase;margin-bottom:2px">Παραλαβή από</div><div style="font-weight:700">${o.storeName||'Κατάστημα'}</div>${storeAddrStr?'<div style="font-size:12px;color:#ffb347;margin-top:3px">📍 '+storeAddrStr+'</div>':''}</div>
+        <a href="${mapsStore}" target="_blank" style="width:40px;height:40px;border-radius:10px;background:var(--surface);border:1px solid rgba(255,165,0,.3);color:#ff9800;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0"><span class="material-icons-round">map</span></a>
       </div>
-      <div class="order-addr" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 12px;margin:6px 0;gap:8px">
+      <div class="order-addr" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 12px;margin:6px 0;display:flex;align-items:center;gap:8px">
         <span class="material-icons-round" style="color:#22c55e;font-size:18px">location_on</span>
-        <div class="order-addr-text"><div style="font-size:10px;font-weight:800;color:#22c55e;text-transform:uppercase;margin-bottom:2px">Παράδοση σε</div>${o.address||'—'}${o.floor?' · '+o.floor:''}${o.doorbell?' 🔔 '+o.doorbell:''}</div>
+        <div class="order-addr-text" style="flex:1"><div style="font-size:10px;font-weight:800;color:#22c55e;text-transform:uppercase;margin-bottom:2px">Παράδοση σε</div>${o.address||'—'}${o.floor?' · '+o.floor:''}${o.doorbell?' 🔔 '+o.doorbell:''}</div>
+        <a href="${mapsCust}" target="_blank" style="width:40px;height:40px;border-radius:10px;background:var(--surface);border:1px solid rgba(34,197,94,.3);color:#22c55e;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0"><span class="material-icons-round">map</span></a>
       </div>
       ${o.notes?`<div style="background:rgba(255,255,255,.05);border-radius:8px;padding:8px 12px;font-size:12px;color:#aaa;margin:4px 0">📝 ${o.notes}</div>`:''}
       <div style="display:flex;gap:12px;margin:8px 0">
@@ -464,208 +407,93 @@ function renderOrders(){
         </div>
       </div>
       <div class="order-btns">
-        ${isPending
-          ?`<button class="btn-delivered" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="acceptOrder('${k}')"><span class="material-icons-round">check_circle</span>Αποδοχή</button>
-            <button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
-          : isAssigned
-          ?`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα</button>
-            <button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`
-          :`<button class="btn-delivered" onclick="deliverOrder('${k}')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>`
-        }
+        ${isPending?`<button class="btn-delivered" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="acceptOrder('${k}')"><span class="material-icons-round">check_circle</span>Αποδοχή</button><button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`:isAssigned?`<button class="btn-accept" onclick="pickupOrder('${k}')"><span class="material-icons-round">storefront</span>Παρέλαβα</button><button style="background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px" onclick="openReject('${k}')"><span class="material-icons-round" style="font-size:16px">close</span>Απόρριψη</button>`:`<button class="btn-delivered" onclick="deliverOrder('${k}')"><span class="material-icons-round">check_circle</span>Παρέδωσα!</button>`}
       </div>
     </div>`;
   }).join('');
 }
-let activeCustomerOrderKey = null;
-let customerChatMsgs = [];
-let custChatListener = null; 
-function openCustomerChat(orderKey) {
-  const o = myOrders[orderKey];
-  if(!o) return;
-  activeCustomerOrderKey = orderKey;
-  document.getElementById('ccAvatar').textContent = (o.customerName||'Π')[0].toUpperCase();
-  document.getElementById('ccName').textContent = o.customerName||'Πελάτης';
-  document.getElementById('ccAddr').textContent = `${o.address||''}${o.floor?' · '+o.floor:''}`;
+
+let activeCustomerOrderKey=null, customerChatMsgs=[], custChatListener=null; 
+function openCustomerChat(orderKey){
+  const o=myOrders[orderKey]; if(!o)return; activeCustomerOrderKey=orderKey;
+  document.getElementById('ccAvatar').textContent=(o.customerName||'Π')[0].toUpperCase(); document.getElementById('ccName').textContent=o.customerName||'Πελάτης'; document.getElementById('ccAddr').textContent=`${o.address||''}${o.floor?' · '+o.floor:''}`;
   document.getElementById('customerChatSheet').classList.add('open');
-  if(custChatListener) custChatListener(); 
-  if(window._db) {
-    custChatListener = window._onValue(window._ref(window._db,'chat/customer/'+orderKey), snap=>{
-      customerChatMsgs = snap.val() ? Object.values(snap.val()) : [];
-      renderCustomerChatUI();
-    });
+  if(custChatListener)custChatListener(); 
+  if(window._db){
+    custChatListener=window._onValue(window._ref(window._db,'chat/customer/'+orderKey),snap=>{customerChatMsgs=snap.val()?Object.values(snap.val()):[]; renderCustomerChatUI();});
   }
 }
-function renderCustomerChatUI() {
-  const area = document.getElementById('customerChatMsgsArea');
-  if(!customerChatMsgs.length){
-    area.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text3); font-size:13px;">Ξεκίνα τη συνομιλία με τον πελάτη!</div>';
-    return;
-  }
-  area.innerHTML = customerChatMsgs.map(m=>{
-    const isMe = m.from === 'driver';
-    const align = isMe ? 'flex-end' : 'flex-start';
-    const bg = isMe ? 'var(--accent)' : 'var(--surface2)';
-    const color = isMe ? '#fff' : 'var(--text)';
-    const radius = isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px';
-    return `<div style="display:flex; justify-content:${align}">
-      <div style="max-width:78%; background:${bg}; color:${color}; border-radius:${radius}; padding:10px 14px; font-size:14px; line-height:1.4;">
-        ${m.text}
-        <div style="font-size:10px; opacity:.6; margin-top:4px; text-align:${isMe?'right':'left'}">${new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'})}</div>
-      </div>
-    </div>`;
-  }).join('');
-  setTimeout(() => { area.scrollTop = area.scrollHeight; }, 50);
+function renderCustomerChatUI(){
+  const area=document.getElementById('customerChatMsgsArea');
+  if(!customerChatMsgs.length){area.innerHTML='<div style="text-align:center; padding:40px; color:var(--text3); font-size:13px;">Ξεκίνα τη συνομιλία με τον πελάτη!</div>';return;}
+  area.innerHTML=customerChatMsgs.map(m=>{
+    const isMe=m.from==='driver'; const align=isMe?'flex-end':'flex-start'; const bg=isMe?'var(--accent)':'var(--surface2)'; const color=isMe?'#fff':'var(--text)'; const radius=isMe?'16px 16px 4px 16px':'16px 16px 16px 4px';
+    return `<div style="display:flex; justify-content:${align}"><div style="max-width:78%; background:${bg}; color:${color}; border-radius:${radius}; padding:10px 14px; font-size:14px; line-height:1.4;">${m.text}<div style="font-size:10px; opacity:.6; margin-top:4px; text-align:${isMe?'right':'left'}">${new Date(m.time).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;
+  }).join(''); setTimeout(()=>area.scrollTop=area.scrollHeight,50);
 }
-function sendCustomerMsg() {
-  const inp = document.getElementById('ccInput');
-  const text = inp.value.trim();
-  if(!text || !activeCustomerOrderKey) return;
-  inp.value = '';
-  const msg = {from:'driver', text, time:Date.now(), driverName: driverData?.name||'Οδηγός'};
-  if(window._db) {
-    window._set(window._push(window._ref(window._db,'chat/customer/'+activeCustomerOrderKey)), msg);
-  } else {
-    customerChatMsgs.push(msg);
-    renderCustomerChatUI();
-  }
+function sendCustomerMsg(){
+  const inp=document.getElementById('ccInput'); const text=inp.value.trim(); if(!text||!activeCustomerOrderKey)return; inp.value='';
+  const msg={from:'driver', text, time:Date.now(), driverName:driverData?.name||'Οδηγός'};
+  if(window._db)window._set(window._push(window._ref(window._db,'chat/customer/'+activeCustomerOrderKey)), msg); else{customerChatMsgs.push(msg);renderCustomerChatUI();}
 }
-function closeCustomerChat() {
-  document.getElementById('customerChatSheet').classList.remove('open');
-  activeCustomerOrderKey = null;
-  if(custChatListener) { custChatListener(); custChatListener = null; }
+function closeCustomerChat(){document.getElementById('customerChatSheet').classList.remove('open'); activeCustomerOrderKey=null; if(custChatListener){custChatListener();custChatListener=null;}}
+
+function updateEarningsUI(total, today, deliveries, cash) {
+  const fmtE=v=>'€'+parseFloat(v||0).toFixed(2); const el=id=>document.getElementById(id);
+  if(el('earnBigMonth'))el('earnBigMonth').textContent=fmtE(total);
+  if(el('earnStatToday'))el('earnStatToday').textContent=fmtE(today);
+  if(el('earnStatDeliveries'))el('earnStatDeliveries').textContent=deliveries||0;
+  if(el('earnStatWeek'))el('earnStatWeek').textContent=fmtE(total);
+  const avg=deliveries>0?(total/deliveries):0; if(el('earnStatAvg'))el('earnStatAvg').textContent=fmtE(avg);
+  if(el('earnToday'))el('earnToday').textContent=fmtE(today); if(el('earnDeliveries'))el('earnDeliveries').textContent=deliveries||0; if(el('earnWeek'))el('earnWeek').textContent=fmtE(total);
+  if(el('cashToHandOver'))el('cashToHandOver').textContent=fmtE(cash);
 }
-function updateEarningsUI(total, today, deliveries) {
-  const fmtE = v => '€' + parseFloat(v||0).toFixed(2);
-  const el = id => document.getElementById(id);
-  if(el('earnBigMonth')) el('earnBigMonth').textContent = fmtE(total);
-  if(el('earnStatToday')) el('earnStatToday').textContent = fmtE(today);
-  if(el('earnStatDeliveries')) el('earnStatDeliveries').textContent = deliveries||0;
-  if(el('earnStatWeek')) el('earnStatWeek').textContent = fmtE(total);
-  const avg = deliveries > 0 ? (total/deliveries) : 0;
-  if(el('earnStatAvg')) el('earnStatAvg').textContent = fmtE(avg);
-  if(el('earnToday')) el('earnToday').textContent = fmtE(today);
-  if(el('earnDeliveries')) el('earnDeliveries').textContent = deliveries||0;
-  if(el('earnWeek')) el('earnWeek').textContent = fmtE(total);
-}
-function calcDriverEarnings(order) {
-  const distKm = order.distanceKm || 1.5; 
-  if(distKm <= 0.5) return 2.50;
-  return 2.50 + (distKm - 0.5) * 0.30;
-}
-function acceptOrder(k) {
-  if(window._db) window._update(window._ref(window._db,'orders/'+k),{status:'assigned'});
-  showToast('✅ Αποδέχτηκες την παραγγελία!');
-}
-function pickupOrder(k){
-  if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'picked'});
-  else{myOrders[k].status='picked';renderOrders();}
-  showToast('📦 Παρέλαβες την παραγγελία!');
-}
+
+function calcDriverEarnings(order) { return parseFloat(order.deliveryCost) || 2.00; }
+function acceptOrder(k) { if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'assigned'}); showToast('✅ Αποδέχτηκες την παραγγελία!'); }
+function pickupOrder(k){ if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'picked'});else{myOrders[k].status='picked';renderOrders();}showToast('📦 Παρέλαβες την παραγγελία!'); }
+
 function deliverOrder(k){
-  const o = myOrders[k];
-  if(!o) return;
-  const earned = calcDriverEarnings(o);
-  const uid = window._currentUser ? window._currentUser.uid : null;
-  if(window._db) {
-    window._update(window._ref(window._db,'orders/'+k), {status:'delivered', deliveredAt: Date.now()});
-  } else {
-    delete myOrders[k]; renderOrders();
-  }
-  if(window._db && uid) {
-    const today = new Date().toISOString().slice(0,10); 
-    const deliveryRecord = {
-      earned, orderId: k, storeName: o.storeName||'', 
-      address: o.address||'', time: Date.now(), date: today
-    };
-    window._set(window._ref(window._db,'deliveries/'+uid+'/'+k), deliveryRecord);
-    const curEarnings = parseFloat(driverData.earnings)||0;
-    const curToday = parseFloat(driverData.earningsToday)||0;
-    const curOrders = parseInt(driverData.orders)||0;
-    const newEarnings = curEarnings + earned;
-    const newToday = curToday + earned;
-    const newOrders = curOrders + 1;
-    window._update(window._ref(window._db,'drivers/'+uid), {
-      earnings: newEarnings,
-      earningsToday: newToday,
-      orders: newOrders,
-      lastDelivery: Date.now()
-    });
-    driverData.earnings = newEarnings;
-    driverData.earningsToday = newToday;
-    driverData.orders = newOrders;
-    updateEarningsUI(newEarnings, newToday, newOrders);
-    showToast('✅ +€' + earned.toFixed(2) + ' — Παράδοση ολοκληρώθηκε!');
-  } else {
-    showToast('✅ Παράδοση ολοκληρώθηκε!');
-  }
+  const o=myOrders[k]; if(!o)return;
+  const earned=calcDriverEarnings(o);
+  const isCash=o.payment==='cash'; const cashCollected=isCash?(parseFloat(o.total)||0):0;
+  const uid=window._currentUser?window._currentUser.uid:null;
+  
+  if(window._db)window._update(window._ref(window._db,'orders/'+k), {status:'delivered', deliveredAt:Date.now()}); else{delete myOrders[k];renderOrders();}
+  
+  if(window._db&&uid){
+    const today=new Date().toISOString().slice(0,10);
+    window._set(window._ref(window._db,'deliveries/'+uid+'/'+k), {earned, orderId:k, storeName:o.storeName||'', address:o.address||'', time:Date.now(), date:today});
+    const curEarnings=parseFloat(driverData.earnings)||0; const curToday=parseFloat(driverData.earningsToday)||0; const curOrders=parseInt(driverData.orders)||0; const curCash=parseFloat(driverData.cashToday)||0;
+    const newEarnings=curEarnings+earned; const newToday=curToday+earned; const newOrders=curOrders+1; const newCashToday=curCash+cashCollected;
+    window._update(window._ref(window._db,'drivers/'+uid), {earnings:newEarnings, earningsToday:newToday, orders:newOrders, cashToday:newCashToday, lastDelivery:Date.now()});
+    driverData.earnings=newEarnings; driverData.earningsToday=newToday; driverData.orders=newOrders; driverData.cashToday=newCashToday;
+    updateEarningsUI(newEarnings, newToday, newOrders, newCashToday);
+    showToast('✅ +€'+earned.toFixed(2)+' — Παράδοση ολοκληρώθηκε!');
+  } else showToast('✅ Παράδοση ολοκληρώθηκε!');
 }
+
 function openReject(k){rejectingKey=k;document.getElementById('rejectSheet').classList.add('open');}
 function closeSheet(){document.getElementById('rejectSheet').classList.remove('open');rejectingKey=null;}
-function rejectOrder(reason){
-  if(!rejectingKey)return;
-  if(window._db)window._update(window._ref(window._db,'orders/'+rejectingKey),{status:'rejected',rejectionReason:reason,driver:'',driverName:''});
-  else{delete myOrders[rejectingKey];renderOrders();}
-  closeSheet();showToast('Παραγγελία απορρίφθηκε');
-}
-function toggleOnline(){
-  isOnline=!isOnline;
-  const t=document.getElementById('onlineToggle');
-  t.className='online-toggle'+(isOnline?' on':'');
-  document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline';
-  const dUid = window._currentUser ? window._currentUser.uid : (window._driverUid||'demo');
-  if(window._db && dUid!=='demo') window._update(window._ref(window._db,'drivers/'+dUid),{online:isOnline});
-}
-function renderChat(){
-  const area=document.getElementById('chatMsgs');
-  if(!myChat.length){area.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px">Καμία συνομιλία ακόμα</div>';return;}
-  area.innerHTML=myChat.map(m=>`<div><div class="msg ${m.from==='driver'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div></div>`).join('');
-  setTimeout(()=>{area.scrollTop=area.scrollHeight;},50);
-}
-function sendMsg(){
-  const input=document.getElementById('chatInput'),text=input.value.trim();
-  if(!text)return;input.value='';
-  const msg={from:'driver',text,time:Date.now(),read:false,driverName:driverData?.name||'Οδηγός'};
-  myChat.push(msg);
-  if(window._db){const uid=window._currentUser?window._currentUser.uid:(window._driverUid||'demo');const r=window._push(window._ref(window._db,'chat/drivers/'+uid));window._set(r,msg);}
-  renderChat();
-}
-function goPage(p){
-  ['orders','chat','earnings','profile'].forEach(x=>{
-    document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none';
-    document.getElementById('nav-'+x).classList.toggle('active',x===p);
-  });
-  if(p==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;});document.getElementById('chatBadge').style.display='none';renderChat();}
-}
+function rejectOrder(reason){if(!rejectingKey)return; if(window._db)window._update(window._ref(window._db,'orders/'+rejectingKey),{status:'rejected',rejectionReason:reason,driver:'',driverName:''});else{delete myOrders[rejectingKey];renderOrders();} closeSheet();showToast('Παραγγελία απορρίφθηκε');}
+
+function toggleOnline(){isOnline=!isOnline; const t=document.getElementById('onlineToggle'); t.className='online-toggle'+(isOnline?' on':''); document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline'; const dUid=window._currentUser?window._currentUser.uid:(window._driverUid||'demo'); if(window._db&&dUid!=='demo')window._update(window._ref(window._db,'drivers/'+dUid),{online:isOnline});}
+function renderChat(){const area=document.getElementById('chatMsgs'); if(!myChat.length){area.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px">Καμία συνομιλία ακόμα</div>';return;} area.innerHTML=myChat.map(m=>`<div><div class="msg ${m.from==='driver'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div></div>`).join(''); setTimeout(()=>{area.scrollTop=area.scrollHeight;},50);}
+function sendMsg(){const input=document.getElementById('chatInput'),text=input.value.trim(); if(!text)return; input.value=''; const msg={from:'driver',text,time:Date.now(),read:false,driverName:driverData?.name||'Οδηγός'}; myChat.push(msg); if(window._db){const uid=window._currentUser?window._currentUser.uid:(window._driverUid||'demo'); window._set(window._push(window._ref(window._db,'chat/drivers/'+uid)),msg);} renderChat();}
+
+function goPage(p){['orders','chat','earnings','profile'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none'; document.getElementById('nav-'+x).classList.toggle('active',x===p);}); if(p==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;}); document.getElementById('chatBadge').style.display='none';renderChat();}}
 function doSignOut(){if(window._auth)window._signOut(window._auth);else showScreen('auth');}
 function initDemo(){showScreen('app');driverData={uid:'demo',name:'Demo Οδηγός',phone:'6934000001'};document.getElementById('topAvatar').textContent='D';document.getElementById('topName').textContent='Demo Οδηγός';}
-let toastT;
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
+
+let toastT; function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
 document.getElementById('rejectSheet').addEventListener('click',function(e){if(e.target===this)closeSheet();});
 document.getElementById('customerChatSheet').addEventListener('click',function(e){if(e.target===this)closeCustomerChat();});
 </script>
-  <script>
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('/sw.js').catch(()=>{});
-    }
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const btn = document.getElementById('installBtn');
-      if(btn) btn.style.display = 'flex';
-    });
-    window.installApp = function(){
-      if(deferredPrompt){
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; const b=document.getElementById('installBtn'); if(b) b.style.display='none'; });
-      }
-    };
-  </script>
-  <script>
-    window.addEventListener('beforeunload', ()=>{
-      const uid = window._currentUser ? window._currentUser.uid : null;
-      if(window._db && uid) window._update(window._ref(window._db,'drivers/'+uid),{online:false});
-    });
-  </script>
+<script>
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+  let deferredPrompt; window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e; const btn=document.getElementById('installBtn');if(btn)btn.style.display='flex';});
+  window.installApp=function(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null; const b=document.getElementById('installBtn');if(b)b.style.display='none';});}};
+  window.addEventListener('beforeunload', ()=>{const uid=window._currentUser?window._currentUser.uid:null; if(window._db&&uid)window._update(window._ref(window._db,'drivers/'+uid),{online:false});});
+</script>
 </body>
 </html>
