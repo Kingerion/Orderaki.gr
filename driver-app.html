@@ -101,8 +101,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .order-btns{display:flex;gap:8px;margin-top:12px}
 .btn-accept{flex:1; background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
 .btn-accept:hover{background:var(--green-dark)}
+.btn-reject{flex:1; background:var(--red);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.btn-reject:hover{background:#dc2626}
 .btn-delivered{flex:1; background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px}
-.btn-reject{flex:1; background:var(--surface3);color:var(--text2);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px}
 .status-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700}
 .st-assigned{background:rgba(245,158,11,.15);color:var(--yellow)}
 .st-picked{background:rgba(139,92,246,.15);color:#a78bfa}
@@ -283,7 +284,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let audioUnlocked = false;
 
-// Ξεκλείδωμα Ήχου & Ειδοποιήσεων με το πρώτο κλικ
 document.body.addEventListener('click', () => {
   if (!audioUnlocked) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -291,9 +291,9 @@ document.body.addEventListener('click', () => {
       Notification.requestPermission();
     }
     audioUnlocked = true;
-    document.getElementById('audioUnlockBanner').style.display = 'none'; // Κρύβουμε το banner αφού πατηθεί
+    document.getElementById('audioUnlockBanner').style.display = 'none';
   }
-  stopAlarms(); // Σταματάει τον ήχο ενοχλητικό ήχο αν χτυπούσε
+  stopAlarms(); 
 }, { capture: true });
 
 function showSysNotif(title, body) {
@@ -318,13 +318,13 @@ function startOrderAlarm() {
   if (orderAlarmTimer) return;
   showSysNotif("ΝΕΑ ΠΑΡΑΓΓΕΛΙΑ!", "Άνοιξε το app για να παραλάβεις.");
   const ring = () => { playBeep(600,'square',0.2,0.8,0); playBeep(800,'square',0.3,0.8,0.2); };
-  ring(); orderAlarmTimer = setInterval(ring, 3000); // Χτυπάει κάθε 3 δευτερόλεπτα (Συνεχόμενα)
+  ring(); orderAlarmTimer = setInterval(ring, 3000); 
 }
 function startMsgAlarm() {
   if (msgAlarmTimer) return;
   showSysNotif("Νέο Μήνυμα", "Έχεις νέο μήνυμα στο Chat.");
   const ring = () => { playBeep(400,'triangle',0.2,0.5,0); };
-  ring(); msgAlarmTimer = setInterval(ring, 4000); // Χτυπάει κάθε 4 δευτερόλεπτα
+  ring(); msgAlarmTimer = setInterval(ring, 4000); 
 }
 function stopAlarms() {
   if(orderAlarmTimer){ clearInterval(orderAlarmTimer); orderAlarmTimer=null; }
@@ -391,8 +391,9 @@ function loadDriverApp(){
 
 function renderOrders(){
   const keys=Object.keys(myOrders); 
-  const pendingCount = keys.filter(k=>myOrders[k].status==='pending_acceptance'||myOrders[k].status==='assigned').length;
-  // Ηχητική Ειδοποίηση Νέας Παραγγελίας
+  // Μετράει μόνο όσες ΔΕΝ έχει αποδεχτεί ακόμα ο οδηγός για να χτυπάει ο συναγερμός
+  const pendingCount = keys.filter(k=> ['assigned','pending_acceptance'].includes(myOrders[k].status) && !myOrders[k].driverAccepted).length;
+  
   if(pendingCount > lastOrderCount) startOrderAlarm(); 
   lastOrderCount = pendingCount;
   
@@ -401,21 +402,23 @@ function renderOrders(){
   
   document.getElementById('ordersList').innerHTML=keys.map(k=>{
     const o=myOrders[k]; 
-    const isPending = o.status==='pending_acceptance'; 
-    const isAssigned = o.status==='assigned'; 
-    const isPicked = o.status==='picked';
+    
+    // ΕΛΕΓΧΟΣ ΣΤΑΣΕΩΝ ΠΑΡΑΓΓΕΛΙΑΣ
+    const needsAcceptance = ['assigned','pending_acceptance'].includes(o.status) && !o.driverAccepted;
+    const isAccepted = ['assigned','pending_acceptance'].includes(o.status) && o.driverAccepted;
+    const isPicked = o.status === 'picked';
     
     const storeAddr=o.storeAddress||getStoreAddress(o.storeId,o.storeName)||o.storeName; const custAddr=`${o.address||''}`;
-    const mapsStore=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storeAddr)}`; const mapsCust=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(custAddr)}`;
+    const mapsStore=`https://maps.google.com/?q=${encodeURIComponent(storeAddr)}`; const mapsCust=`https://maps.google.com/?q=${encodeURIComponent(custAddr)}`;
     const earnings = parseFloat(o.deliveryCost)||2.00;
     
-    return`<div class="order-card ${isPending?'new-order':''}">
-      <div class="order-card-hd"><div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div><span class="status-pill ${isPending?'st-new':isAssigned?'st-assigned':'st-picked'}">${isPending?'Νέα!':isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span></div>
+    return`<div class="order-card ${needsAcceptance?'new-order':''}">
+      <div class="order-card-hd"><div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div><span class="status-pill ${needsAcceptance?'st-new':isAccepted?'st-assigned':'st-picked'}">${needsAcceptance?'Νέα!':isAccepted?'Ανατέθηκε':'Παρελήφθη'}</span></div>
       
       <div class="order-info-grid">
         <div class="order-info-item" style="grid-column: span 2; display:flex; justify-content:space-between; align-items:center;">
           <div><div class="order-info-label">Πελάτης</div><div class="order-info-val">${o.customerName||'—'}</div></div>
-          ${(isAssigned||isPicked)?`<button onclick="openCustomerChat('${k}')" style="background:var(--accent); color:#fff; border:none; border-radius:10px; padding:8px 14px; font-weight:700; display:flex; align-items:center; gap:6px;"><span class="material-icons-round" style="font-size:16px">chat</span>Chat</button>`:''}
+          ${(isAccepted||isPicked)?`<button onclick="openCustomerChat('${k}')" style="background:var(--accent); color:#fff; border:none; border-radius:10px; padding:8px 14px; font-weight:700; display:flex; align-items:center; gap:6px;"><span class="material-icons-round" style="font-size:16px">chat</span>Chat</button>`:''}
         </div>
         <div class="order-info-item" style="grid-column: span 2; display:flex; justify-content:space-between; align-items:center;">
           <div><div class="order-info-label">Τηλέφωνο</div><div class="order-info-val">${o.phone||'—'}</div></div>
@@ -441,13 +444,13 @@ function renderOrders(){
       </div>
       
       <div class="order-btns">
-        ${isPending ? `
+        ${needsAcceptance ? `
           <button class="btn-accept" onclick="acceptOrder('${k}')"><span class="material-icons-round">check</span> Αποδοχή</button>
           <button class="btn-reject" onclick="openReject('${k}')"><span class="material-icons-round">close</span> Απόρριψη</button>
-        ` : isAssigned ? `
-          <button class="btn-accept" onclick="pickupOrder('${k}')" style="flex: 2;"><span class="material-icons-round">storefront</span> Παρέλαβα</button>
+        ` : isAccepted ? `
+          <button class="btn-accept" onclick="pickupOrder('${k}')" style="flex: 1; background:var(--accent);"><span class="material-icons-round">storefront</span> Παρέλαβα</button>
         ` : `
-          <button class="btn-delivered" onclick="deliverOrder('${k}')" style="flex: 2;"><span class="material-icons-round">check_circle</span> Παρέδωσα!</button>
+          <button class="btn-delivered" onclick="deliverOrder('${k}')" style="flex: 1;"><span class="material-icons-round">check_circle</span> Παρέδωσα!</button>
         `}
       </div>
     </div>`;
@@ -498,8 +501,16 @@ function updateEarningsUI(total, today, deliveries, cash) {
 function calcDriverEarnings(order) { return parseFloat(order.deliveryCost) || 2.00; }
 
 // --- ΡΟΗ ΠΑΡΑΓΓΕΛΙΑΣ ---
-function acceptOrder(k) { stopAlarms(); if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'assigned'}); showToast('✅ Αποδέχτηκες'); }
-function pickupOrder(k) { stopAlarms(); if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'picked'}); showToast('📦 Παρέλαβες'); }
+function acceptOrder(k) { 
+  stopAlarms(); 
+  if(window._db)window._update(window._ref(window._db,'orders/'+k),{driverAccepted: true, status: 'assigned'}); 
+  showToast('✅ Αποδέχτηκες'); 
+}
+function pickupOrder(k) { 
+  stopAlarms(); 
+  if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'picked'}); 
+  showToast('📦 Παρέλαβες'); 
+}
 function deliverOrder(k){
   stopAlarms(); const o=myOrders[k]; if(!o)return; const earned=calcDriverEarnings(o); const isCash=o.payment==='cash'; const cashCollected=isCash?(parseFloat(o.total)||0):0; const uid=window._currentUser.uid;
   if(window._db){
@@ -511,7 +522,7 @@ function deliverOrder(k){
 }
 function openReject(k){rejectingKey=k;document.getElementById('rejectSheet').classList.add('open'); stopAlarms(); }
 function closeSheet(){document.getElementById('rejectSheet').classList.remove('open');rejectingKey=null;}
-function rejectOrder(reason){if(window._db)window._update(window._ref(window._db,'orders/'+rejectingKey),{status:'rejected',rejectionReason:reason,driver:''}); closeSheet();}
+function rejectOrder(reason){if(window._db)window._update(window._ref(window._db,'orders/'+rejectingKey),{status:'rejected',rejectionReason:reason,driver:'', driverAccepted: false}); closeSheet();}
 
 function toggleOnline(){isOnline=!isOnline; document.getElementById('onlineToggle').className='online-toggle'+(isOnline?' on':''); document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline'; if(window._db)window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:isOnline});}
 function renderChat(){const area=document.getElementById('chatMsgs'); area.innerHTML=myChat.map(m=>`<div class="msg ${m.from==='driver'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div>`).join(''); setTimeout(()=>area.scrollTop=area.scrollHeight,50);}
@@ -528,3 +539,4 @@ document.addEventListener('click', e => { if(e.target.classList.contains('sheet-
 </script>
 </body>
 </html>
+
