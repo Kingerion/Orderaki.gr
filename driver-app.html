@@ -111,7 +111,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .chat-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface);flex-shrink:0}
 .chat-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;color:var(--text);outline:none;font-family:'Outfit',sans-serif}
 .chat-send{width:42px;height:42px;background:var(--accent);border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0}
-/* ΣΥΜΠΙΕΣΗ ΚΕΡΔΩΝ (Λύση 1ης Εικόνας) */
 .earn-page{padding:14px}
 .earn-big-card{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;padding:16px;text-align:center;margin-bottom:12px}
 .earn-big-val{font-size:36px;font-weight:900;color:#fff;letter-spacing:-2px}
@@ -250,7 +249,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
          <div style="width:36px; height:36px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff;" id="ccAvatar">Π</div>
          <div><div style="font-size:14px; font-weight:800;" id="ccName">Πελάτης</div></div>
       </div>
-      <button onclick="closeCustomerChat()" style="background:none; border:none; color:var(--text3); font-size:24px; cursor:pointer;">&times;</button>
+      <button onclick="closeCustomerChat()" style="background:none; border:none; color:var(--text3); font-size:24px; cursor:pointer;">×</button>
     </div>
     <div id="customerChatMsgsArea" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px;"></div>
     <div style="padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; background:var(--surface);">
@@ -261,7 +260,15 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 </div>
 <div class="toast" id="toast"></div>
 <script>
-// -- AUDIO SYSTEM (Web Audio API) --
+// -- ΣΥΣΤΗΜΑ ΗΧΟΥ & ΕΙΔΟΠΟΙΗΣΕΩΝ --
+if ("Notification" in window) Notification.requestPermission();
+function showSysNotif(title, body) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    const n = new Notification(title, { body: body, icon: '/icon-driver.png' });
+    n.onclick = function() { window.focus(); this.close(); };
+  }
+}
+
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playBeep(freq, type, duration, vol, delay=0) {
   if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -272,10 +279,28 @@ function playBeep(freq, type, duration, vol, delay=0) {
   gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + delay + duration);
   osc.start(audioCtx.currentTime + delay); osc.stop(audioCtx.currentTime + delay + duration);
 }
-function playOrderSound() { playBeep(600,'sine',0.2,0.5,0); playBeep(800,'sine',0.3,0.5,0.2); } // Διπλός ήχος
-function playMsgSound() { playBeep(400,'triangle',0.15,0.3,0); } // Απλός ήχος
 
-let driverData=null, myOrders={}, myChat=[], isOnline=true, rejectingKey=null, lastOrderCount=0;
+let orderAlarmTimer = null, msgAlarmTimer = null;
+function startOrderAlarm() {
+  if (orderAlarmTimer) return;
+  showSysNotif("ΝΕΑ ΠΑΡΑΓΓΕΛΙΑ!", "Άνοιξε το app για να παραλάβεις.");
+  const ring = () => { playBeep(600,'square',0.2,0.8,0); playBeep(800,'square',0.3,0.8,0.2); };
+  ring(); orderAlarmTimer = setInterval(ring, 3000);
+}
+function startMsgAlarm() {
+  if (msgAlarmTimer) return;
+  showSysNotif("Νέο Μήνυμα", "Έχεις νέο μήνυμα στο Chat.");
+  const ring = () => { playBeep(400,'triangle',0.2,0.5,0); };
+  ring(); msgAlarmTimer = setInterval(ring, 4000);
+}
+function stopAlarms() {
+  if(orderAlarmTimer){ clearInterval(orderAlarmTimer); orderAlarmTimer=null; }
+  if(msgAlarmTimer){ clearInterval(msgAlarmTimer); msgAlarmTimer=null; }
+}
+// Σταματάει τον ήχο μόλις ακουμπήσει την οθόνη
+document.addEventListener('click', stopAlarms); document.addEventListener('touchstart', stopAlarms);
+
+let driverData=null, myOrders={}, myChat=[], isOnline=true, rejectingKey=null, lastOrderCount=0, lastCustMsgCount=0, lastAdminMsgCount=0;
 const fmtTime=ts=>ts?new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}):'';
 const fmtCur=v=>`€${(v||0).toFixed(2)}`;
 
@@ -289,6 +314,7 @@ function doRegister(){
   if(f&&l&&ph&&em&&pa.length>=6&&window._auth){
     window._createUser(window._auth,em,pa).then(u=>{
       window._set(window._ref(window._db,'drivers/'+u.user.uid),{name:f+' '+l,phone:ph,email:em,online:false,orders:0,earnings:0,cashToday:0,status:'pending',uid:u.user.uid});
+      window._push(window._ref(window._db,'notifications'),{type:'new_driver',driverId:u.user.uid,name:f+' '+l,phone:ph,email:em,time:Date.now(),read:false});
     }).catch(e=>showErr(e.message));
   }
 }
@@ -325,7 +351,8 @@ function loadDriverApp(){
     });
     window._onValue(window._ref(window._db,'chat/drivers/'+window._currentUser.uid),snap=>{
       const d=snap.val(); const newChat = d?Object.values(d):[];
-      if(newChat.length>myChat.length && newChat[newChat.length-1].from==='admin') playMsgSound();
+      if(newChat.length>lastAdminMsgCount && newChat[newChat.length-1].from==='admin'){ startMsgAlarm(); }
+      lastAdminMsgCount = newChat.length;
       myChat=newChat; renderChat(); document.getElementById('chatBadge').style.display=myChat.filter(m=>m.from==='admin'&&!m.read).length>0?'flex':'none';
     });
   }
@@ -334,7 +361,8 @@ function loadDriverApp(){
 function renderOrders(){
   const keys=Object.keys(myOrders); 
   const pendingCount = keys.filter(k=>myOrders[k].status==='pending_acceptance'||myOrders[k].status==='assigned').length;
-  if(pendingCount > lastOrderCount) playOrderSound(); lastOrderCount = pendingCount;
+  if(pendingCount > lastOrderCount) startOrderAlarm(); 
+  lastOrderCount = pendingCount;
   
   document.getElementById('navBadge').textContent=keys.length; document.getElementById('navBadge').style.display=keys.length>0?'flex':'none';
   if(!keys.length){document.getElementById('ordersList').innerHTML='<div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Καμία ενεργή παραγγελία</span></div>';return;}
@@ -342,8 +370,8 @@ function renderOrders(){
   document.getElementById('ordersList').innerHTML=keys.map(k=>{
     const o=myOrders[k]; const isPending=o.status==='pending_acceptance'; const isAssigned=o.status==='assigned';
     const storeAddr=o.storeAddress||getStoreAddress(o.storeId,o.storeName)||o.storeName; const custAddr=`${o.address||''}`;
-    const mapsStore=`https://maps.google.com/?q=${encodeURIComponent(storeAddr)}`; const mapsCust=`https://maps.google.com/?q=${encodeURIComponent(custAddr)}`;
-    const earnings = parseFloat(o.deliveryCost)||2.00; // Driver gets exactly the delivery cost
+    const mapsStore=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storeAddr)}`; const mapsCust=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(custAddr)}`;
+    const earnings = parseFloat(o.deliveryCost)||2.00;
     
     return`<div class="order-card ${isAssigned||isPending?'new-order':''}">
       <div class="order-card-hd"><div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div><span class="status-pill ${isPending?'st-new':isAssigned?'st-assigned':'st-picked'}">${isPending?'Νέα!':isAssigned?'Ανατέθηκε':'Παρελήφθη'}</span></div>
@@ -380,7 +408,7 @@ function renderOrders(){
 
 let activeCustomerOrderKey=null, customerChatMsgs=[], custChatListener=null; 
 function openCustomerChat(orderKey){
-  activeCustomerOrderKey=orderKey; const o=myOrders[orderKey];
+  activeCustomerOrderKey=orderKey; const o=myOrders[orderKey]; stopAlarms();
   document.getElementById('ccAvatar').textContent=(o.customerName||'Π')[0]; document.getElementById('ccName').textContent=o.customerName;
   document.getElementById('customerChatSheet').classList.add('open');
   if(custChatListener)custChatListener(); 
@@ -389,9 +417,10 @@ function openCustomerChat(orderKey){
       const data = snap.val();
       if(data) {
         const newMsgs = Object.values(data).sort((a,b)=>a.time-b.time);
-        if(newMsgs.length > customerChatMsgs.length && newMsgs[newMsgs.length-1].from === 'customer') playMsgSound();
+        if(newMsgs.length > lastCustMsgCount && newMsgs[newMsgs.length-1].from === 'customer') startMsgAlarm();
+        lastCustMsgCount = newMsgs.length;
         customerChatMsgs = newMsgs;
-      } else customerChatMsgs = [];
+      } else { customerChatMsgs = []; lastCustMsgCount=0;}
       renderCustomerChatUI();
     });
   }
@@ -419,7 +448,7 @@ function updateEarningsUI(total, today, deliveries, cash) {
   el('cashToHandOver').textContent=fmtCur(cash);
 }
 function calcDriverEarnings(order) { return parseFloat(order.deliveryCost) || 2.00; }
-function acceptOrder(k) { if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'assigned'}); showToast('✅ Αποδέχτηκες'); }
+function acceptOrder(k) { stopAlarms(); if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'assigned'}); showToast('✅ Αποδέχτηκες'); }
 function pickupOrder(k) { if(window._db)window._update(window._ref(window._db,'orders/'+k),{status:'picked'}); showToast('📦 Παρέλαβες'); }
 function deliverOrder(k){
   const o=myOrders[k]; if(!o)return; const earned=calcDriverEarnings(o); const isCash=o.payment==='cash'; const cashCollected=isCash?(parseFloat(o.total)||0):0; const uid=window._currentUser.uid;
@@ -436,7 +465,7 @@ function rejectOrder(reason){if(window._db)window._update(window._ref(window._db
 function toggleOnline(){isOnline=!isOnline; document.getElementById('onlineToggle').className='online-toggle'+(isOnline?' on':''); document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline'; if(window._db)window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:isOnline});}
 function renderChat(){const area=document.getElementById('chatMsgs'); area.innerHTML=myChat.map(m=>`<div class="msg ${m.from==='driver'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div>`).join(''); setTimeout(()=>area.scrollTop=area.scrollHeight,50);}
 function sendMsg(){const inp=document.getElementById('chatInput'),text=input.value.trim(); if(!text)return; inp.value=''; if(window._db)window._set(window._push(window._ref(window._db,'chat/drivers/'+window._currentUser.uid)),{from:'driver',text,time:Date.now(),read:false});}
-function goPage(p){['orders','chat','earnings','profile'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none'; document.getElementById('nav-'+x).classList.toggle('active',x===p);}); if(p==='chat'){myChat.forEach(m=>{m.read=true;}); document.getElementById('chatBadge').style.display='none';renderChat();}}
+function goPage(p){['orders','chat','earnings','profile'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none'; document.getElementById('nav-'+x).classList.toggle('active',x===p);}); if(p==='chat'){myChat.forEach(m=>{m.read=true;}); document.getElementById('chatBadge').style.display='none';renderChat(); stopAlarms();}}
 function doSignOut(){if(window._auth)window._signOut(window._auth);}
 
 let toastT; function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
