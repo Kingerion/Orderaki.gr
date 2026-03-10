@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/icon-admin.png">
   <link rel="icon" type="image/png" href="/icon-admin.png">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>2Fast Delivery — Admin Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -42,7 +42,6 @@
       
       let orderHistory = {};
       
-      // Load Settings first
       onValue(ref(db, 'settings'), s => {
          if(s.val()) {
             window.adminSettings = s.val();
@@ -125,6 +124,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);displa
 .tabs{display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px}
 .tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap}
 .tab.active{background:var(--surface);color:var(--dark);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.tab:hover:not(.active){color:var(--dark)}
 .topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
 .btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:'Syne',sans-serif;}
 .btn-primary{background:var(--accent);color:#fff;}
@@ -150,59 +150,107 @@ th{text-align:left;padding:10px 16px;font-size:10.5px;font-weight:700;text-trans
 td{padding:12px 16px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle}
 tr:hover td{background:#fdf9f7}
 .status-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.s-new{background:rgba(59,130,246,.1);color:var(--blue)}
+.s-assigned{background:rgba(245,158,11,.1);color:var(--yellow)}
+.s-picked{background:rgba(255,109,0,.1);color:var(--accent2)}
+.s-delivered{background:rgba(0,179,126,.1);color:var(--green)}
+.s-ready{background:rgba(0,179,126,.2);color:var(--green);font-weight:800}
+.s-rejected{background:rgba(239,68,68,.08);color:var(--red)}
+.s-blocked{background:rgba(239,68,68,.15);color:var(--red)}
 .act-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;}
-.toast.show{transform:translateY(0);opacity:1}
-#map { position:absolute; inset:0; z-index:1; }
+.driver-sel{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--dark);outline:none;}
+.right-col{display:flex;flex-direction:column;gap:16px;overflow:hidden}
+.driver-row{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--border);cursor:pointer;}
+.driver-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;position:relative}
+.online-dot{position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;border:2px solid var(--surface)}
+.chat-btn-small{width:28px;height:28px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--blue);position:relative}
+.chat-unread{position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:var(--red);border-radius:50%;font-size:8px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--surface)}
+
+/* MAP & MODALS */
+.map-box{flex:1;min-height:160px;position:relative;overflow:hidden;border-radius:0 0 16px 16px; z-index:1;}
+#map { position:absolute; inset:0; width:100%; height:100%; z-index:1; }
 .custom-div-icon { background: none; border: none; }
+.chat-overlay,.overlay{position:fixed;inset:0;background:rgba(26,26,26,.6);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:flex-end;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay{align-items:center;justify-content:center;z-index:300}
+.chat-overlay.open,.overlay.open{opacity:1;pointer-events:all}
+.chat-panel{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:360px;height:540px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(30px) scale(.97);transition:transform .25s;}
+.chat-overlay.open .chat-panel{transform:translateY(0) scale(1)}
+.chat-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface2);}
+.modal{background:var(--surface);border-radius:20px;width:500px;max-width:95vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(20px);transition:transform .25s;}
+.overlay.open .modal{transform:translateY(0)}
 .fgroup{margin-bottom:14px}
 .flabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px;display:block}
 .finput{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'Syne',sans-serif;font-size:13px;outline:none;}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.overlay{position:fixed;inset:0;background:rgba(26,26,26,.6);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-.overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--surface);border-radius:20px;width:500px;max-width:95vw;padding:28px;transform:translateY(20px);transition:transform .25s;}
-.overlay.open .modal{transform:translateY(0)}
+.modal-ft{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;}
+.toast.show{transform:translateY(0);opacity:1}
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:10px}
+
+/* 📱 MOBILE RESPONSIVENESS 📱 */
+@media (max-width: 992px) {
+  body { flex-direction: column; overflow-y: auto; }
+  .sidebar { width: 100%; max-height: 60px; flex-direction: row; padding: 0 10px; overflow-x: auto; overflow-y: hidden; z-index: 50; }
+  .logo { padding: 10px; border: none; background: transparent; }
+  .logo-title, .logo-sub { display: none; }
+  .nav { flex-direction: row; padding: 0; align-items: center; gap:5px; }
+  .nav-label { display: none; }
+  .nav-item { padding: 8px 12px; white-space: nowrap; }
+  .sidebar-user { display: none; }
+  .main { flex: none; height: auto; overflow: visible; }
+  .topbar { height: auto; flex-wrap: wrap; padding: 12px; }
+  .content { padding: 12px; overflow: visible; }
+  .stats { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-main { grid-template-columns: 1fr !important; display: flex; flex-direction: column; gap:16px;}
+  .right-col { display: flex; flex-direction: column; gap:16px;}
+  .map-box { min-height: 350px; height: 350px; }
+  .view-section { display: none; }
+  .view-section.active { display: flex; flex-direction: column; }
+  .table-wrap { max-width: 100vw; overflow-x: auto; }
+  .panel { max-width: 100vw; }
+}
 </style>
 </head>
 <body>
-
 <aside class="sidebar">
-  <div class="logo"><div class="logo-mark">⚡</div><div><div class="logo-title">2Fast Delivery</div><div class="logo-sub">Admin Panel</div></div></div>
+  <div class="logo">
+    <div class="logo-mark">⚡</div>
+    <div><div class="logo-title">2Fast Delivery</div><div class="logo-sub">Admin Panel</div></div>
+  </div>
   <nav class="nav">
     <div class="nav-label">Κύριο</div>
-    <div class="nav-item active" onclick="navTo(this)"><span class="material-icons-round">receipt_long</span> Orders <span class="nav-badge" id="navCount">0</span></div>
-    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">storefront</span> Stores</div>
-    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">two_wheeler</span> Couriers <span class="nav-badge green" id="navDrivers">0</span></div>
+    <div class="nav-item active" onclick="switchView('orders', this)"><span class="material-icons-round">receipt_long</span> Orders <span class="nav-badge" id="navCount">0</span></div>
+    <div class="nav-item" onclick="switchView('stores', this)"><span class="material-icons-round">storefront</span> Stores</div>
+    <div class="nav-item" onclick="switchView('drivers', this)"><span class="material-icons-round">two_wheeler</span> Couriers <span class="nav-badge green" id="navDrivers">0</span></div>
     
     <div class="nav-label">Οικονομικά & Λειτουργίες</div>
-    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">map</span> Zones</div>
-    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">account_balance_wallet</span> Finance</div>
-    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">payments</span> Settlements</div>
-    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">local_offer</span> Promotions</div>
+    <div class="nav-item" onclick="switchView('zones', this)"><span class="material-icons-round">map</span> Zones</div>
+    <div class="nav-item" onclick="switchView('finance', this)"><span class="material-icons-round">account_balance_wallet</span> Finance</div>
+    <div class="nav-item" onclick="switchView('settlements', this)"><span class="material-icons-round">payments</span> Settlements</div>
+    <div class="nav-item" onclick="switchView('promotions', this)"><span class="material-icons-round">local_offer</span> Promotions</div>
 
     <div class="nav-label">Υποστήριξη & Σύστημα</div>
-    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">support_agent</span> Customers</div>
+    <div class="nav-item" onclick="switchView('customers', this)"><span class="material-icons-round">support_agent</span> Customers</div>
     <div class="nav-item" onclick="document.getElementById('chatOverlay').classList.add('open');"><span class="material-icons-round">chat</span> Chats <span class="nav-badge blue" id="navUnread" style="display:none">!</span></div>
-    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">settings</span> Settings</div>
+    <div class="nav-item" onclick="switchView('settings', this)"><span class="material-icons-round">settings</span> Settings</div>
   </nav>
   <div class="sidebar-user"><div class="user-row"><div class="user-av">A</div><div><div class="user-name">Admin</div><div class="user-role">2Fast Delivery</div></div></div></div>
 </aside>
-<div class="main">
 
+<div class="main">
   <div class="view-section active" id="view-orders">
     <div class="topbar">
-      <div class="topbar-title">Παραγγελίες Live</div><div class="live-pill"><div class="live-dot"></div> LIVE</div>
+      <div class="topbar-title">Παραγγελίες Live</div>
+      <div class="live-pill"><div class="live-dot"></div> LIVE</div>
       <div class="auto-dispatch-wrap on" id="adWrap" onclick="toggleAutoDispatch()">
         <span class="material-icons-round" style="font-size:16px;color:var(--green)" id="adIcon">smart_toy</span>
         <div><div class="ad-label" id="adLabel">Auto-Dispatch: ON</div></div><div class="toggle-switch on" id="adToggle"></div>
       </div>
       <div class="tabs"><div class="tab active" onclick="filterTab('all',this)">Όλες</div><div class="tab" onclick="filterTab('new',this)">Νέες</div><div class="tab" onclick="filterTab('preparing',this)">Ετοιμάζεται</div><div class="tab" onclick="filterTab('ready',this)">Έτοιμη</div><div class="tab" onclick="filterTab('assigned',this)">Ανατεθ.</div></div>
-      <div class="topbar-actions"><button class="btn btn-outline" onclick="openModal()"><span class="material-icons-round">add</span> Νέα</button></div>
+      <div class="topbar-actions"><button class="btn btn-outline" onclick="openModal()"><span class="material-icons-round">add</span> Νέα Παραγγελία</button></div>
     </div>
     <div class="content">
       <div class="stats">
@@ -210,7 +258,7 @@ tr:hover td{background:#fdf9f7}
         <div class="stat"><div class="stat-top"><div><div class="stat-label">Σε Διαδρομή</div><div class="stat-value" id="sActive" style="color:var(--accent2)">0</div></div><div class="stat-icon" style="background:rgba(255,109,0,.1)"><span class="material-icons-round" style="color:var(--accent2)">two_wheeler</span></div></div></div>
         <div class="stat"><div class="stat-top"><div><div class="stat-label">Παραδόθηκαν</div><div class="stat-value" id="sDelivered" style="color:var(--green)">0</div></div><div class="stat-icon" style="background:rgba(0,179,126,.1)"><span class="material-icons-round" style="color:var(--green)">check_circle_outline</span></div></div></div>
         <div class="stat"><div class="stat-top"><div><div class="stat-label">Οδηγοί Live</div><div class="stat-value" id="sDrivers" style="color:var(--accent)">0</div></div><div class="stat-icon" style="background:rgba(255,61,0,.1)"><span class="material-icons-round" style="color:var(--accent)">person_pin_circle</span></div></div></div>
-        <div class="stat"><div class="stat-top"><div><div class="stat-label">Σύνολο</div><div class="stat-value" id="sTotal">0</div></div><div class="stat-icon" style="background:rgba(0,0,0,.05)"><span class="material-icons-round" style="color:var(--muted)">receipt_long</span></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Σύνολο Ημέρας</div><div class="stat-value" id="sTotal">0</div></div><div class="stat-icon" style="background:rgba(0,0,0,.05)"><span class="material-icons-round" style="color:var(--muted)">receipt_long</span></div></div></div>
       </div>
       <div class="grid-main">
         <div class="panel">
@@ -219,7 +267,7 @@ tr:hover td{background:#fdf9f7}
         </div>
         <div class="right-col">
           <div class="panel" style="flex:0 0 auto">
-            <div class="panel-hd"><div class="panel-title">Οδηγοί Live</div></div>
+            <div class="panel-hd"><div class="panel-title">Οδηγοί Live</div><div class="count-badge" style="background:rgba(0,179,126,.1);color:var(--green)" id="driverCount">0</div></div>
             <div id="driversList"></div>
             <div style="padding:10px 20px 6px;font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--text3);border-top:1px solid var(--border);margin-top:4px">Αιτήματα Οδηγών <span id="pendingBadge" style="display:none;background:var(--yellow);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;margin-left:4px">0</span></div>
             <div id="pendingDriversList"><div style="padding:16px 20px;font-size:13px;color:var(--text3)">Δεν υπάρχουν αιτήματα</div></div>
@@ -237,7 +285,6 @@ tr:hover td{background:#fdf9f7}
       <div class="panel" style="flex:1"><div class="panel-hd"><div class="panel-title">Λίστα Συνεργατών</div><div class="search-wrap"><span class="material-icons-round">search</span><input type="text" id="storeSearchInput" placeholder="Αναζήτηση..." oninput="renderAdminStoresTable()"></div></div><div class="table-wrap"><table><thead><tr><th>Κατάστημα</th><th>Κατηγορία</th><th>Επικοινωνία</th><th>Κατάσταση</th><th>Ενέργειες</th></tr></thead><tbody id="storesAdminBody"></tbody></table></div></div>
     </div>
   </div>
-
   <div class="view-section" id="view-drivers">
     <div class="topbar"><div class="topbar-title">Οδηγοί / Couriers</div><div class="tabs"><div class="tab active" onclick="filterDriversTab('all',this)">Όλοι</div><div class="tab" onclick="filterDriversTab('online',this)">Online</div><div class="tab" onclick="filterDriversTab('pending',this)">Αιτήματα <span id="drTopBadge" style="display:none">0</span></div></div></div>
     <div class="content">
@@ -260,6 +307,7 @@ tr:hover td{background:#fdf9f7}
       </div>
     </div>
   </div>
+
   <div class="view-section" id="view-settlements">
     <div class="topbar"><div class="topbar-title">Εκκαθαρίσεις (Ταμεία)</div></div>
     <div class="content" style="flex-direction:row;">
@@ -286,68 +334,33 @@ tr:hover td{background:#fdf9f7}
   <div class="view-section" id="view-zones">
     <div class="topbar"><div class="topbar-title">Ζώνες & Περιοχές</div><button class="btn btn-primary" onclick="showToast('Προσθήκη ζώνης σύντομα!')">+ Νέα Ζώνη</button></div>
     <div class="content">
-       <div class="panel">
-         <div class="table-wrap">
-           <table>
-             <thead><tr><th>Περιοχή</th><th>Ελάχιστη Παραγγελία</th><th>Βασική Χρέωση Διανομής</th><th>Κατάσταση</th></tr></thead>
-             <tbody>
-               <tr><td><b>Πειραιάς (Κέντρο)</b></td><td>€5.00</td><td>€1.50</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργή</span></td></tr>
-               <tr><td><b>Αθήνα (Κέντρο)</b></td><td>€7.00</td><td>€2.00</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργή</span></td></tr>
-               <tr><td><b>Νότια Προάστια</b></td><td>€10.00</td><td>€2.50</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργή</span></td></tr>
-             </tbody>
-           </table>
-         </div>
-       </div>
+       <div class="panel"><div class="table-wrap"><table><thead><tr><th>Περιοχή</th><th>Ελάχιστη Παραγγελία</th><th>Βασική Χρέωση Διανομής</th><th>Κατάσταση</th></tr></thead><tbody><tr><td><b>Πειραιάς (Κέντρο)</b></td><td>€5.00</td><td>€1.50</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργή</span></td></tr><tr><td><b>Αθήνα (Κέντρο)</b></td><td>€7.00</td><td>€2.00</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργή</span></td></tr><tr><td><b>Νότια Προάστια</b></td><td>€10.00</td><td>€2.50</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργή</span></td></tr></tbody></table></div></div>
     </div>
   </div>
 
   <div class="view-section" id="view-promotions">
     <div class="topbar"><div class="topbar-title">Προσφορές & Κουπόνια</div><button class="btn btn-primary" onclick="showToast('Προσθήκη κουπονιού σύντομα!')">+ Νέο Κουπόνι</button></div>
     <div class="content">
-       <div class="panel">
-         <div class="table-wrap">
-           <table>
-             <thead><tr><th>Κωδικός Κουπονιού</th><th>Έκπτωση</th><th>Λήξη</th><th>Χρήσεις</th><th>Κατάσταση</th></tr></thead>
-             <tbody>
-               <tr><td><span style="background:var(--surface2);padding:4px 8px;border-radius:6px;font-family:monospace;font-weight:700">WELCOME10</span></td><td>10%</td><td>31/12/2026</td><td>45</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργό</span></td></tr>
-               <tr><td><span style="background:var(--surface2);padding:4px 8px;border-radius:6px;font-family:monospace;font-weight:700">FREEDELIVERY</span></td><td>Δωρεάν Μεταφορικά</td><td>01/06/2026</td><td>128</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργό</span></td></tr>
-               <tr><td><span style="background:var(--surface2);padding:4px 8px;border-radius:6px;font-family:monospace;font-weight:700">SUMMER20</span></td><td>20%</td><td>31/08/2025</td><td>310</td><td><span class="status-tag s-failed" style="color:var(--red);background:rgba(239,68,68,.1)">Έληξε</span></td></tr>
-             </tbody>
-           </table>
-         </div>
-       </div>
+       <div class="panel"><div class="table-wrap"><table><thead><tr><th>Κωδικός Κουπονιού</th><th>Έκπτωση</th><th>Λήξη</th><th>Χρήσεις</th><th>Κατάσταση</th></tr></thead><tbody><tr><td><span style="background:var(--surface2);padding:4px 8px;border-radius:6px;font-family:monospace;font-weight:700">WELCOME10</span></td><td>10%</td><td>31/12/2026</td><td>45</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργό</span></td></tr><tr><td><span style="background:var(--surface2);padding:4px 8px;border-radius:6px;font-family:monospace;font-weight:700">FREEDELIVERY</span></td><td>Δωρεάν Μεταφορικά</td><td>01/06/2026</td><td>128</td><td><span class="status-tag s-delivered" style="color:var(--green);background:rgba(0,179,126,.1)">Ενεργό</span></td></tr><tr><td><span style="background:var(--surface2);padding:4px 8px;border-radius:6px;font-family:monospace;font-weight:700">SUMMER20</span></td><td>20%</td><td>31/08/2025</td><td>310</td><td><span class="status-tag s-failed" style="color:var(--red);background:rgba(239,68,68,.1)">Έληξε</span></td></tr></tbody></table></div></div>
     </div>
   </div>
 
   <div class="view-section" id="view-settings">
     <div class="topbar"><div class="topbar-title">Ρυθμίσεις Συστήματος</div></div>
     <div class="content" style="align-items:center">
-      <div class="panel" style="width:100%;max-width:500px;padding:24px">
-        <div style="font-size:16px;font-weight:800;margin-bottom:20px">Βασικές Παράμετροι</div>
-        <div class="fgroup">
-          <label class="flabel">Προμήθεια Πλατφόρμας (%)</label>
-          <input type="number" id="setCommission" class="finput" value="10">
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Το ποσοστό που κρατάει η πλατφόρμα από την αξία της κάθε παραγγελίας.</div>
-        </div>
-        <div class="fgroup" style="margin-top:20px">
-          <label class="flabel">Ακτίνα Auto-Dispatch (Χλμ)</label>
-          <input type="number" id="setRadius" class="finput" value="5">
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Πόσο μακριά μπορεί να ψάξει το σύστημα για διαθέσιμο οδηγό.</div>
-        </div>
-        <button class="btn btn-primary" onclick="saveAdminSettings()" style="width:100%;justify-content:center;margin-top:16px;padding:12px">Αποθήκευση Ρυθμίσεων</button>
-      </div>
+      <div class="panel" style="width:100%;max-width:500px;padding:24px"><div style="font-size:16px;font-weight:800;margin-bottom:20px">Βασικές Παράμετροι</div><div class="fgroup"><label class="flabel">Προμήθεια Πλατφόρμας (%)</label><input type="number" id="setCommission" class="finput" value="10"><div style="font-size:11px;color:var(--muted);margin-top:6px">Το ποσοστό που κρατάει η πλατφόρμα από την αξία της κάθε παραγγελίας.</div></div><div class="fgroup" style="margin-top:20px"><label class="flabel">Ακτίνα Auto-Dispatch (Χλμ)</label><input type="number" id="setRadius" class="finput" value="5"><div style="font-size:11px;color:var(--muted);margin-top:6px">Πόσο μακριά μπορεί να ψάξει το σύστημα για διαθέσιμο οδηγό.</div></div><button class="btn btn-primary" onclick="saveAdminSettings()" style="width:100%;justify-content:center;margin-top:16px;padding:12px">Αποθήκευση Ρυθμίσεων</button></div>
     </div>
   </div>
 
 </div> <div class="chat-overlay" id="chatOverlay"><div class="chat-panel"><div class="chat-hd"><span class="material-icons-round" style="color:var(--blue);font-size:20px">chat</span><div style="flex:1"><div style="font-size:14px;font-weight:800" id="chatMainTitle">Chat</div><div style="font-size:11px;color:var(--muted)" id="chatSubtitle">Επίλεξε οδηγό</div></div><button class="icon-btn" onclick="document.getElementById('chatOverlay').classList.remove('open')"><span class="material-icons-round">close</span></button></div><div style="display:flex;flex:1;min-height:0"><div class="chat-driver-list" style="width:130px;flex-shrink:0" id="chatDriverList"></div><div class="chat-main" id="chatMain"><div class="chat-empty"><span class="material-icons-round">chat_bubble_outline</span><div class="chat-empty-text">Επίλεξε οδηγό</div></div></div></div></div></div>
-<div class="overlay" id="orderOverlay"><div class="modal"><div class="modal-hd"><div class="modal-title">➕ Νέα Παραγγελία</div><button class="icon-btn" onclick="closeModal()"><span class="material-icons-round">close</span></button></div><div class="frow"><div class="fgroup"><label class="flabel">Όνομα Πελάτη *</label><input class="finput" id="fName"></div><div class="fgroup"><label class="flabel">Τηλέφωνο *</label><input class="finput" id="fPhone"></div></div><div class="fgroup"><label class="flabel">Διεύθυνση Παράδοσης *</label><input class="finput" id="fAddress"></div><div class="modal-ft"><button class="btn btn-outline" onclick="closeModal()">Ακύρωση</button><button class="btn btn-primary" onclick="submitNewOrder()">Δημιουργία</button></div></div></div>
+<div class="overlay" id="orderOverlay"><div class="modal"><div class="modal-hd"><div class="modal-title">➕ Νέα Παραγγελία</div><button class="icon-btn" onclick="closeModal()"><span class="material-icons-round">close</span></button></div><div class="frow"><div class="fgroup"><label class="flabel">Όνομα Πελάτη *</label><input class="finput" id="fName"></div><div class="fgroup"><label class="flabel">Τηλέφωνο *</label><input class="finput" id="fPhone"></div></div><div class="fgroup"><label class="flabel">Διεύθυνση Παράδοσης *</label><input class="finput" id="fAddress"></div><div class="frow"><div class="fgroup"><label class="flabel">Σημείο Παραλαβής</label><input class="finput" id="fPickup"></div><div class="fgroup"><label class="flabel">Κόστος Μεταφοράς (€)</label><input class="finput" id="fCost" type="number"></div></div><div class="fgroup"><label class="flabel">Σχόλια</label><textarea class="finput" id="fNotes" rows="2"></textarea></div><div class="modal-ft"><button class="btn btn-outline" onclick="closeModal()">Ακύρωση</button><button class="btn btn-primary" onclick="submitNewOrder()">Δημιουργία</button></div></div></div>
 <div class="toast" id="toast"><span class="material-icons-round">bolt</span><span id="toastMsg"></span></div>
 <script>
 let allOrders = {}, allDrivers = {}, allChats = {}, allStores = {};
 let currentFilter = 'all', searchQ = '', autoDispatch = true;
 let activeChatDriver = null, activeChatKey = null, activeChatType = 'driver';
 let adminStoreFilter = 'all', adminDriverFilter = 'all', adminCustFilter = 'all';
-window.adminSettings = { commission: 10, radius: 5 }; // Προεπιλογές
+window.adminSettings = { commission: 10, radius: 5 }; 
 
 const COLORS = ['#ff3d00','#3b82f6','#00b37e','#f59e0b','#8b5cf6'];
 const initials = n => n ? n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase() : '?';
@@ -358,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTable(); renderDrivers(); updateStats(allOrders); renderChatDriverList(); updateAutoDispatchUI(); initMap(); 
 });
 
-// ROUTING (ΠΛΟΗΓΗΣΗ ΣΕ ΟΛΕΣ ΤΙΣ ΣΕΛΙΔΕΣ)
+// ROUTING 
 function switchView(vid, el) {
   document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
   if(el) el.classList.add('active');
@@ -373,9 +386,9 @@ function switchView(vid, el) {
   } else { showToast('🚧 Η σελίδα αυτή είναι υπό κατασκευή!'); }
 }
 function navTo(el) {
-  if(el.textContent.includes('Orders') || el.textContent.includes('Παραγγελίες')) switchView('orders', el);
+  if(el.textContent.includes('Orders')) switchView('orders', el);
   else if(el.textContent.includes('Stores')) switchView('stores', el);
-  else if(el.textContent.includes('Couriers') || el.textContent.includes('Οδηγοί')) switchView('drivers', el);
+  else if(el.textContent.includes('Couriers')) switchView('drivers', el);
   else if(el.textContent.includes('Customers')) switchView('customers', el);
   else if(el.textContent.includes('Finance')) switchView('finance', el);
   else if(el.textContent.includes('Settlements')) switchView('settlements', el);
@@ -393,7 +406,7 @@ window.saveAdminSettings = function() {
        window._update(window._ref(window._db, 'settings'), { commission: comm, radius: rad });
        showToast('✅ Οι ρυθμίσεις αποθηκεύτηκαν!');
        window.adminSettings = { commission: comm, radius: rad };
-       window.renderFinanceAndSettlements(); // Ανανέωση των οικονομικών με το νέο ποσοστό!
+       window.renderFinanceAndSettlements(); 
    }
 };
 
@@ -407,7 +420,7 @@ window.renderAdminCustomersTable = function() {
   document.getElementById('cTotal').textContent = customers.length; document.getElementById('cActive').textContent = customers.filter(c=>c.orderCount>0 && !c.blocked).length; document.getElementById('cBlocked').textContent = customers.filter(c=>c.blocked).length;
   if(adminCustFilter === 'active') customers = customers.filter(c => c.orderCount > 0 && !c.blocked); if(adminCustFilter === 'blocked') customers = customers.filter(c => c.blocked);
   const search = document.getElementById('custSearchInput')?.value.toLowerCase()||''; if(search) customers = customers.filter(c => (c.name||'').toLowerCase().includes(search) || (c.phone||'').includes(search) || (c.email||'').toLowerCase().includes(search));
-  customers.sort((a,b) => b.orderCount - a.orderCount); // VIP first
+  customers.sort((a,b) => b.orderCount - a.orderCount); 
   tbody.innerHTML = customers.map((c, i) => {
     const isBlocked = c.blocked; const color = COLORS[i%COLORS.length];
     return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:50%;background:${color}18;color:${color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">${initials(c.name)}</div><div><div style="font-weight:800;font-size:14px">${c.name||'—'}</div><div style="font-size:11px;color:var(--muted)">Εγγραφή: ${fmtTime(c.createdAt)}</div></div></div></td><td><div style="font-size:13px;font-weight:600">${c.phone||'—'}</div><div style="font-size:11px;color:var(--muted)">${c.email||'—'}</div></td><td><div><span style="font-size:11px;color:var(--muted)">ΠΑΡΑΓΓΕΛΙΕΣ:</span> <b>${c.orderCount}</b></div><div><span style="font-size:11px;color:var(--muted)">ΤΖΙΡΟΣ:</span> <b style="color:var(--green)">${fmtCur(c.totalSpent)}</b></div></td><td>${isBlocked ? `<span class="status-tag" style="background:rgba(239,68,68,.15);color:var(--red)">Μπλοκαρισμένος</span>` : `<span class="status-tag s-delivered">Ενεργός</span>`}</td><td><div style="display:flex;gap:4px"><button class="act-btn" style="color:${isBlocked?'var(--green)':'var(--red)'}" onclick="toggleCustomerBlock('${c.uid}', ${isBlocked})" title="${isBlocked?'Ξεμπλοκάρισμα':'Μπλοκάρισμα (Ban)'}"><span class="material-icons-round">${isBlocked?'check_circle':'block'}</span></button></div></td></tr>`;
@@ -425,21 +438,17 @@ window.renderFinanceAndSettlements = function() {
   const orders = Object.values(allOrders).filter(o => o.status === 'delivered');
   let totalSales = 0, totalDelivery = 0, totalCommission = 0, cashCollected = 0, cardPayments = 0;
   let storeStats = {}, driverStats = {};
-  
-  const commRate = (window.adminSettings.commission || 10) / 100; // Παίρνει την προμήθεια από τα Settings!
-
+  const commRate = (window.adminSettings.commission || 10) / 100; 
   orders.forEach(o => {
       const val = parseFloat(o.subtotal) || 0; const dFee = parseFloat(o.deliveryCost) || 2.00; const comm = val * commRate; 
       totalSales += val; totalDelivery += dFee; totalCommission += comm;
       if(o.payment === 'cash') cashCollected += (val + dFee); else cardPayments += (val + dFee);
-
       if(o.storeId) { if(!storeStats[o.storeId]) storeStats[o.storeId] = { name: o.storeName, orders: 0, sales: 0, comm: 0 };
           storeStats[o.storeId].orders++; storeStats[o.storeId].sales += val; storeStats[o.storeId].comm += comm; }
       if(o.driver) { if(!driverStats[o.driver]) driverStats[o.driver] = { name: o.driverName, orders: 0, earned: 0, cash: 0 };
           driverStats[o.driver].orders++; driverStats[o.driver].earned += dFee;
           if(o.payment === 'cash') driverStats[o.driver].cash += (val + dFee); }
   });
-
   const el = id => document.getElementById(id);
   if(el('finSales')) { el('finSales').textContent = fmtCur(totalSales); el('finDelivery').textContent = fmtCur(totalDelivery); el('finComm').textContent = fmtCur(totalCommission); el('finCash').textContent = fmtCur(cashCollected); el('finCard').textContent = fmtCur(cardPayments); }
   if(el('setStoresBody')) {
@@ -448,7 +457,7 @@ window.renderFinanceAndSettlements = function() {
   }
 };
 
-// AUTO-DISPATCH (ΕΞΥΠΝΟ ROUND-ROBIN ΓΙΑ ΑΠΟΡΡΙΨΕΙΣ ΟΔΗΓΩΝ)
+// AUTO-DISPATCH
 function toggleAutoDispatch() { autoDispatch = !autoDispatch; updateAutoDispatchUI(); showToast(autoDispatch ? '🤖 Auto-Dispatch: Ενεργό!' : '✋ Manual Mode'); if (autoDispatch) runAutoDispatch(allOrders); }
 function updateAutoDispatchUI() {
   const wrap = document.getElementById('adWrap'), toggle = document.getElementById('adToggle'), label = document.getElementById('adLabel'), icon = document.getElementById('adIcon');
@@ -460,12 +469,10 @@ function runAutoDispatch(orders) {
   const ordersToAssign = Object.entries(orders||{}).filter(([,o]) => (o.status === 'ready' || o.status === 'rejected') && !o.driverAccepted);
   const onlineEntries = Object.entries(allDrivers).filter(([,d]) => d.online && (!d.status || d.status==='approved'));
   if (!ordersToAssign.length || !onlineEntries.length) return;
-
   ordersToAssign.forEach(([key, o]) => {
     const rejectedMap = o.rejectedBy || {};
     const availableDrivers = onlineEntries.filter(([uid]) => !rejectedMap[uid]);
     if(!availableDrivers.length) return; 
-
     const driverLoads = {}; availableDrivers.forEach(([uid]) => { driverLoads[uid] = 0; });
     Object.values(allOrders).forEach(ord => { if ((ord.status === 'assigned' || ord.status === 'picked') && ord.driver && driverLoads[ord.driver] !== undefined) driverLoads[ord.driver]++; });
     const [bestUid, bestDriver] = availableDrivers.reduce((a,b) => (driverLoads[a[0]]||0) <= (driverLoads[b[0]]||0) ? a : b);
@@ -476,6 +483,7 @@ function runAutoDispatch(orders) {
 function renderTable() {
   let orders = Object.entries(allOrders).map(([k,v])=>({...v,_key:k}));
   if (currentFilter !== 'all') orders = orders.filter(o=>o.status===currentFilter);
+  if (searchQ) orders = orders.filter(o => (o.customerName||'').toLowerCase().includes(searchQ) || (o.id||'').toLowerCase().includes(searchQ) || (o.deliveryAddress||'').toLowerCase().includes(searchQ) || (o.phone||'').includes(searchQ) || (o.storeName||'').toLowerCase().includes(searchQ));
   orders.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   document.getElementById('tableCount').textContent = orders.length; document.getElementById('emptyState').style.display = orders.length ? 'none' : 'flex';
   const driverOptions = Object.entries(allDrivers).filter(([uid,d])=> !d.status || d.status==='approved').map(([uid,d])=>`<option value="${uid}::${d.name}">${d.name} (${d.phone||''})</option>`).join('');
@@ -492,9 +500,10 @@ function renderTable() {
   }).join('');
 }
 
-// DRIVERS MAP & CHAT (Συμπτυγμένα για οικονομία χώρου)
+// ΔΩΡΕΑΝ ΧΑΡΤΗΣ LEAFLET
 let map; let driverMarkers = {};
-function initMap() { if(document.getElementById('map')) { map = L.map('map').setView([37.9429, 23.6439], 12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(map); } }
+function initMap() { if(document.getElementById('map')) { map = L.map('map').setView([37.9429, 23.6439], 12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(map); setTimeout(() => { map.invalidateSize(); }, 500); } }
+window.addEventListener('resize', () => { if(map) map.invalidateSize(); });
 function updateMapMarkers() { if(!map) return; Object.entries(allDrivers).forEach(([uid, d]) => { if((d.online===true || d.online==='true') && d.lat && d.lng) { if(!driverMarkers[uid]) { const icon = L.divIcon({ className: 'custom-div-icon', html: `<div style="background:var(--green);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:2px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,0.3);">${initials(d.name)}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }); driverMarkers[uid] = L.marker([d.lat, d.lng], {icon}).addTo(map).bindPopup(`<b>${d.name}</b>`); } else { driverMarkers[uid].setLatLng([d.lat, d.lng]); } } else if(driverMarkers[uid]) { map.removeLayer(driverMarkers[uid]); delete driverMarkers[uid]; } }); }
 function renderDrivers() { const seen = new Set(); const entries = Object.entries(allDrivers).filter(([k,d])=>{ const name = d.name||k; if(seen.has(name)) return false; seen.add(name); return true; }); const online = entries.filter(([,d])=>d.online===true || d.online==='true').length; document.getElementById('driverCount').textContent = online + ' Online'; document.getElementById('sDrivers').textContent = online; document.getElementById('navDrivers').textContent = online; document.getElementById('driversList').innerHTML = entries.map(([k,d],i)=>{ const unread = (allChats['driver:'+k]?.msgs||[]).filter(m=>m.from==='driver'&&!m.read).length; return `<div class="driver-row"><div class="driver-av" style="background:${COLORS[i%COLORS.length]}18;color:${COLORS[i%COLORS.length]}">${initials(d.name)}<div class="online-dot" style="background:${(d.online===true||d.online==='true')?'var(--green)':'var(--muted)'}"></div></div><div style="flex:1"><div class="d-name">${d.name}</div><div class="d-info">${(d.online===true||d.online==='true')?'Online':'Offline'}</div></div><div class="d-orders"><span>${d.orders||0}</span></div><div class="chat-btn-small" onclick="openChatWith('${k}','${d.name}')"><span class="material-icons-round">chat</span>${unread>0?`<div class="chat-unread">${unread}</div>`:''}</div></div>`; }).join(''); }
 function openChat() { document.getElementById('chatOverlay').classList.add('open'); renderChatDriverList(); }
