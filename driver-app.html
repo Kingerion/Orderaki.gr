@@ -241,7 +241,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
         <div class="profile-avatar" id="profAvatar">?</div><div class="profile-name" id="profName">—</div><div class="profile-email" id="profEmail">—</div>
         <div style="margin-top:10px; display:inline-block; background:rgba(34,197,94,.12); color:var(--green); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;">Εγκεκριμένος Οδηγός</div>
       </div>
-      <div class="profile-menu-item" onclick="doSignOut()"><span class="material-icons-round" style="color:var(--red)">logout</span><span style="flex:1; font-weight:600; color:var(--red)">Αποσύνδεση</span></div>
+      <div class="profile-menu-item"><span class="material-icons-round" style="color:var(--text2)">phone</span><span class="profile-menu-label" id="profPhone" style="flex:1; font-weight:600; margin-left:12px">—</span></div>
+      <div class="profile-menu-item" onclick="doSignOut()"><span class="material-icons-round" style="color:var(--red)">logout</span><span style="flex:1; font-weight:600; color:var(--red); margin-left:12px">Αποσύνδεση</span></div>
     </div>
   </div>
 
@@ -287,11 +288,10 @@ let audioUnlocked = false;
 document.body.addEventListener('click', () => {
   if (!audioUnlocked) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
-    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-      Notification.requestPermission();
-    }
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") Notification.requestPermission();
     audioUnlocked = true;
-    document.getElementById('audioUnlockBanner').style.display = 'none';
+    const banner = document.getElementById('audioUnlockBanner');
+    if(banner) banner.style.display = 'none';
   }
   stopAlarms(); 
 }, { capture: true });
@@ -367,13 +367,24 @@ function getStoreAddress(storeId,storeName){const s=window._storesCache[storeId]
 
 function loadDriverApp(){
   showScreen('app'); setTimeout(startHeartbeat,1000); loadStoresCache();
+  
+  // ΠΡΟΣΘΗΚΗ ΠΡΟΦΙΛ (ΟΝΟΜΑ/ΤΗΛΕΦΩΝΟ)
+  const n = driverData.name || 'Οδηγός';
+  const init = n.charAt(0).toUpperCase();
+  document.getElementById('topAvatar').textContent=init;
+  document.getElementById('topName').textContent=n;
+  document.getElementById('profAvatar').textContent=init;
+  document.getElementById('profName').textContent=n;
+  document.getElementById('profEmail').textContent=driverData.email||'—';
+  if(document.getElementById('profPhone')) document.getElementById('profPhone').textContent=driverData.phone||'—';
+
   if(window._db&&window._currentUser){
     window._onValue(window._ref(window._db,'drivers/'+window._currentUser.uid), snap=>{
       const d=snap.val()||{}; driverData.earnings=d.earnings||0; driverData.earningsToday=d.earningsToday||0; driverData.orders=d.orders||0; driverData.cashToday=d.cashToday||0;
       updateEarningsUI(d.earnings, d.earningsToday, d.orders, d.cashToday);
     });
   }
-  document.getElementById('topAvatar').textContent=(driverData.name||'Ο')[0]; document.getElementById('topName').textContent=driverData.name;
+  
   if(window._db){
     window._onValue(window._ref(window._db,'orders'),snap=>{
       const all=snap.val()||{}; myOrders={};
@@ -391,9 +402,7 @@ function loadDriverApp(){
 
 function renderOrders(){
   const keys=Object.keys(myOrders); 
-  // Μετράει μόνο όσες ΔΕΝ έχει αποδεχτεί ακόμα ο οδηγός για να χτυπάει ο συναγερμός
   const pendingCount = keys.filter(k=> ['assigned','pending_acceptance'].includes(myOrders[k].status) && !myOrders[k].driverAccepted).length;
-  
   if(pendingCount > lastOrderCount) startOrderAlarm(); 
   lastOrderCount = pendingCount;
   
@@ -402,8 +411,6 @@ function renderOrders(){
   
   document.getElementById('ordersList').innerHTML=keys.map(k=>{
     const o=myOrders[k]; 
-    
-    // ΕΛΕΓΧΟΣ ΣΤΑΣΕΩΝ ΠΑΡΑΓΓΕΛΙΑΣ
     const needsAcceptance = ['assigned','pending_acceptance'].includes(o.status) && !o.driverAccepted;
     const isAccepted = ['assigned','pending_acceptance'].includes(o.status) && o.driverAccepted;
     const isPicked = o.status === 'picked';
@@ -500,7 +507,6 @@ function updateEarningsUI(total, today, deliveries, cash) {
 }
 function calcDriverEarnings(order) { return parseFloat(order.deliveryCost) || 2.00; }
 
-// --- ΡΟΗ ΠΑΡΑΓΓΕΛΙΑΣ ---
 function acceptOrder(k) { 
   stopAlarms(); 
   if(window._db)window._update(window._ref(window._db,'orders/'+k),{driverAccepted: true, status: 'assigned'}); 
@@ -539,4 +545,3 @@ document.addEventListener('click', e => { if(e.target.classList.contains('sheet-
 </script>
 </body>
 </html>
-
