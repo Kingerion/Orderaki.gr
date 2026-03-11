@@ -45,6 +45,7 @@
     } catch(e) { window._firebaseReady = false; console.error(e); }
   } else { window._firebaseReady = false; }
 </script>
+
 <style>
 :root {
   --bg:#f0ede8; --surface:#fff; --surface2:#f7f4f0; --border:rgba(0,0,0,0.08); --shadow:0 2px 16px rgba(0,0,0,0.07);
@@ -55,7 +56,6 @@
 body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:14px}
 .view-section { display:none; flex:1; flex-direction:column; min-height:0; overflow:hidden; }
 .view-section.active { display:flex; }
-
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);background:var(--dark);display:flex;flex-direction:column;flex-shrink:0;position:relative;overflow-y:auto;}
 .sidebar::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,rgba(255,61,0,.15) 0%,transparent 60%);pointer-events:none}
@@ -170,6 +170,7 @@ tr:hover td{background:#fdf9f7}
 </style>
 </head>
 <body>
+
 <aside class="sidebar">
   <div class="logo"><div class="logo-mark">⚡</div><div><div class="logo-title">2Fast Delivery</div><div class="logo-sub">Admin Panel</div></div></div>
   <nav class="nav">
@@ -193,11 +194,9 @@ tr:hover td{background:#fdf9f7}
 </aside>
 
 <div class="main">
-
   <div class="view-section active" id="view-orders">
     <div class="topbar">
-      <div class="topbar-title">Παραγγελίες Live</div>
-      <div class="live-pill"><div class="live-dot"></div> LIVE</div>
+      <div class="topbar-title">Παραγγελίες Live</div><div class="live-pill"><div class="live-dot"></div> LIVE</div>
       <div class="auto-dispatch-wrap on" id="adWrap" onclick="toggleAutoDispatch()">
         <span class="material-icons-round" style="font-size:16px;color:var(--green)" id="adIcon">smart_toy</span>
         <div><div class="ad-label" id="adLabel">Auto-Dispatch: ON</div></div><div class="toggle-switch on" id="adToggle"></div>
@@ -233,6 +232,7 @@ tr:hover td{background:#fdf9f7}
       </div>
     </div>
   </div>
+
   <div class="view-section" id="view-stores">
     <div class="topbar"><div class="topbar-title">Καταστήματα</div><div class="tabs"><div class="tab active" onclick="filterStoresTab('all',this)">Όλα</div><div class="tab" onclick="filterStoresTab('pending',this)">Αιτήματα <span id="stTopBadge" style="display:none">0</span></div><div class="tab" onclick="filterStoresTab('active',this)">Ενεργά</div></div></div>
     <div class="content">
@@ -248,7 +248,6 @@ tr:hover td{background:#fdf9f7}
       <div class="panel" style="flex:1"><div class="panel-hd"><div class="panel-title">Λίστα Οδηγών & Ταμεία</div><div class="search-wrap"><span class="material-icons-round">search</span><input type="text" id="driverSearchInput" placeholder="Αναζήτηση..." oninput="renderAdminDriversTable()"></div></div><div class="table-wrap"><table><thead><tr><th>Οδηγός</th><th>Επικοινωνία</th><th>Κατάσταση / Live</th><th>Οικονομικά (Σήμερα)</th><th>Ενέργειες</th></tr></thead><tbody id="driversAdminBody"></tbody></table></div></div>
     </div>
   </div>
-
   <div class="view-section" id="view-finance">
     <div class="topbar"><div class="topbar-title">Οικονομικά (Σήμερα)</div></div>
     <div class="content">
@@ -263,6 +262,7 @@ tr:hover td{background:#fdf9f7}
       </div>
     </div>
   </div>
+
   <div class="view-section" id="view-settlements">
     <div class="topbar"><div class="topbar-title">Εκκαθαρίσεις (Ταμεία)</div></div>
     <div class="content" style="flex-direction:row; flex-wrap:wrap;">
@@ -311,97 +311,51 @@ const initials = n => n ? n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperC
 const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}) : '--:--';
 const fmtCur = v => `€${(v||0).toFixed(2)}`;
 
-document.addEventListener('DOMContentLoaded', () => {
-  if(window.renderTable) window.renderTable(); 
-  if(window.renderDrivers) window.renderDrivers(); 
-  if(window.updateStats) window.updateStats(allOrders); 
-  if(window.updateAutoDispatchUI) window.updateAutoDispatchUI(); 
-  if(window.initMap) window.initMap();
-});
+// ΔΙΑΣΦΑΛΙΣΗ ΟΤΙ ΟΙ ΣΥΝΑΡΤΗΣΕΙΣ ΕΙΝΑΙ ΠΑΓΚΟΣΜΙΕΣ (GLOBAL) ΓΙΑ ΝΑ ΤΙΣ ΒΛΕΠΕΙ Η FIREBASE
+window.renderOrdersFromFirebase = d => { allOrders=d||{}; renderTable(); window.updateStats(allOrders); };
 
-// ROUTING 
-function switchView(vid, el) {
-  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-  if(el) el.classList.add('active');
-  const views = ['view-orders', 'view-stores', 'view-drivers', 'view-finance', 'view-settlements', 'view-customers', 'view-zones', 'view-promotions', 'view-settings'];
-  if(views.includes('view-'+vid)) {
-    views.forEach(v => { const sec = document.getElementById(v); if(sec) sec.style.display = v===('view-'+vid) ? 'flex' : 'none'; });
-    if(vid === 'orders' && window.map) setTimeout(()=>window.map.invalidateSize(), 300);
-    if(vid === 'stores' && window.renderAdminStoresTable) window.renderAdminStoresTable();
-    if(vid === 'drivers' && window.renderAdminDriversTable) window.renderAdminDriversTable();
-    if((vid === 'finance' || vid === 'settlements') && window.renderFinanceAndSettlements) window.renderFinanceAndSettlements();
-    if(vid === 'customers' && window.renderAdminCustomersTable) window.renderAdminCustomersTable();
-  } else { showToast('🚧 Η σελίδα αυτή είναι υπό κατασκευή!'); }
-}
-function navTo(el) {
-  const t = el.textContent;
-  if(t.includes('Orders') || t.includes('Παραγγελίες')) switchView('orders', el);
-  else if(t.includes('Stores')) switchView('stores', el);
-  else if(t.includes('Couriers') || t.includes('Οδηγοί')) switchView('drivers', el);
-  else if(t.includes('Customers')) switchView('customers', el);
-  else if(t.includes('Finance')) switchView('finance', el);
-  else if(t.includes('Settlements')) switchView('settlements', el);
-  else if(t.includes('Zones')) switchView('zones', el);
-  else if(t.includes('Promotions')) switchView('promotions', el);
-  else if(t.includes('Settings')) switchView('settings', el);
-  else showToast('🚧 Υπό κατασκευή!');
-}
-
-// CUSTOMERS LOGIC
-function filterCustTab(f, el) { adminCustFilter = f; document.querySelectorAll('#view-customers .tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); window.renderAdminCustomersTable(); }
-window.renderAdminCustomersTable = function() {
-  const tbody = document.getElementById('custAdminBody'); if(!tbody) return;
-  let customers = Object.entries(window._firebaseCustomers||{}).map(([k,v])=>({...v, uid:k}));
-  const ordersArr = Object.values(allOrders||{});
-  customers.forEach(c => { const cOrders = ordersArr.filter(o => o.customerUid === c.uid); c.orderCount = cOrders.length; c.totalSpent = cOrders.reduce((sum, o) => sum + (parseFloat(o.total)||0), 0); });
-  document.getElementById('cTotal').textContent = customers.length; document.getElementById('cActive').textContent = customers.filter(c=>c.orderCount>0 && !c.blocked).length; document.getElementById('cBlocked').textContent = customers.filter(c=>c.blocked).length;
-  if(adminCustFilter === 'active') customers = customers.filter(c => c.orderCount > 0 && !c.blocked); if(adminCustFilter === 'blocked') customers = customers.filter(c => c.blocked);
-  const search = document.getElementById('custSearchInput')?.value.toLowerCase()||''; if(search) customers = customers.filter(c => (c.name||'').toLowerCase().includes(search) || (c.phone||'').includes(search) || (c.email||'').toLowerCase().includes(search));
-  customers.sort((a,b) => b.orderCount - a.orderCount); 
-  tbody.innerHTML = customers.map((c, i) => {
-    const isBlocked = c.blocked; const color = COLORS[i%COLORS.length];
-    return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:50%;background:${color}18;color:${color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">${initials(c.name)}</div><div><div style="font-weight:800;font-size:14px">${c.name||'—'}</div><div style="font-size:11px;color:var(--muted)">Εγγραφή: ${fmtTime(c.createdAt)}</div></div></div></td><td><div style="font-size:13px;font-weight:600">${c.phone||'—'}</div><div style="font-size:11px;color:var(--muted)">${c.email||'—'}</div></td><td><div><span style="font-size:11px;color:var(--muted)">ΠΑΡΑΓΓΕΛΙΕΣ:</span> <b>${c.orderCount}</b></div><div><span style="font-size:11px;color:var(--muted)">ΤΖΙΡΟΣ:</span> <b style="color:var(--green)">${fmtCur(c.totalSpent)}</b></div></td><td>${isBlocked ? `<span class="status-tag" style="background:rgba(239,68,68,.15);color:var(--red)">Μπλοκαρισμένος</span>` : `<span class="status-tag s-delivered">Ενεργός</span>`}</td><td><div style="display:flex;gap:4px"><button class="act-btn" style="color:${isBlocked?'var(--green)':'var(--red)'}" onclick="toggleCustomerBlock('${c.uid}', ${isBlocked})" title="${isBlocked?'Ξεμπλοκάρισμα':'Μπλοκάρισμα (Ban)'}"><span class="material-icons-round">${isBlocked?'check_circle':'block'}</span></button></div></td></tr>`;
-  }).join('');
-};
-window.toggleCustomerBlock = function(uid, currentlyBlocked) {
-  if(confirm(currentlyBlocked ? 'Θέλεις να ξεμπλοκάρεις αυτόν τον πελάτη;' : 'Σίγουρα θέλεις να μπλοκάρεις αυτόν τον πελάτη;')) {
-    if(window._db) window._update(window._ref(window._db, 'customers/'+uid), { blocked: !currentlyBlocked });
-    showToast(currentlyBlocked ? '✅ Ο πελάτης ξεμπλοκαρίστηκε' : '🚫 Ο πελάτης μπλοκαρίστηκε');
+window.renderDriversFromFirebase = d => {
+  const all = d || {};
+  window._firebaseDriversAll = all;
+  allDrivers = {};
+  const pending = {};
+  for(const [k,v] of Object.entries(all)){
+    if(v.status==='pending') pending[k]=v;
+    else allDrivers[k]=v;
   }
+  renderDrivers();
+  if(window.renderPendingDrivers) window.renderPendingDrivers(pending);
+  if(window.renderAllChats) window.renderAllChats();
+  if(window.updateMapMarkers) window.updateMapMarkers();
+  if(document.getElementById('view-drivers') && document.getElementById('view-drivers').style.display === 'flex' && window.renderAdminDriversTable) window.renderAdminDriversTable();
 };
 
-// FINANCE & SETTLEMENTS
-window.renderFinanceAndSettlements = function() {
-  const orders = Object.values(allOrders).filter(o => o.status === 'delivered');
-  let totalSales = 0, totalDelivery = 0, totalCommission = 0, cashCollected = 0, cardPayments = 0;
-  let storeStats = {}, driverStats = {};
-  const commRate = (window.adminSettings.commission || 10) / 100; 
-  orders.forEach(o => {
-      const val = parseFloat(o.subtotal) || 0; const dFee = parseFloat(o.deliveryCost) || 2.00; const comm = val * commRate; 
-      totalSales += val; totalDelivery += dFee; totalCommission += comm;
-      if(o.payment === 'cash') cashCollected += (val + dFee); else cardPayments += (val + dFee);
-      if(o.storeId) { if(!storeStats[o.storeId]) storeStats[o.storeId] = { name: o.storeName, orders: 0, sales: 0, comm: 0 };
-          storeStats[o.storeId].orders++; storeStats[o.storeId].sales += val; storeStats[o.storeId].comm += comm; }
-      if(o.driver) { if(!driverStats[o.driver]) driverStats[o.driver] = { name: o.driverName, orders: 0, earned: 0, cash: 0 };
-          driverStats[o.driver].orders++; driverStats[o.driver].earned += dFee;
-          if(o.payment === 'cash') driverStats[o.driver].cash += (val + dFee); }
-  });
-  const el = id => document.getElementById(id);
-  if(el('finSales')) { el('finSales').textContent = fmtCur(totalSales); el('finDelivery').textContent = fmtCur(totalDelivery); el('finComm').textContent = fmtCur(totalCommission); el('finCash').textContent = fmtCur(cashCollected); el('finCard').textContent = fmtCur(cardPayments); }
-  if(el('setStoresBody')) {
-    el('setStoresBody').innerHTML = Object.values(storeStats).length ? Object.values(storeStats).map(s => { const net = s.sales - s.comm; return `<tr><td><b>${s.name}</b></td><td>${s.orders}</td><td>${fmtCur(s.sales)}</td><td style="color:var(--red)">${fmtCur(s.comm)}</td><td style="font-weight:800;color:var(--green)">${fmtCur(net)}</td></tr>`; }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--muted)">Δεν υπάρχουν δεδομένα</td></tr>`;
-    el('setDriversBody').innerHTML = Object.values(driverStats).length ? Object.values(driverStats).map(d => { const balance = d.earned - d.cash; const balColor = balance < 0 ? 'var(--red)' : 'var(--green)'; return `<tr><td><b>${d.name}</b></td><td>${d.orders}</td><td style="color:var(--green)">${fmtCur(d.earned)}</td><td style="color:var(--accent)">${fmtCur(d.cash)}</td><td style="font-weight:800;color:${balColor}">${fmtCur(balance)}</td></tr>`; }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--muted)">Δεν υπάρχουν δεδομένα</td></tr>`;
-  }
+window.renderPendingDrivers = function(pending){
+  const entries = Object.entries(pending); const el = document.getElementById('pendingDriversList'); if(!el) return;
+  const badge = document.getElementById('pendingBadge'); if(badge) { badge.style.display = entries.length?'inline-flex':'none'; badge.textContent = entries.length; }
+  if(!entries.length){ el.innerHTML='<div style="padding:16px 20px;font-size:13px;color:var(--text3)">Δεν υπάρχουν αιτήματα</div>'; return; }
+  el.innerHTML = entries.map(([k,d])=>`<tr><td><div style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-top:1px solid var(--border)"><div style="width:38px;height:38px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--accent)">${initials(d.name)}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${d.name||d.email||k}</div><div style="font-size:12px;color:var(--text3)">${d.phone||''}</div></div><button onclick="approveDriver('${k}','${(d.name||'').replace(/'/g,'')}','${d.phone||''}')" class="act-btn" style="color:var(--green)">✅</button><button onclick="rejectDriverReq('${k}')" class="act-btn" style="color:var(--red)">❌</button></div></td></tr>`).join('');
 };
 
-// AUTO-DISPATCH
+window.updateStats = function(data){
+  const o = Object.values(data||{});
+  if(document.getElementById('sNew')) document.getElementById('sNew').textContent = o.filter(x=>x.status==='new'||x.status==='preparing').length;
+  if(document.getElementById('sActive')) document.getElementById('sActive').textContent = o.filter(x=>x.status==='ready'||x.status==='assigned'||x.status==='picked').length;
+  if(document.getElementById('sDelivered')) document.getElementById('sDelivered').textContent = o.filter(x=>x.status==='delivered').length;
+  if(document.getElementById('sTotal')) document.getElementById('sTotal').textContent = o.length;
+  if(document.getElementById('navCount')) document.getElementById('navCount').textContent = o.filter(x=>x.status==='ready').length;
+};
+
+// AUTO DISPATCH
 function toggleAutoDispatch() { autoDispatch = !autoDispatch; updateAutoDispatchUI(); showToast(autoDispatch ? '🤖 Auto-Dispatch: Ενεργό!' : '✋ Manual Mode'); if (autoDispatch) runAutoDispatch(allOrders); }
 function updateAutoDispatchUI() {
   const wrap = document.getElementById('adWrap'), toggle = document.getElementById('adToggle'), label = document.getElementById('adLabel'), icon = document.getElementById('adIcon');
-  if (autoDispatch) { wrap.className = 'auto-dispatch-wrap on'; toggle.className = 'toggle-switch on'; label.textContent = 'Auto-Dispatch: ON'; icon.style.color = 'var(--green)'; } 
-  else { wrap.className = 'auto-dispatch-wrap'; toggle.className = 'toggle-switch'; label.textContent = 'Auto-Dispatch: OFF'; icon.style.color = 'var(--muted)'; }
+  if(wrap) {
+      if (autoDispatch) { wrap.className = 'auto-dispatch-wrap on'; toggle.className = 'toggle-switch on'; label.textContent = 'Auto-Dispatch: ON'; icon.style.color = 'var(--green)'; }
+      else { wrap.className = 'auto-dispatch-wrap'; toggle.className = 'toggle-switch'; label.textContent = 'Auto-Dispatch: OFF'; icon.style.color = 'var(--muted)'; }
+  }
 }
-function runAutoDispatch(orders) {
+window.runAutoDispatch = function(orders) {
   if (!autoDispatch) return;
   const ordersToAssign = Object.entries(orders||{}).filter(([,o]) => (o.status === 'ready' || o.status === 'rejected') && !o.driverAccepted);
   const onlineEntries = Object.entries(allDrivers).filter(([,d]) => d.online && (!d.status || d.status==='approved'));
@@ -415,16 +369,6 @@ function runAutoDispatch(orders) {
     const [bestUid, bestDriver] = availableDrivers.reduce((a,b) => (driverLoads[a[0]]||0) <= (driverLoads[b[0]]||0) ? a : b);
     setTimeout(() => { if (window._db) window._update(window._ref(window._db,'orders/'+key), { driver: bestUid, driverName: bestDriver.name, status:'assigned', driverAccepted: false, rejectionReason: '' }); }, 1000);
   });
-}
-
-window.renderOrdersFromFirebase = d => { allOrders=d||{}; renderTable(); window.updateStats(allOrders); };
-window.updateStats = function(data){
-  const o = Object.values(data||{});
-  if(document.getElementById('sNew')) document.getElementById('sNew').textContent = o.filter(x=>x.status==='new'||x.status==='preparing').length;
-  if(document.getElementById('sActive')) document.getElementById('sActive').textContent = o.filter(x=>x.status==='ready'||x.status==='assigned'||x.status==='picked').length;
-  if(document.getElementById('sDelivered')) document.getElementById('sDelivered').textContent = o.filter(x=>x.status==='delivered').length;
-  if(document.getElementById('sTotal')) document.getElementById('sTotal').textContent = o.length;
-  if(document.getElementById('navCount')) document.getElementById('navCount').textContent = o.filter(x=>x.status==='ready').length;
 };
 
 function renderTable() {
@@ -453,12 +397,6 @@ function setStatus(key, status) { if (window._db) { window._update(window._ref(w
 function reassignOrder(key) { const onlineEntries = Object.entries(allDrivers).filter(([,d])=>d.online); if (!onlineEntries.length) { showToast('⚠️ Κανένας online οδηγός'); return; } const available = onlineEntries.filter(([uid]) => uid !== allOrders[key]?.driver); if (!available.length) { showToast('⚠️ Δεν υπάρχει άλλος διαθέσιμος'); return; } if (window._db) window._update(window._ref(window._db,'orders/'+key),{driver:available[0][0],driverName:available[0][1].name,status:'assigned',driverAccepted:false,rejectionReason:''}); showToast('🔄 Ανα-ανατέθηκε: '+available[0][1].name); }
 function deleteOrder(key) { if (window._db) window._set(window._ref(window._db,'orders/'+key),null); showToast('🗑️ Διαγράφηκε'); }
 
-function filterTab(f,el){currentFilter=f;document.querySelectorAll('#view-orders .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderTable();}
-function searchOrders(q){searchQ=q.toLowerCase();renderTable();}
-function openModal(){document.getElementById('orderOverlay').classList.add('open');}
-function closeModal(){document.getElementById('orderOverlay').classList.remove('open');}
-function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
-
 function renderDrivers() { 
   const seen = new Set(); const entries = Object.entries(allDrivers).filter(([k,d])=>{ const name = d.name||k; if(seen.has(name)) return false; seen.add(name); return true; }); 
   const online = entries.filter(([,d])=>d.online===true || d.online==='true').length; 
@@ -467,6 +405,34 @@ function renderDrivers() {
   if(document.getElementById('navDrivers')) document.getElementById('navDrivers').textContent = online; 
   if(document.getElementById('driversList')) document.getElementById('driversList').innerHTML = entries.map(([k,d],i)=>{ const unread = (allChats['driver:'+k]?.msgs||[]).filter(m=>m.from==='driver'&&!m.read).length; return `<div class="driver-row"><div class="driver-av" style="background:${COLORS[i%COLORS.length]}18;color:${COLORS[i%COLORS.length]}">${initials(d.name)}<div class="online-dot" style="background:${(d.online===true||d.online==='true')?'var(--green)':'var(--muted)'}"></div></div><div style="flex:1"><div class="d-name">${d.name}</div><div class="d-info">${(d.online===true||d.online==='true')?'Online':'Offline'}</div></div><div class="d-orders"><span>${d.orders||0}</span></div></div>`; }).join(''); 
 }
+
+let map; let driverMarkers = {};
+window.initMap = function() { 
+  if(document.getElementById('map') && !window.mapInitialized) { 
+    map = L.map('map').setView([37.9429, 23.6439], 12); 
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(map); 
+    window.mapInitialized = true;
+    setTimeout(() => { map.invalidateSize(); }, 500); 
+  } 
+};
+window.updateMapMarkers = function() { 
+  if(!map) return; 
+  Object.entries(allDrivers).forEach(([uid, d]) => { 
+    if((d.online===true || d.online==='true') && d.lat && d.lng) { 
+      if(!driverMarkers[uid]) { 
+        const icon = L.divIcon({ className: 'custom-div-icon', html: `<div style="background:var(--green);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:2px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,0.3);">${initials(d.name)}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }); 
+        driverMarkers[uid] = L.marker([d.lat, d.lng], {icon}).addTo(map).bindPopup(`<b>${d.name}</b>`); 
+      } else { driverMarkers[uid].setLatLng([d.lat, d.lng]); } 
+    } else if(driverMarkers[uid]) { map.removeLayer(driverMarkers[uid]); delete driverMarkers[uid]; } 
+  }); 
+};
+
+function filterTab(f,el){currentFilter=f;document.querySelectorAll('#view-orders .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderTable();}
+function searchOrders(q){searchQ=q.toLowerCase();renderTable();}
+function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
+document.addEventListener('DOMContentLoaded', () => {
+  renderTable(); renderDrivers(); window.updateStats(allOrders); updateAutoDispatchUI(); window.initMap(); 
+});
 </script>
 </body>
 </html>
