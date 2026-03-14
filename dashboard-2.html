@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <link rel="manifest" href="/manifest-admin.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Admin">
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="apple-touch-icon" href="/icon-admin.png">
+  <link rel="icon" type="image/png" href="/icon-admin.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>2Fast Delivery — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script type="module">
+  const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA_MyIsYGScuuK-7qXAg4vPSPk5RS0uxNA",
+  authDomain: "orderaki-cc05a.firebaseapp.com",
+  databaseURL: "https://orderaki-cc05a-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "orderaki-cc05a",
+  storageBucket: "orderaki-cc05a.firebasestorage.app",
+  messagingSenderId: "418215879535",
+  appId: "1:418215879535:web:bf048c4b728862a5d5be9a"
+};
+  if (FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
+    try {
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+      const { getDatabase, ref, onValue, update, push, set, remove, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+      const app = initializeApp(FIREBASE_CONFIG); const db = getDatabase(app);
+      window._db = db; window._ref = ref; window._update = update; window._push = push; window._set = set; window._serverTimestamp = serverTimestamp; window._remove = remove; window._onValue = onValue; window._firebaseReady = true;
+      let orderHistory = {};
+      onValue(ref(db, 'settings'), s => {
+        if(s.val()) {
+          window.adminSettings = { ...window.adminSettings, ...s.val() };
+          const f = (id,key,def) => { const el=document.getElementById(id); if(el) el.value = window.adminSettings[key] ?? def; };
+          f('setCommission','commission',10); f('setRadius','radius',5);
+          f('setBaseDeliveryFee','baseDeliveryFee',2); f('setPricePerKm','pricePerKm',0.5);
+          f('setMinOrder','minOrder',5); f('setSurcharge','surcharge',0);
+          f('setVAT','vat',24); f('setCourierFee','courierFee',3);
+          f('setCourierBonus','courierBonus',0.5); f('setMaxRetries','maxDispatchRetries',3);
+          f('setDispatchTimeout','dispatchTimeout',60); f('setOpenTime','openTime','09:00');
+          f('setCloseTime','closeTime','23:00'); f('setPlatformName','platformName','2Fast Delivery');
+          f('setSupportPhone','supportPhone',''); f('setSupportEmail','supportEmail','');
+          const t = (id,key,def) => { const el=document.getElementById(id); if(el) el.checked = window.adminSettings[key] ?? def; };
+          t('togCOD','codEnabled',true); t('togCard','cardEnabled',true);
+          t('togPushOrders','pushOrders',true); t('togPushDrivers','pushDrivers',true);
+          t('togSMS','smsEnabled',false); t('togEmail','emailEnabled',false);
+          t('togMaintenance','maintenanceMode',false);
+          if(window._firebaseOrders && window.renderFinanceAndSettlements) window.renderFinanceAndSettlements();
+        }
+      });
+      onValue(ref(db,'orders'), s => { const d=s.val()||{}; window._firebaseOrders=d; Object.entries(d).forEach(([k, o]) => { if(o.status === 'assigned') { if(!orderHistory[k]) orderHistory[k]={}; orderHistory[k].lastDriver = o.driver; } if(o.status === 'rejected' && orderHistory[k] && orderHistory[k].lastDriver) { const rList = o.rejectedBy || {}; if(!rList[orderHistory[k].lastDriver]) { rList[orderHistory[k].lastDriver] = true; update(ref(db, 'orders/'+k), { rejectedBy: rList }); } } }); if(window.renderOrdersFromFirebase) window.renderOrdersFromFirebase(d); if(window.updateStats) window.updateStats(d); if(window.renderFinanceAndSettlements) window.renderFinanceAndSettlements(); const custView = document.getElementById('view-customers'); if(custView && custView.style.display === 'flex' && window.renderAdminCustomersTable) window.renderAdminCustomersTable(); if(window.autoDispatch && window.runAutoDispatch) window.runAutoDispatch(d); });
+      onValue(ref(db,'drivers'), s => { const d=s.val()||{}; window._firebaseDriversAll=d; if(window.renderDriversFromFirebase) window.renderDriversFromFirebase(d); if(window.renderFinanceAndSettlements) window.renderFinanceAndSettlements(); });
+      onValue(ref(db,'stores'), s => { const all=s.val()||{}; window._firebaseStores=all; window.allStores=all; if(window.renderPendingStores) window.renderPendingStores(all); if(window.renderAdminStoresTable) window.renderAdminStoresTable(); if(window.renderFinanceAndSettlements) window.renderFinanceAndSettlements(); });
+      onValue(ref(db,'customers'), s => { window._firebaseCustomers = s.val()||{}; const custView = document.getElementById('view-customers'); if(custView && custView.style.display === 'flex' && window.renderAdminCustomersTable) window.renderAdminCustomersTable(); });
+      onValue(ref(db,'chat/stores'), s => { window._storeChats=s.val()||{}; if(window.renderAllChats) window.renderAllChats(); });
+      onValue(ref(db,'chat/drivers'), s => { window._driverChats=s.val()||{}; if(window.renderAllChats) window.renderAllChats(); });
+    } catch(e) { window._firebaseReady = false; console.error("Firebase Init Error:", e); }
+  } else { window._firebaseReady = false; }
+</script>
+
+<style>
+:root{--bg:#f0ede8;--surface:#fff;--surface2:#f7f4f0;--border:rgba(0,0,0,0.08);--shadow:0 2px 16px rgba(0,0,0,0.07);--accent:#ff3d00;--accent2:#ff6d00;--dark:#1a1a1a;--muted:#8a8480;--green:#00b37e;--yellow:#f59e0b;--red:#ef4444;--blue:#3b82f6;--sidebar-w:240px;--text:#1a1a1a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:14px}
+.view-section{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+.view-section.active{display:flex}
+.sidebar{width:var(--sidebar-w);background:var(--dark);display:flex;flex-direction:column;flex-shrink:0;position:relative;overflow-y:auto}
+.sidebar::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,rgba(255,61,0,.15) 0%,transparent 60%);pointer-events:none}
+.logo{padding:22px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:12px;position:sticky;top:0;background:var(--dark);z-index:2}
+.logo-mark{width:38px;height:38px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 16px rgba(255,61,0,.4);flex-shrink:0}
+.logo-title{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px;line-height:1.1}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.35);font-weight:400;letter-spacing:1px;text-transform:uppercase}
+.nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+.nav-label{font-size:9px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,.25);text-transform:uppercase;padding:14px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;color:rgba(255,255,255,.45);transition:all .15s;font-size:13px;font-weight:600;position:relative}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nav-item.active{background:rgba(255,61,0,.2);color:#fff}
+.nav-item.active .material-icons-round{color:var(--accent)}
+.nav-item .material-icons-round{font-size:18px!important}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;font-family:'DM Mono',monospace}
+.nav-badge.green{background:var(--green)}.nav-badge.blue{background:var(--blue)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:50px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);flex-shrink:0;flex-wrap:wrap}
+.topbar-title{font-size:15px;font-weight:800;letter-spacing:-.5px}
+.live-pill{display:flex;align-items:center;gap:6px;background:rgba(0,179,126,.1);border:1px solid rgba(0,179,126,.25);color:var(--green);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.auto-dispatch-wrap{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:4px 10px;cursor:pointer;transition:all .2s;user-select:none}
+.auto-dispatch-wrap.on{background:rgba(0,179,126,.1);border-color:rgba(0,179,126,.4)}
+.auto-dispatch-wrap.on .ad-label{color:var(--green)}
+.ad-label{font-size:11px;font-weight:700;color:var(--muted);transition:color .2s}
+.toggle-switch{width:32px;height:18px;background:var(--muted);border-radius:20px;position:relative;transition:background .2s;flex-shrink:0}
+.toggle-switch.on{background:var(--green)}
+.toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle-switch.on::after{transform:translateX(14px)}
+.tabs{display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px}
+.tab{padding:5px 11px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap}
+.tab.active{background:var(--surface);color:var(--dark);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{display:flex;align-items:center;gap:6px;padding:6px 13px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:'Syne',sans-serif}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-outline{background:transparent;color:var(--dark);border:1.5px solid var(--border)}.btn-outline:hover{background:var(--surface2)}
+.icon-btn{width:32px;height:32px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.content{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow)}
+.stat-top{display:flex;justify-content:space-between;align-items:flex-start}
+.stat-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.stat-label{font-size:9.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.stat-value{font-size:20px;font-weight:800;font-family:'DM Mono',monospace;line-height:1}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;flex:1}
+.panel-hd{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.panel-title{font-size:12px;font-weight:800}
+.search-wrap{margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px}
+.search-wrap input{background:none;border:none;outline:none;font-family:'Syne',sans-serif;font-size:11px;color:var(--dark);width:120px}
+.table-wrap{overflow-y:auto;flex:1;min-height:120px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:7px 12px;font-size:9.5px;font-weight:700;text-transform:uppercase;color:var(--muted);background:var(--surface2);position:sticky;top:0;z-index:1;white-space:nowrap}
+td{padding:8px 12px;border-top:1px solid var(--border);font-size:11.5px;vertical-align:middle}
+tr:hover td{background:#fdf9f7}
+.status-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.s-new{background:rgba(59,130,246,.1);color:var(--blue)}.s-assigned{background:rgba(245,158,11,.1);color:var(--yellow)}
+.s-picked{background:rgba(255,109,0,.1);color:var(--accent2)}.s-delivered{background:rgba(0,179,126,.1);color:var(--green)}
+.s-ready{background:rgba(0,179,126,.2);color:var(--green);font-weight:800}
+.s-rejected,.s-failed{background:rgba(239,68,68,.08);color:var(--red)}
+.act-btn{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
+.act-btn .material-icons-round{font-size:15px!important}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:#fff;border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s}
+.toast.show{transform:translateY(0);opacity:1}
+#map{position:absolute;inset:0;z-index:1}.custom-div-icon{background:none;border:none}
+.fgroup{margin-bottom:10px}
+.flabel{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;letter-spacing:.5px}
+.finput{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Syne',sans-serif;font-size:12px;outline:none;transition:border-color .2s}
+.finput:focus{border-color:var(--accent)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.overlay{position:fixed;inset:0;background:rgba(26,26,26,.6);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:18px;width:480px;max-width:95vw;padding:22px;transform:translateY(20px);transition:transform .25s;border:1px solid var(--border)}
+.overlay.open .modal{transform:translateY(0)}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-title{font-size:15px;font-weight:800}
+.modal-ft{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:10px}
+.driver-row{display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;transition:background .1s}
+.driver-row:hover{background:var(--surface2)}
+.driver-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;position:relative;flex-shrink:0}
+.online-dot{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;border:2px solid var(--surface)}
+.d-name{font-size:11px;font-weight:700}.d-info{font-size:9px;color:var(--muted)}
+.d-orders{font-size:10px;font-weight:800;background:var(--surface2);border-radius:6px;padding:2px 7px}
+.count-badge{font-size:10px;font-weight:700;background:var(--surface2);border-radius:6px;padding:2px 8px;font-family:'DM Mono',monospace}
+.map-box{position:relative;flex:1;min-height:180px}
+.order-id{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace}
+.cust-cell{display:flex;align-items:center;gap:6px}
+.cust-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
+.cust-name{font-size:11px;font-weight:700}.cust-phone{font-size:9px;color:var(--muted)}
+.addr-text{font-size:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.driver-sel{font-size:10px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);font-family:'Syne',sans-serif;outline:none;max-width:120px}
+.rejected-reason{font-size:9px;color:var(--red);font-style:italic;margin-top:2px}
+.row-new{animation:rowHighlight 2s ease}
+@keyframes rowHighlight{0%{background:rgba(59,130,246,.12)}100%{background:transparent}}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;color:var(--muted)}
+.empty .material-icons-round{font-size:36px;margin-bottom:6px;opacity:.3}
+.empty-text{font-size:12px;font-weight:600}
+.chat-overlay{position:fixed;inset:0;background:rgba(26,26,26,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:stretch;justify-content:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
+.chat-overlay.open{opacity:1;pointer-events:all}
+.chat-panel{width:440px;max-width:100vw;background:var(--surface);display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.15)}
+.chat-hd{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.chat-driver-list{border-right:1px solid var(--border);overflow-y:auto;padding:6px;width:120px;flex-shrink:0}
+.chat-driver-item{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:10px;font-weight:600;display:flex;align-items:center;gap:5px;margin-bottom:2px;transition:background .1s}
+.chat-driver-item:hover,.chat-driver-item.active{background:var(--surface2)}
+.chat-driver-item .unread-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.chat-main{flex:1;display:flex;flex-direction:column;min-width:0}
+.chat-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:5px}
+.chat-bubble{max-width:75%;padding:7px 10px;border-radius:10px;font-size:11px;line-height:1.4;word-break:break-word}
+.chat-bubble.admin{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.chat-bubble.other{background:var(--surface2);align-self:flex-start;border-bottom-left-radius:3px}
+.chat-input-wrap{padding:8px;border-top:1px solid var(--border);display:flex;gap:6px}
+.chat-input-wrap input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Syne',sans-serif;font-size:11px;outline:none}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--muted);gap:6px}
+.chat-empty .material-icons-round{font-size:32px;opacity:.3}
+.chat-empty-text{font-size:11px}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+.settings-card-title{font-size:12px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:7px;color:var(--dark)}
+.settings-card-title .material-icons-round{font-size:16px;color:var(--accent)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0}
+.toggle-row-label{font-size:11px;font-weight:600;color:var(--text)}
+.toggle-check{width:34px;height:18px;appearance:none;-webkit-appearance:none;background:var(--muted);border-radius:20px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle-check:checked{background:var(--green)}
+.toggle-check::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle-check:checked::after{transform:translateX(16px)}
+.fhint{font-size:9px;color:var(--muted);margin-top:2px}
+@media(max-width:992px){
+body{flex-direction:column;overflow-y:auto}
+.sidebar{width:100%;max-height:64px;flex-direction:row;padding:0 10px;overflow-x:auto;overflow-y:hidden;z-index:100;position:sticky;top:0}
+.logo{padding:10px;border:none;background:transparent}.logo-title,.logo-sub{display:none}
+.nav{flex-direction:row;padding:0;align-items:center;gap:5px}.nav-label{display:none}
+.nav-item{padding:8px 12px;white-space:nowrap}
+.main{flex:none;height:auto;overflow:visible}.topbar{height:auto;flex-wrap:wrap;padding:10px}
+.content{padding:10px;overflow:visible}.stats{grid-template-columns:repeat(2,1fr)!important}
+.grid-main{grid-template-columns:1fr!important;display:flex;flex-direction:column;gap:10px}
+.right-col{display:flex;flex-direction:column;gap:10px}
+.map-box{min-height:300px;height:300px}
+.view-section{display:none}.view-section.active{display:flex;flex-direction:column}
+.table-wrap{max-width:100vw;overflow-x:auto}.panel{max-width:100vw}
+.settings-grid{grid-template-columns:1fr}.frow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="logo"><div class="logo-mark">⚡</div><div><div class="logo-title">2Fast Delivery</div><div class="logo-sub">Admin Panel</div></div></div>
+  <nav class="nav">
+    <div class="nav-label">Κύριο</div>
+    <div class="nav-item active" onclick="navTo(this)"><span class="material-icons-round">receipt_long</span> Orders <span class="nav-badge" id="navCount">0</span></div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">storefront</span> Stores</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">two_wheeler</span> Couriers <span class="nav-badge green" id="navDrivers">0</span></div>
+    <div class="nav-label">Οικονομικά & Λειτουργίες</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">map</span> Zones</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">account_balance_wallet</span> Finance</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">payments</span> Settlements</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">local_offer</span> Promotions</div>
+    <div class="nav-label">Υποστήριξη & Σύστημα</div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">support_agent</span> Customers</div>
+    <div class="nav-item" onclick="document.getElementById('chatOverlay').classList.add('open');if(window.renderAllChats)window.renderAllChats();"><span class="material-icons-round">chat</span> Chats <span class="nav-badge blue" id="navUnread" style="display:none">!</span></div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">settings</span> Settings</div>
+  </nav>
+</aside>
+<div class="main">
+  <div class="view-section active" id="view-orders">
+    <div class="topbar">
+      <div class="topbar-title">Παραγγελίες Live</div>
+      <div class="live-pill"><div class="live-dot"></div> LIVE</div>
+      <div class="auto-dispatch-wrap on" id="adWrap" onclick="toggleAutoDispatch()"><span class="material-icons-round" style="font-size:15px;color:var(--green)" id="adIcon">smart_toy</span><div><div class="ad-label" id="adLabel">Auto-Dispatch: ON</div></div><div class="toggle-switch on" id="adToggle"></div></div>
+      <div class="tabs"><div class="tab active" onclick="filterTab('all',this)">Όλες</div><div class="tab" onclick="filterTab('new',this)">Νέες</div><div class="tab" onclick="filterTab('preparing',this)">Ετοιμάζεται</div><div class="tab" onclick="filterTab('ready',this)">Έτοιμη</div><div class="tab" onclick="filterTab('assigned',this)">Ανατεθ.</div></div>
+      <div class="topbar-actions"><button class="btn btn-outline" onclick="openModal()"><span class="material-icons-round">add</span> Νέα</button></div>
+    </div>
+    <div class="content">
+      <div class="stats">
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Νέες</div><div class="stat-value" id="sNew" style="color:var(--blue)">0</div></div><div class="stat-icon" style="background:rgba(59,130,246,.1)"><span class="material-icons-round" style="color:var(--blue)">pending_actions</span></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Σε Διαδρομή</div><div class="stat-value" id="sActive" style="color:var(--accent2)">0</div></div><div class="stat-icon" style="background:rgba(255,109,0,.1)"><span class="material-icons-round" style="color:var(--accent2)">two_wheeler</span></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Παραδόθηκαν</div><div class="stat-value" id="sDelivered" style="color:var(--green)">0</div></div><div class="stat-icon" style="background:rgba(0,179,126,.1)"><span class="material-icons-round" style="color:var(--green)">check_circle_outline</span></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Οδηγοί</div><div class="stat-value" id="sDrivers" style="color:var(--accent)">0</div></div><div class="stat-icon" style="background:rgba(255,61,0,.1)"><span class="material-icons-round" style="color:var(--accent)">person_pin_circle</span></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Σύνολο</div><div class="stat-value" id="sTotal">0</div></div><div class="stat-icon" style="background:rgba(0,0,0,.05)"><span class="material-icons-round" style="color:var(--muted)">receipt_long</span></div></div></div>
+      </div>
+      <div class="grid-main" style="display:grid;grid-template-columns:1fr 260px;gap:10px;">
+        <div class="panel">
+          <div class="panel-hd"><div class="panel-title">Παραγγελίες</div><div class="count-badge" id="tableCount">0</div><div class="search-wrap"><span class="material-icons-round">search</span><input type="text" placeholder="Αναζήτηση..." oninput="searchOrders(this.value)"></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Κατάστημα/#</th><th>Πελάτης</th><th>Παράδοση</th><th>Οδηγός</th><th>Ώρα</th><th>Status</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table><div class="empty" id="emptyState" style="display:none"><span class="material-icons-round">inbox</span><div class="empty-text">Δεν υπάρχουν παραγγελίες</div></div></div>
+        </div>
+        <div class="right-col">
+          <div class="panel" style="flex:0 0 auto">
+            <div class="panel-hd"><div class="panel-title">Οδηγοί</div><div class="count-badge" style="background:rgba(0,179,126,.1);color:var(--green)" id="driverCount">0</div></div>
+            <div id="driversList"></div>
+            <div style="padding:6px 14px 3px;font-size:8px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--border);margin-top:3px">Αιτήματα <span id="pendingBadge" style="display:none;background:var(--yellow);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:20px;margin-left:3px">0</span></div>
+            <div id="pendingDriversList"><div style="padding:8px 14px;font-size:11px;color:var(--muted)">Δεν υπάρχουν αιτήματα</div></div>
+          </div>
+          <div class="panel" style="flex:1;display:flex;flex-direction:column"><div class="panel-hd"><div class="panel-title">Χάρτης</div></div><div class="map-box"><div id="map"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view-section" id="view-stores">
+    <div class="topbar"><div class="topbar-title">Καταστήματα</div><div class="tabs"><div class="tab active" onclick="filterStoresTab('all',this)">Όλα</div><div class="tab" onclick="filterStoresTab('pending',this)">Αιτήματα <span id="stTopBadge" style="display:none">0</span></div><div class="tab" onclick="filterStoresTab('active',this)">Ενεργά</div><div class="tab" onclick="filterStoresTab('paused',this)">Παύση</div><div class="tab" onclick="filterStoresTab('disabled',this)">Ανενεργά</div></div></div>
+    <div class="content">
+      <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><div class="stat-top"><div><div class="stat-label">Σύνολο</div><div class="stat-value" id="stTotal">0</div></div></div></div><div class="stat"><div class="stat-top"><div><div class="stat-label">Ενεργά</div><div class="stat-value" id="stActive" style="color:var(--green)">0</div></div></div></div><div class="stat"><div class="stat-top"><div><div class="stat-label">Παύση</div><div class="stat-value" id="stPaused" style="color:var(--yellow)">0</div></div></div></div><div class="stat"><div class="stat-top"><div><div class="stat-label">Αιτήματα</div><div class="stat-value" id="stPending" style="color:var(--accent)">0</div></div></div></div></div>
+      <div class="panel" style="flex:1"><div class="panel-hd"><div class="panel-title">Λίστα Συνεργατών</div><div class="search-wrap"><span class="material-icons-round">search</span><input type="text" id="storeSearchInput" placeholder="Αναζήτηση..." oninput="if(window.renderAdminStoresTable)window.renderAdminStoresTable()"></div></div><div class="table-wrap"><table><thead><tr><th>Κατάστημα</th><th>Κατηγορία</th><th>Επικοινωνία</th><th>Status</th><th></th></tr></thead><tbody id="storesAdminBody"></tbody></table></div></div>
+    </div>
+  </div>
+
+  <div class="view-section" id="view-drivers">
+    <div class="topbar"><div class="topbar-title">Οδηγοί / Couriers</div><div class="tabs"><div class="tab active" onclick="filterDriversTab('all',this)">Όλοι</div><div class="tab" onclick="filterDriversTab('online',this)">Online</div><div class="tab" onclick="filterDriversTab('offline',this)">Offline</div><div class="tab" onclick="filterDriversTab('pending',this)">Αιτήματα</div><div class="tab" onclick="filterDriversTab('suspended',this)">Αναστολή</div></div></div>
+    <div class="content">
+      <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><div class="stat-top"><div><div class="stat-label">Σύνολο</div><div class="stat-value" id="drTotal">0</div></div></div></div><div class="stat"><div class="stat-top"><div><div class="stat-label">Online</div><div class="stat-value" id="drOnline" style="color:var(--green)">0</div></div></div></div><div class="stat"><div class="stat-top"><div><div class="stat-label">Αναστολή</div><div class="stat-value" id="drSuspended" style="color:var(--red)">0</div></div></div></div><div class="stat"><div class="stat-top"><div><div class="stat-label">Αιτήματα</div><div class="stat-value" id="drPending" style="color:var(--yellow)">0</div></div></div></div></div>
+      <div class="panel" style="flex:1"><div class="panel-hd"><div class="panel-title">Λίστα Οδηγών & Ταμεία</div><div class="search-wrap"><span class="material-icons-round">search</span><input type="text" id="driverSearchInput" placeholder="Αναζήτηση..." oninput="if(window.renderAdminDriversTable)window.renderAdminDriversTable()"></div></div><div class="table-wrap"><table><thead><tr><th>Οδηγός</th><th>Επικ.</th><th>Status</th><th>Οικονομικά</th><th></th></tr></thead><tbody id="driversAdminBody"></tbody></table></div></div>
+    </div>
+  </div>
+
+  <div class="view-section" id="view-finance">
+    <div class="topbar"><div class="topbar-title">Οικονομικά (Σήμερα)</div></div>
+    <div class="content">
+      <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Τζίρος Φαγητού</div><div class="stat-value" id="finSales" style="color:var(--dark)">€0.00</div></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Έσοδα Delivery</div><div class="stat-value" id="finDelivery" style="color:var(--blue)">€0.00</div></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Προμήθεια</div><div class="stat-value" id="finComm" style="color:var(--green)">€0.00</div></div></div></div>
+      </div>
+      <div class="stats" style="grid-template-columns:repeat(2,1fr)">
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Μετρητά</div><div class="stat-value" id="finCash" style="color:var(--accent)">€0.00</div></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Κάρτα</div><div class="stat-value" id="finCard" style="color:var(--yellow)">€0.00</div></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view-section" id="view-settlements">
+    <div class="topbar"><div class="topbar-title">Εκκαθαρίσεις</div></div>
+    <div class="content" style="flex-direction:row;flex-wrap:wrap">
+      <div class="panel" style="flex:1;min-width:280px"><div class="panel-hd"><div class="panel-title">Καταστήματα</div></div><div class="table-wrap"><table><thead><tr><th>Μαγαζί</th><th>#</th><th>Πωλήσεις</th><th>Προμ.</th><th>Καθαρά</th></tr></thead><tbody id="setStoresBody"></tbody></table></div></div>
+      <div class="panel" style="flex:1;min-width:280px"><div class="panel-hd"><div class="panel-title">Οδηγοί</div></div><div class="table-wrap"><table><thead><tr><th>Οδηγός</th><th>#</th><th>Αμοιβή</th><th>Είσπραξη</th><th>Υπόλοιπο</th></tr></thead><tbody id="setDriversBody"></tbody></table></div></div>
+    </div>
+  </div>
+
+  <div class="view-section" id="view-customers">
+    <div class="topbar"><div class="topbar-title">Πελάτες</div><div class="tabs"><div class="tab active" onclick="filterCustTab('all',this)">Όλοι</div><div class="tab" onclick="filterCustTab('active',this)">Ενεργοί</div><div class="tab" onclick="filterCustTab('blocked',this)">Blocked</div></div></div>
+    <div class="content">
+      <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Σύνολο</div><div class="stat-value" id="cTotal">0</div></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Ενεργοί</div><div class="stat-value" id="cActive" style="color:var(--green)">0</div></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Blocked</div><div class="stat-value" id="cBlocked" style="color:var(--red)">0</div></div></div></div>
+      </div>
+      <div class="panel" style="flex:1"><div class="panel-hd"><div class="panel-title">Λίστα Πελατών</div><div class="search-wrap"><span class="material-icons-round">search</span><input type="text" id="custSearchInput" placeholder="Αναζήτηση..." oninput="if(window.renderAdminCustomersTable)window.renderAdminCustomersTable()"></div></div><div class="table-wrap"><table><thead><tr><th>Πελάτης</th><th>Επικ.</th><th>Στατιστικά</th><th>Status</th><th></th></tr></thead><tbody id="custAdminBody"></tbody></table></div></div>
+    </div>
+  </div>
+
+  <div class="view-section" id="view-zones"><div class="topbar"><div class="topbar-title">Ζώνες</div><button class="btn btn-primary" onclick="showToast('Σύντομα')">+ Νέα Ζώνη</button></div><div class="content"><div class="panel"><div class="table-wrap"><table><thead><tr><th>Περιοχή</th><th>Min</th><th>Χρέωση</th><th>Status</th></tr></thead><tbody><tr><td><b>Πειραιάς</b></td><td>€5.00</td><td>€1.50</td><td><span class="status-tag s-delivered">Ενεργή</span></td></tr></tbody></table></div></div></div></div>
+  <div class="view-section" id="view-promotions"><div class="topbar"><div class="topbar-title">Προσφορές</div><button class="btn btn-primary" onclick="showToast('Σύντομα')">+ Κουπόνι</button></div><div class="content"><div class="panel"><div class="table-wrap"><table><thead><tr><th>Κωδικός</th><th>Έκπτωση</th><th>Λήξη</th><th>Status</th></tr></thead><tbody><tr><td><b>WELCOME10</b></td><td>10%</td><td>31/12/2026</td><td><span class="status-tag s-delivered">Ενεργό</span></td></tr></tbody></table></div></div></div></div>
+
+  <!-- ══ SETTINGS — ΠΛΗΡΕΙΣ ΡΥΘΜΙΣΕΙΣ ══ -->
+  <div class="view-section" id="view-settings">
+    <div class="topbar"><div class="topbar-title">Ρυθμίσεις Συστήματος</div></div>
+    <div class="content">
+      <div class="settings-grid">
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">tune</span> Βασικές Παράμετροι</div>
+          <div class="fgroup"><label class="flabel">Όνομα Πλατφόρμας</label><input type="text" id="setPlatformName" class="finput" value="2Fast Delivery"></div>
+          <div class="frow"><div class="fgroup"><label class="flabel">Προμήθεια (%)</label><input type="number" id="setCommission" class="finput" value="10" min="0" max="100" step="0.5"><div class="fhint">% από κάθε παραγγελία</div></div><div class="fgroup"><label class="flabel">ΦΠΑ (%)</label><input type="number" id="setVAT" class="finput" value="24" min="0" max="100"></div></div>
+          <div class="frow"><div class="fgroup"><label class="flabel">Τηλ. Support</label><input type="text" id="setSupportPhone" class="finput" placeholder="+30 210..."></div><div class="fgroup"><label class="flabel">Email Support</label><input type="email" id="setSupportEmail" class="finput" placeholder="support@2fast.gr"></div></div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">delivery_dining</span> Χρεώσεις Παράδοσης</div>
+          <div class="frow"><div class="fgroup"><label class="flabel">Βασική Χρέωση (€)</label><input type="number" id="setBaseDeliveryFee" class="finput" value="2" min="0" step="0.1"><div class="fhint">Σταθερή ανά παράδοση</div></div><div class="fgroup"><label class="flabel">€/Χλμ</label><input type="number" id="setPricePerKm" class="finput" value="0.50" min="0" step="0.1"></div></div>
+          <div class="frow"><div class="fgroup"><label class="flabel">Min Παραγγελία (€)</label><input type="number" id="setMinOrder" class="finput" value="5" min="0" step="0.5"></div><div class="fgroup"><label class="flabel">Surcharge (€)</label><input type="number" id="setSurcharge" class="finput" value="0" min="0" step="0.1"><div class="fhint">Νυχτερινή, βροχή κ.λπ.</div></div></div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">two_wheeler</span> Αμοιβές Οδηγών</div>
+          <div class="frow"><div class="fgroup"><label class="flabel">Αμοιβή/Παράδοση (€)</label><input type="number" id="setCourierFee" class="finput" value="3" min="0" step="0.1"></div><div class="fgroup"><label class="flabel">Bonus/Χλμ (€)</label><input type="number" id="setCourierBonus" class="finput" value="0.50" min="0" step="0.1"></div></div>
+          <div class="fhint">Distance Rules ορίζονται ανά ζώνη στο Zones.</div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">smart_toy</span> Dispatch</div>
+          <div class="frow"><div class="fgroup"><label class="flabel">Ακτίνα (Χλμ)</label><input type="number" id="setRadius" class="finput" value="5" min="1" max="50"><div class="fhint">Εύρος αναζήτησης οδηγού</div></div><div class="fgroup"><label class="flabel">Max Προσπάθειες</label><input type="number" id="setMaxRetries" class="finput" value="3" min="1" max="10"></div></div>
+          <div class="fgroup"><label class="flabel">Timeout Αποδοχής (δευτ.)</label><input type="number" id="setDispatchTimeout" class="finput" value="60" min="10" max="300"><div class="fhint">Χρόνος αναμονής πριν τον επόμενο</div></div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">schedule</span> Ωράριο</div>
+          <div class="frow"><div class="fgroup"><label class="flabel">Άνοιγμα</label><input type="time" id="setOpenTime" class="finput" value="09:00"></div><div class="fgroup"><label class="flabel">Κλείσιμο</label><input type="time" id="setCloseTime" class="finput" value="23:00"></div></div>
+          <div class="fhint">Εκτός ωραρίου δεν δέχεται νέες παραγγελίες.</div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">credit_card</span> Πληρωμές</div>
+          <div class="toggle-row"><span class="toggle-row-label">Αντικαταβολή (COD)</span><input type="checkbox" id="togCOD" class="toggle-check" checked></div>
+          <div class="toggle-row"><span class="toggle-row-label">Κάρτα / Online</span><input type="checkbox" id="togCard" class="toggle-check" checked></div>
+          <div class="fhint" style="margin-top:6px">Payment Gateway (Stripe/Viva) ρυθμίζεται στο backend.</div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">notifications_active</span> Ειδοποιήσεις</div>
+          <div class="toggle-row"><span class="toggle-row-label">Push Νέα Παραγγελία</span><input type="checkbox" id="togPushOrders" class="toggle-check" checked></div>
+          <div class="toggle-row"><span class="toggle-row-label">Push Οδηγούς</span><input type="checkbox" id="togPushDrivers" class="toggle-check" checked></div>
+          <div class="toggle-row"><span class="toggle-row-label">SMS</span><input type="checkbox" id="togSMS" class="toggle-check"></div>
+          <div class="toggle-row"><span class="toggle-row-label">Email</span><input type="checkbox" id="togEmail" class="toggle-check"></div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">shield</span> Ασφάλεια</div>
+          <div class="fhint" style="margin-bottom:8px">Admin passwords, API keys, roles, permissions & audit logs μέσω Firebase Console.</div>
+          <div class="toggle-row"><span class="toggle-row-label">Maintenance Mode</span><input type="checkbox" id="togMaintenance" class="toggle-check"></div>
+          <div class="fhint" style="margin-top:4px">Εμφανίζει «Εργασίες συντήρησης» στους πελάτες.</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="if(window.saveAdminSettings)window.saveAdminSettings()" style="width:100%;max-width:380px;justify-content:center;margin:8px auto 0;padding:11px;font-size:12px"><span class="material-icons-round" style="font-size:16px">save</span> Αποθήκευση Ρυθμίσεων</button>
+    </div>
+  </div>
+</div>
+
+<div class="chat-overlay" id="chatOverlay"><div class="chat-panel"><div class="chat-hd"><span class="material-icons-round" style="color:var(--blue);font-size:18px">chat</span><div style="flex:1"><div style="font-size:13px;font-weight:800" id="chatMainTitle">Chat</div><div style="font-size:10px;color:var(--muted)" id="chatSubtitle">Επίλεξε</div></div><button class="icon-btn" onclick="document.getElementById('chatOverlay').classList.remove('open')"><span class="material-icons-round">close</span></button></div><div style="display:flex;flex:1;min-height:0"><div class="chat-driver-list" id="chatDriverList"></div><div class="chat-main" id="chatMain"><div class="chat-empty"><span class="material-icons-round">chat_bubble_outline</span><div class="chat-empty-text">Επίλεξε</div></div></div></div></div></div>
+
+<div class="overlay" id="orderOverlay"><div class="modal"><div class="modal-hd"><div class="modal-title">➕ Νέα Παραγγελία</div><button class="icon-btn" onclick="closeModal()"><span class="material-icons-round">close</span></button></div><div class="frow"><div class="fgroup"><label class="flabel">Όνομα *</label><input class="finput" id="fName"></div><div class="fgroup"><label class="flabel">Τηλέφωνο *</label><input class="finput" id="fPhone"></div></div><div class="fgroup"><label class="flabel">Διεύθυνση *</label><input class="finput" id="fAddress"></div><div class="frow"><div class="fgroup"><label class="flabel">Κατάστημα</label><select class="finput" id="fStore"><option value="">— Επιλογή —</option></select></div><div class="fgroup"><label class="flabel">Delivery (€)</label><input class="finput" id="fCost" type="number" value="2"></div></div><div class="frow"><div class="fgroup"><label class="flabel">Αξία (€)</label><input class="finput" id="fSubtotal" type="number" value="0"></div><div class="fgroup"><label class="flabel">Πληρωμή</label><select class="finput" id="fPayment"><option value="cash">Μετρητά</option><option value="card">Κάρτα</option></select></div></div><div class="fgroup"><label class="flabel">Σχόλια</label><textarea class="finput" id="fNotes" rows="2"></textarea></div><div class="modal-ft"><button class="btn btn-outline" onclick="closeModal()">Ακύρωση</button><button class="btn btn-primary" onclick="if(window.submitNewOrder)window.submitNewOrder()">Δημιουργία</button></div></div></div>
+<div class="toast" id="toast"><span class="material-icons-round">bolt</span><span id="toastMsg"></span></div>
+
+<script>
+let allOrders={},allDrivers={},allChats={},allStores={};
+let currentFilter='all',searchQ='',autoDispatch=true;
+let activeChatKey=null,activeChatType='driver';
+let adminStoreFilter='all',adminDriverFilter='all',adminCustFilter='all';
+let driverMarkers={};
+window.adminSettings={commission:10,radius:5,baseDeliveryFee:2,pricePerKm:0.5,minOrder:5,surcharge:0,vat:24,courierFee:3,courierBonus:0.5,maxDispatchRetries:3,dispatchTimeout:60,openTime:'09:00',closeTime:'23:00',codEnabled:true,cardEnabled:true,pushOrders:true,pushDrivers:true,smsEnabled:false,emailEnabled:false,platformName:'2Fast Delivery',supportPhone:'',supportEmail:'',maintenanceMode:false};
+const COLORS=['#ff3d00','#3b82f6','#00b37e','#f59e0b','#8b5cf6'];
+const initials=n=>n?n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase():'?';
+const fmtTime=ts=>ts?new Date(ts).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}):'--:--';
+const fmtCur=v=>"€"+(parseFloat(v)||0).toFixed(2);
+
+document.addEventListener('DOMContentLoaded',()=>{try{if(window.renderTable)window.renderTable();if(window.renderDrivers)window.renderDrivers();if(window.updateStats)window.updateStats(allOrders);if(window.updateAutoDispatchUI)window.updateAutoDispatchUI();if(window.initMap)window.initMap();setTimeout(()=>{const sel=document.getElementById('fStore');if(sel&&window._firebaseStores){Object.entries(window._firebaseStores).forEach(([k,s])=>{if(s.status==='approved'||s.status==='active'){const o=document.createElement('option');o.value=k;o.textContent=s.name||k;sel.appendChild(o)}})}},3000)}catch(e){console.error(e)}});
+
+function switchView(vid,el){try{document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));if(el)el.classList.add('active');const views=['view-orders','view-stores','view-drivers','view-finance','view-settlements','view-customers','view-zones','view-promotions','view-settings'];if(views.includes('view-'+vid)){views.forEach(v=>{const sec=document.getElementById(v);if(sec)sec.style.display=v===('view-'+vid)?'flex':'none'});if(vid==='orders'&&window.map)setTimeout(()=>window.map.invalidateSize(),100);if(vid==='stores'&&window.renderAdminStoresTable)window.renderAdminStoresTable();if(vid==='drivers'&&window.renderAdminDriversTable)window.renderAdminDriversTable();if((vid==='finance'||vid==='settlements')&&window.renderFinanceAndSettlements)window.renderFinanceAndSettlements();if(vid==='customers'&&window.renderAdminCustomersTable)window.renderAdminCustomersTable()}else{showToast('🚧 Υπό κατασκευή!')}}catch(e){console.error(e)}}
+function navTo(el){const t=el.textContent;if(t.includes('Orders'))switchView('orders',el);else if(t.includes('Stores'))switchView('stores',el);else if(t.includes('Couriers'))switchView('drivers',el);else if(t.includes('Customers'))switchView('customers',el);else if(t.includes('Finance'))switchView('finance',el);else if(t.includes('Settlements'))switchView('settlements',el);else if(t.includes('Zones'))switchView('zones',el);else if(t.includes('Promotions'))switchView('promotions',el);else if(t.includes('Settings'))switchView('settings',el);else showToast('🚧 Υπό κατασκευή!')}
+
+// ══ STORES ══
+function filterStoresTab(f,el){adminStoreFilter=f;document.querySelectorAll('#view-stores .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');window.renderAdminStoresTable()}
+window.renderPendingStores=function(all){try{const stores=all||window._firebaseStores||{};const pending=Object.entries(stores).filter(([,s])=>s.status==='pending');const tb=document.getElementById('stTopBadge');if(tb){tb.textContent=pending.length;tb.style.display=pending.length?'inline':'none'}}catch(e){console.error(e)}};
+window.renderAdminStoresTable=function(){try{const tbody=document.getElementById('storesAdminBody');if(!tbody)return;const stores=window._firebaseStores||{};let arr=Object.entries(stores).map(([k,v])=>({...v,_key:k}));const total=arr.length,active=arr.filter(s=>s.status==='approved'||s.status==='active').length,paused=arr.filter(s=>s.status==='paused').length,pending=arr.filter(s=>s.status==='pending').length;if(document.getElementById('stTotal'))document.getElementById('stTotal').textContent=total;if(document.getElementById('stActive'))document.getElementById('stActive').textContent=active;if(document.getElementById('stPaused'))document.getElementById('stPaused').textContent=paused;if(document.getElementById('stPending'))document.getElementById('stPending').textContent=pending;if(adminStoreFilter==='pending')arr=arr.filter(s=>s.status==='pending');else if(adminStoreFilter==='active')arr=arr.filter(s=>s.status==='approved'||s.status==='active');else if(adminStoreFilter==='paused')arr=arr.filter(s=>s.status==='paused');else if(adminStoreFilter==='disabled')arr=arr.filter(s=>s.status==='disabled');const q=document.getElementById('storeSearchInput')?.value.toLowerCase()||'';if(q)arr=arr.filter(s=>(s.name||'').toLowerCase().includes(q)||(s.phone||'').includes(q));tbody.innerHTML=arr.length?arr.map((s,i)=>{const c=COLORS[i%COLORS.length];const sm={approved:['Ενεργό','s-delivered'],active:['Ενεργό','s-delivered'],pending:['Αίτημα','s-new'],paused:['Παύση','s-assigned'],disabled:['Off','s-rejected']};const[sL,sC]=sm[s.status]||['—','s-new'];return`<tr><td><div style="display:flex;align-items:center;gap:7px"><div style="width:28px;height:28px;border-radius:8px;background:${c}18;color:${c};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800">${initials(s.name)}</div><div><div style="font-weight:800;font-size:11px">${s.name||'—'}</div></div></div></td><td style="font-size:10px">${s.category||'—'}</td><td><div style="font-size:10px">${s.phone||'—'}</div></td><td><span class="status-tag ${sC}">${sL}</span></td><td><div style="display:flex;gap:3px">${s.status==='pending'?`<button class="act-btn" style="color:var(--green)" onclick="approveStore('${s._key}')"><span class="material-icons-round">check_circle</span></button>`:''}${s.status==='paused'?`<button class="act-btn" style="color:var(--green)" onclick="approveStore('${s._key}')"><span class="material-icons-round">play_circle</span></button>`:''}${s.status!=='paused'&&s.status!=='disabled'?`<button class="act-btn" style="color:var(--yellow)" onclick="pauseStore('${s._key}')"><span class="material-icons-round">pause_circle</span></button>`:''}<button class="act-btn" style="color:var(--red)" onclick="disableStore('${s._key}')"><span class="material-icons-round">block</span></button></div></td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Κανένα κατάστημα</td></tr>'}catch(e){console.error(e)}};
+window.approveStore=function(k){if(window._db)window._update(window._ref(window._db,'stores/'+k),{status:'approved'});showToast('✅ Εγκρίθηκε')};
+window.pauseStore=function(k){if(window._db)window._update(window._ref(window._db,'stores/'+k),{status:'paused'});showToast('⏸ Παύση')};
+window.disableStore=function(k){if(confirm('Απενεργοποίηση;')){if(window._db)window._update(window._ref(window._db,'stores/'+k),{status:'disabled'});showToast('🚫 Off')}};
+
+// ══ DRIVERS ══
+function filterDriversTab(f,el){adminDriverFilter=f;document.querySelectorAll('#view-drivers .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');window.renderAdminDriversTable()}
+window.renderPendingDrivers=function(pending){try{const list=document.getElementById('pendingDriversList'),badge=document.getElementById('pendingBadge');const entries=Object.entries(pending||{});if(badge){badge.textContent=entries.length;badge.style.display=entries.length?'inline':'none'}if(!list)return;if(!entries.length){list.innerHTML='<div style="padding:8px 14px;font-size:11px;color:var(--muted)">Κανένα αίτημα</div>';return}list.innerHTML=entries.map(([k,d],i)=>{const c=COLORS[i%COLORS.length];return`<div class="driver-row" style="border-bottom:1px solid var(--border)"><div class="driver-av" style="background:${c}18;color:${c}">${initials(d.name)}</div><div style="flex:1"><div class="d-name">${d.name||'—'}</div><div class="d-info">${d.phone||''}</div></div><div style="display:flex;gap:3px"><button class="act-btn" style="color:var(--green)" onclick="approveDriver('${k}')"><span class="material-icons-round">check_circle</span></button><button class="act-btn" style="color:var(--red)" onclick="rejectDriver('${k}')"><span class="material-icons-round">cancel</span></button></div></div>`}).join('')}catch(e){console.error(e)}};
+window.approveDriver=function(k){if(window._db)window._update(window._ref(window._db,'drivers/'+k),{status:'approved'});showToast('✅ Εγκρίθηκε')};
+window.rejectDriver=function(k){if(confirm('Απόρριψη;')){if(window._db)window._update(window._ref(window._db,'drivers/'+k),{status:'rejected'});showToast('❌ Απορρίφθηκε')}};
+window.suspendDriver=function(k){if(window._db)window._update(window._ref(window._db,'drivers/'+k),{status:'suspended'});showToast('⛔ Αναστολή')};
+window.unsuspendDriver=function(k){if(window._db)window._update(window._ref(window._db,'drivers/'+k),{status:'approved'});showToast('✅ Ενεργός')};
+window.renderAdminDriversTable=function(){try{const tbody=document.getElementById('driversAdminBody');if(!tbody)return;const allD=window._firebaseDriversAll||{};let arr=Object.entries(allD).map(([k,v])=>({...v,uid:k}));const total=arr.filter(d=>d.status!=='pending').length,online=arr.filter(d=>(d.online===true||d.online==='true')&&d.status!=='pending').length,suspended=arr.filter(d=>d.status==='suspended').length,pend=arr.filter(d=>d.status==='pending').length;if(document.getElementById('drTotal'))document.getElementById('drTotal').textContent=total;if(document.getElementById('drOnline'))document.getElementById('drOnline').textContent=online;if(document.getElementById('drSuspended'))document.getElementById('drSuspended').textContent=suspended;if(document.getElementById('drPending'))document.getElementById('drPending').textContent=pend;if(adminDriverFilter==='online')arr=arr.filter(d=>(d.online===true||d.online==='true')&&d.status!=='pending');else if(adminDriverFilter==='offline')arr=arr.filter(d=>!(d.online===true||d.online==='true')&&d.status!=='pending'&&d.status!=='suspended');else if(adminDriverFilter==='pending')arr=arr.filter(d=>d.status==='pending');else if(adminDriverFilter==='suspended')arr=arr.filter(d=>d.status==='suspended');const q=document.getElementById('driverSearchInput')?.value.toLowerCase()||'';if(q)arr=arr.filter(d=>(d.name||'').toLowerCase().includes(q)||(d.phone||'').includes(q));const oArr=Object.values(allOrders||{});tbody.innerHTML=arr.length?arr.map((d,i)=>{const c=COLORS[i%COLORS.length];const on=d.online===true||d.online==='true';const dO=oArr.filter(o=>o.driver===d.uid&&o.status==='delivered');const earn=dO.reduce((s,o)=>s+(parseFloat(o.deliveryCost)||2),0);const cash=dO.filter(o=>o.payment==='cash').reduce((s,o)=>s+(parseFloat(o.subtotal)||0)+(parseFloat(o.deliveryCost)||2),0);let st='';if(d.status==='pending')st='<span class="status-tag s-new">Αίτημα</span>';else if(d.status==='suspended')st='<span class="status-tag s-rejected">Αναστολή</span>';else st=`<span class="status-tag ${on?'s-delivered':'s-assigned'}">${on?'Online':'Offline'}</span>`;return`<tr><td><div style="display:flex;align-items:center;gap:7px"><div style="width:28px;height:28px;border-radius:50%;background:${c}18;color:${c};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800">${initials(d.name)}</div><div><div style="font-weight:800;font-size:11px">${d.name||'—'}</div><div style="font-size:9px;color:var(--muted)">${d.vehicle||'—'}</div></div></div></td><td style="font-size:10px">${d.phone||'—'}</td><td>${st}</td><td><div style="font-size:10px"><b>${dO.length}</b> del · <b style="color:var(--green)">${fmtCur(earn)}</b></div></td><td><div style="display:flex;gap:3px">${d.status==='pending'?`<button class="act-btn" style="color:var(--green)" onclick="approveDriver('${d.uid}')"><span class="material-icons-round">check_circle</span></button><button class="act-btn" style="color:var(--red)" onclick="rejectDriver('${d.uid}')"><span class="material-icons-round">cancel</span></button>`:''}${d.status==='suspended'?`<button class="act-btn" style="color:var(--green)" onclick="unsuspendDriver('${d.uid}')"><span class="material-icons-round">lock_open</span></button>`:''}${d.status!=='pending'&&d.status!=='suspended'?`<button class="act-btn" style="color:var(--red)" onclick="suspendDriver('${d.uid}')"><span class="material-icons-round">block</span></button>`:''}</div></td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Κανένας οδηγός</td></tr>'}catch(e){console.error(e)}};
+
+// ══ CUSTOMERS ══
+function filterCustTab(f,el){adminCustFilter=f;document.querySelectorAll('#view-customers .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');window.renderAdminCustomersTable()}
+window.renderAdminCustomersTable=function(){try{const tbody=document.getElementById('custAdminBody');if(!tbody)return;let cust=Object.entries(window._firebaseCustomers||{}).map(([k,v])=>({...v,uid:k}));const oArr=Object.values(allOrders||{});cust.forEach(c=>{const co=oArr.filter(o=>o.customerUid===c.uid);c.orderCount=co.length;c.totalSpent=co.reduce((s,o)=>s+(parseFloat(o.total)||0),0)});document.getElementById('cTotal').textContent=cust.length;document.getElementById('cActive').textContent=cust.filter(c=>c.orderCount>0&&!c.blocked).length;document.getElementById('cBlocked').textContent=cust.filter(c=>c.blocked).length;if(adminCustFilter==='active')cust=cust.filter(c=>c.orderCount>0&&!c.blocked);if(adminCustFilter==='blocked')cust=cust.filter(c=>c.blocked);const q=document.getElementById('custSearchInput')?.value.toLowerCase()||'';if(q)cust=cust.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q));cust.sort((a,b)=>b.orderCount-a.orderCount);tbody.innerHTML=cust.length?cust.map((c,i)=>{const bl=c.blocked;const co=COLORS[i%COLORS.length];return`<tr><td><div style="display:flex;align-items:center;gap:7px"><div style="width:28px;height:28px;border-radius:50%;background:${co}18;color:${co};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800">${initials(c.name)}</div><div style="font-weight:800;font-size:11px">${c.name||'—'}</div></div></td><td style="font-size:10px">${c.phone||'—'}</td><td><span style="font-size:10px"><b>${c.orderCount}</b> · <b style="color:var(--green)">${fmtCur(c.totalSpent)}</b></span></td><td>${bl?'<span class="status-tag s-rejected">Blocked</span>':'<span class="status-tag s-delivered">OK</span>'}</td><td><button class="act-btn" style="color:${bl?'var(--green)':'var(--red)'}" onclick="toggleCustomerBlock('${c.uid}',${bl})"><span class="material-icons-round">${bl?'check_circle':'block'}</span></button></td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Κανένας πελάτης</td></tr>'}catch(e){console.error(e)}};
+window.toggleCustomerBlock=function(uid,bl){if(confirm(bl?'Ξεμπλοκάρισμα;':'Μπλοκάρισμα;')){if(window._db)window._update(window._ref(window._db,'customers/'+uid),{blocked:!bl});showToast(bl?'✅ Ξεμπλοκαρίστηκε':'🚫 Μπλοκαρίστηκε')}};
+
+// ══ SETTINGS SAVE ══
+window.saveAdminSettings=function(){const s={commission:parseFloat(document.getElementById('setCommission').value)||10,radius:parseFloat(document.getElementById('setRadius').value)||5,baseDeliveryFee:parseFloat(document.getElementById('setBaseDeliveryFee').value)||2,pricePerKm:parseFloat(document.getElementById('setPricePerKm').value)||0.5,minOrder:parseFloat(document.getElementById('setMinOrder').value)||5,surcharge:parseFloat(document.getElementById('setSurcharge').value)||0,vat:parseFloat(document.getElementById('setVAT').value)||24,courierFee:parseFloat(document.getElementById('setCourierFee').value)||3,courierBonus:parseFloat(document.getElementById('setCourierBonus').value)||0.5,maxDispatchRetries:parseInt(document.getElementById('setMaxRetries').value)||3,dispatchTimeout:parseInt(document.getElementById('setDispatchTimeout').value)||60,openTime:document.getElementById('setOpenTime').value||'09:00',closeTime:document.getElementById('setCloseTime').value||'23:00',codEnabled:document.getElementById('togCOD').checked,cardEnabled:document.getElementById('togCard').checked,pushOrders:document.getElementById('togPushOrders').checked,pushDrivers:document.getElementById('togPushDrivers').checked,smsEnabled:document.getElementById('togSMS').checked,emailEnabled:document.getElementById('togEmail').checked,platformName:document.getElementById('setPlatformName').value||'2Fast Delivery',supportPhone:document.getElementById('setSupportPhone').value||'',supportEmail:document.getElementById('setSupportEmail').value||'',maintenanceMode:document.getElementById('togMaintenance').checked};if(window._db){window._update(window._ref(window._db,'settings'),s);showToast('✅ Αποθηκεύτηκαν!');window.adminSettings=s;if(window.renderFinanceAndSettlements)window.renderFinanceAndSettlements()}else{showToast('⚠️ No Firebase')}};
+
+// ══ FINANCE ══
+window.renderFinanceAndSettlements=function(){try{const orders=Object.values(allOrders).filter(o=>o.status==='delivered');let tS=0,tD=0,tC=0,cash=0,card=0;let ss={},ds={};const cr=(window.adminSettings.commission||10)/100;orders.forEach(o=>{const v=parseFloat(o.subtotal)||0;const df=parseFloat(o.deliveryCost)||(window.adminSettings.baseDeliveryFee||2);const cm=v*cr;tS+=v;tD+=df;tC+=cm;if(o.payment==='cash')cash+=(v+df);else card+=(v+df);if(o.storeId){if(!ss[o.storeId])ss[o.storeId]={name:o.storeName,orders:0,sales:0,comm:0};ss[o.storeId].orders++;ss[o.storeId].sales+=v;ss[o.storeId].comm+=cm}if(o.driver){if(!ds[o.driver])ds[o.driver]={name:o.driverName,orders:0,earned:0,cash:0};ds[o.driver].orders++;ds[o.driver].earned+=df;if(o.payment==='cash')ds[o.driver].cash+=(v+df)}});const el=id=>document.getElementById(id);if(el('finSales')){el('finSales').textContent=fmtCur(tS);el('finDelivery').textContent=fmtCur(tD);el('finComm').textContent=fmtCur(tC);el('finCash').textContent=fmtCur(cash);el('finCard').textContent=fmtCur(card)}if(el('setStoresBody')){el('setStoresBody').innerHTML=Object.values(ss).length?Object.values(ss).map(s=>{const n=s.sales-s.comm;return`<tr><td><b>${s.name}</b></td><td>${s.orders}</td><td>${fmtCur(s.sales)}</td><td style="color:var(--red)">${fmtCur(s.comm)}</td><td style="font-weight:800;color:var(--green)">${fmtCur(n)}</td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">—</td></tr>';el('setDriversBody').innerHTML=Object.values(ds).length?Object.values(ds).map(d=>{const b=d.earned-d.cash;return`<tr><td><b>${d.name}</b></td><td>${d.orders}</td><td style="color:var(--green)">${fmtCur(d.earned)}</td><td style="color:var(--accent)">${fmtCur(d.cash)}</td><td style="font-weight:800;color:${b<0?'var(--red)':'var(--green)'}">${fmtCur(b)}</td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">—</td></tr>'}}catch(e){console.error(e)}};
+
+// ══ AUTO-DISPATCH ══
+function toggleAutoDispatch(){autoDispatch=!autoDispatch;updateAutoDispatchUI();showToast(autoDispatch?'🤖 Auto ON':'✋ Manual');if(autoDispatch)runAutoDispatch(allOrders)}
+function updateAutoDispatchUI(){const w=document.getElementById('adWrap'),t=document.getElementById('adToggle'),l=document.getElementById('adLabel'),ic=document.getElementById('adIcon');if(w){if(autoDispatch){w.className='auto-dispatch-wrap on';t.className='toggle-switch on';l.textContent='Auto-Dispatch: ON';ic.style.color='var(--green)'}else{w.className='auto-dispatch-wrap';t.className='toggle-switch';l.textContent='Auto-Dispatch: OFF';ic.style.color='var(--muted)'}}}
+window.runAutoDispatch=function(orders){if(!autoDispatch)return;const toAssign=Object.entries(orders||{}).filter(([,o])=>(o.status==='ready'||o.status==='rejected')&&!o.driverAccepted);const onl=Object.entries(allDrivers).filter(([,d])=>d.online&&(!d.status||d.status==='approved'));if(!toAssign.length||!onl.length)return;toAssign.forEach(([key,o])=>{const rej=o.rejectedBy||{};const avail=onl.filter(([uid])=>!rej[uid]);if(!avail.length)return;const loads={};avail.forEach(([uid])=>{loads[uid]=0});Object.values(allOrders).forEach(ord=>{if((ord.status==='assigned'||ord.status==='picked')&&ord.driver&&loads[ord.driver]!==undefined)loads[ord.driver]++});const[bUid,bDr]=avail.reduce((a,b)=>(loads[a[0]]||0)<=(loads[b[0]]||0)?a:b);setTimeout(()=>{if(window._db)window._update(window._ref(window._db,'orders/'+key),{driver:bUid,driverName:bDr.name,status:'assigned',driverAccepted:false,rejectionReason:''})},1000)})};
+
+// ══ ORDERS ══
+window.renderOrdersFromFirebase=d=>{try{allOrders=d||{};renderTable();window.updateStats(allOrders)}catch(e){console.error(e)}};
+window.updateStats=function(data){const o=Object.values(data||{});if(document.getElementById('sNew'))document.getElementById('sNew').textContent=o.filter(x=>x.status==='new'||x.status==='preparing').length;if(document.getElementById('sActive'))document.getElementById('sActive').textContent=o.filter(x=>x.status==='ready'||x.status==='assigned'||x.status==='picked').length;if(document.getElementById('sDelivered'))document.getElementById('sDelivered').textContent=o.filter(x=>x.status==='delivered').length;if(document.getElementById('sTotal'))document.getElementById('sTotal').textContent=o.length;if(document.getElementById('navCount'))document.getElementById('navCount').textContent=o.filter(x=>x.status==='ready').length};
+window.renderTable=function(){try{let orders=Object.entries(allOrders).map(([k,v])=>({...v,_key:k}));if(currentFilter!=='all')orders=orders.filter(o=>o.status===currentFilter);if(searchQ)orders=orders.filter(o=>(o.customerName||'').toLowerCase().includes(searchQ)||(o.id||'').toLowerCase().includes(searchQ)||(o.deliveryAddress||'').toLowerCase().includes(searchQ)||(o.phone||'').includes(searchQ)||(o.storeName||'').toLowerCase().includes(searchQ));orders.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));if(document.getElementById('tableCount'))document.getElementById('tableCount').textContent=orders.length;if(document.getElementById('emptyState'))document.getElementById('emptyState').style.display=orders.length?'none':'flex';const dOpts=Object.entries(allDrivers).filter(([,d])=>!d.status||d.status==='approved').map(([uid,d])=>`<option value="${uid}::${d.name}">${d.name} (${d.phone||''})</option>`).join('');const sMap={new:['Νέα','s-new'],preparing:['Ετοιμ.','s-assigned'],ready:['Έτοιμη','s-ready'],assigned:['Ανατ.','s-assigned'],picked:['Παρέλ.','s-picked'],delivered:['OK','s-delivered'],failed:['Fail','s-failed'],rejected:['Reject','s-rejected']};if(document.getElementById('ordersBody'))document.getElementById('ordersBody').innerHTML=orders.map((o,i)=>{const[sl,sc]=sMap[o.status]||['—','s-new'];const c=COLORS[i%COLORS.length];let timer='';if(o.status==='preparing'&&o.prepMinutes){const st=o.acceptedAt||o.createdAt||Date.now();const rem=parseInt(o.prepMinutes)-Math.floor((Date.now()-st)/60000);timer=`<div style="font-size:9px;color:${rem>0?'var(--accent)':'var(--red)'};margin-top:2px;font-weight:700">⏱ ${rem>0?rem+'\'':'OK!'}</div>`}return`<tr class="${i===0&&o.status==='new'?'row-new':''}"><td><div style="font-size:9px;font-weight:800;color:var(--accent);margin-bottom:1px;text-transform:uppercase">${o.storeName||'—'}</div><span class="order-id">${o.id||o._key}</span></td><td><div class="cust-cell"><div class="cust-av" style="background:${c}18;color:${c}">${initials(o.customerName)}</div><div><div class="cust-name">${o.customerName||'—'}</div><div class="cust-phone">${o.phone||''}</div></div></div></td><td><div class="addr-text" title="${o.deliveryAddress||''}">${o.deliveryAddress||'—'}</div></td><td>${o.status==='rejected'?`<div style="font-size:10px;color:var(--red);font-weight:600">${o.driverName||'—'}</div><div class="rejected-reason">↳ ${o.rejectionReason||'Reject'}</div>`:`<select class="driver-sel" onchange="assignDriver('${o._key}',this.value)"><option value="">—</option>${dOpts}${o.driver?`<option selected>${o.driverName||o.driver}</option>`:''}</select>`}</td><td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)">${fmtTime(o.createdAt)}</td><td><span class="status-tag ${sc}">${sl}</span>${timer}</td><td><div style="display:flex;gap:2px"><div class="act-btn" title="OK" onclick="setStatus('${o._key}','delivered')" style="color:var(--green)"><span class="material-icons-round">check_circle</span></div>${o.status==='rejected'?`<div class="act-btn" onclick="reassignOrder('${o._key}')" style="color:var(--blue)"><span class="material-icons-round">person_add</span></div>`:''}<div class="act-btn" onclick="deleteOrder('${o._key}')" style="color:var(--red)"><span class="material-icons-round">delete_outline</span></div></div></td></tr>`}).join('')}catch(e){console.error(e)}};
+
+// ══ DRIVERS & MAP ══
+window.renderDriversFromFirebase=d=>{try{const all=d||{};window._firebaseDriversAll=all;allDrivers={};const pending={};for(const[k,v]of Object.entries(all)){if(v.status==='pending')pending[k]=v;else allDrivers[k]=v}if(window.renderDrivers)window.renderDrivers();if(window.renderPendingDrivers)window.renderPendingDrivers(pending);if(window.renderAllChats)window.renderAllChats();if(window.updateMapMarkers)window.updateMapMarkers();if(document.getElementById('view-drivers')&&document.getElementById('view-drivers').style.display==='flex'&&window.renderAdminDriversTable)window.renderAdminDriversTable()}catch(e){console.error(e)}};
+window.renderDrivers=function(){const seen=new Set();const entries=Object.entries(allDrivers).filter(([k,d])=>{const n=d.name||k;if(seen.has(n))return false;seen.add(n);return true});const online=entries.filter(([,d])=>d.online===true||d.online==='true').length;if(document.getElementById('driverCount'))document.getElementById('driverCount').textContent=online+' Online';if(document.getElementById('sDrivers'))document.getElementById('sDrivers').textContent=online;if(document.getElementById('navDrivers'))document.getElementById('navDrivers').textContent=online;if(document.getElementById('driversList'))document.getElementById('driversList').innerHTML=entries.map(([k,d],i)=>`<div class="driver-row"><div class="driver-av" style="background:${COLORS[i%COLORS.length]}18;color:${COLORS[i%COLORS.length]}">${initials(d.name)}<div class="online-dot" style="background:${(d.online===true||d.online==='true')?'var(--green)':'var(--muted)'}"></div></div><div style="flex:1"><div class="d-name">${d.name}</div><div class="d-info">${(d.online===true||d.online==='true')?'Online':'Offline'}</div></div><div class="d-orders"><span>${d.orders||0}</span></div></div>`).join('')};
+window.initMap=function(){if(document.getElementById('map')&&!window.mapInitialized){window.map=L.map('map').setView([37.9429,23.6439],12);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(window.map);window.mapInitialized=true;setTimeout(()=>{window.map.invalidateSize()},500)}};
+window.updateMapMarkers=function(){if(!window.map)return;Object.entries(allDrivers).forEach(([uid,d])=>{if((d.online===true||d.online==='true')&&d.lat&&d.lng){if(!driverMarkers[uid]){const icon=L.divIcon({className:'custom-div-icon',html:`<div style="background:var(--green);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.3)">${initials(d.name)}</div>`,iconSize:[24,24],iconAnchor:[12,12]});driverMarkers[uid]=L.marker([d.lat,d.lng],{icon}).addTo(window.map).bindPopup(`<b>${d.name}</b>`)}else{driverMarkers[uid].setLatLng([d.lat,d.lng])}}else if(driverMarkers[uid]){window.map.removeLayer(driverMarkers[uid]);delete driverMarkers[uid]}})};
+
+// ══ CHAT ══
+window.renderAllChats=function(){try{const list=document.getElementById('chatDriverList');if(!list)return;const dc=window._driverChats||{},sc=window._storeChats||{};let items=[];Object.entries(allDrivers).forEach(([k,d])=>{const msgs=dc[k]?Object.values(dc[k]):[];const unread=msgs.filter(m=>m.from==='driver'&&!m.read).length;items.push({key:k,name:d.name,type:'driver',unread})});Object.entries(window._firebaseStores||{}).forEach(([k,s])=>{const msgs=sc[k]?Object.values(sc[k]):[];const unread=msgs.filter(m=>m.from==='store'&&!m.read).length;items.push({key:k,name:s.name,type:'store',unread})});items.sort((a,b)=>b.unread-a.unread);const tot=items.reduce((s,i)=>s+i.unread,0);const nu=document.getElementById('navUnread');if(nu){nu.style.display=tot>0?'inline':'none';nu.textContent=tot}list.innerHTML=items.map(i=>`<div class="chat-driver-item ${activeChatKey===i.key?'active':''}" onclick="openChat('${i.key}','${i.type}')"><span style="font-size:12px">${i.type==='driver'?'🏍':'🏪'}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.name||'—'}</span>${i.unread?'<span class="unread-dot"></span>':''}</div>`).join('')}catch(e){console.error(e)}};
+window.openChat=function(key,type){activeChatKey=key;activeChatType=type;const cm=document.getElementById('chatMain');const path=type==='driver'?'chat/drivers/'+key:'chat/stores/'+key;const name=type==='driver'?(allDrivers[key]?.name||key):(window._firebaseStores?.[key]?.name||key);document.getElementById('chatMainTitle').textContent=name;document.getElementById('chatSubtitle').textContent=type==='driver'?'Οδηγός':'Κατάστημα';const chats=type==='driver'?(window._driverChats?.[key]||{}):(window._storeChats?.[key]||{});const msgs=Object.values(chats).sort((a,b)=>(a.ts||0)-(b.ts||0));cm.innerHTML=`<div class="chat-msgs" id="chatMsgsArea">${msgs.map(m=>`<div class="chat-bubble ${m.from==='admin'?'admin':'other'}">${m.text}<div style="font-size:8px;opacity:.5;margin-top:2px">${fmtTime(m.ts)}</div></div>`).join('')}</div><div class="chat-input-wrap"><input id="chatInput" placeholder="Μήνυμα..." onkeydown="if(event.key==='Enter')sendChatMsg()"><button class="btn btn-primary" onclick="sendChatMsg()" style="padding:7px 12px"><span class="material-icons-round" style="font-size:15px">send</span></button></div>`;const area=document.getElementById('chatMsgsArea');if(area)area.scrollTop=area.scrollHeight;Object.entries(chats).forEach(([mk,m])=>{if(m.from!=='admin'&&!m.read&&window._db)window._update(window._ref(window._db,path+'/'+mk),{read:true})});if(window.renderAllChats)window.renderAllChats()};
+window.sendChatMsg=function(){const inp=document.getElementById('chatInput');if(!inp||!inp.value.trim()||!activeChatKey)return;const path=activeChatType==='driver'?'chat/drivers/'+activeChatKey:'chat/stores/'+activeChatKey;if(window._db){const r=window._push(window._ref(window._db,path));window._set(r,{text:inp.value.trim(),from:'admin',ts:Date.now(),read:false})}inp.value=''};
+
+// ══ SUBMIT ORDER ══
+window.submitNewOrder=function(){const name=document.getElementById('fName')?.value?.trim();const phone=document.getElementById('fPhone')?.value?.trim();const addr=document.getElementById('fAddress')?.value?.trim();if(!name||!phone||!addr){showToast('⚠️ Συμπλήρωσε Όνομα, Τηλ, Διεύθυνση');return}const sk=document.getElementById('fStore')?.value||'';const sn=sk&&window._firebaseStores?.[sk]?window._firebaseStores[sk].name:'Manual';const dc=parseFloat(document.getElementById('fCost')?.value)||(window.adminSettings.baseDeliveryFee||2);const sub=parseFloat(document.getElementById('fSubtotal')?.value)||0;const pay=document.getElementById('fPayment')?.value||'cash';const notes=document.getElementById('fNotes')?.value?.trim()||'';if(window._db){const r=window._push(window._ref(window._db,'orders'));window._set(r,{customerName:name,phone,deliveryAddress:addr,storeId:sk,storeName:sn,deliveryCost:dc,subtotal:sub,total:sub+dc,payment:pay,notes,status:'new',createdAt:Date.now(),source:'admin'});showToast('✅ Δημιουργήθηκε!');closeModal();document.getElementById('fName').value='';document.getElementById('fPhone').value='';document.getElementById('fAddress').value='';document.getElementById('fNotes').value='';document.getElementById('fSubtotal').value='0'}else{showToast('⚠️ No Firebase')}};
+
+// ══ REASSIGN ══
+window.reassignAfterReject=function(key){if(!autoDispatch)return;const order=allOrders[key];if(!order||order.status!=='rejected')return;const onl=Object.entries(allDrivers).filter(([,d])=>(d.online===true||d.online==='true')&&(!d.status||d.status==='approved'));const rej=order.rejectedBy||{};const avail=onl.filter(([uid])=>!rej[uid]);if(avail.length&&window._db){const[u,dr]=avail[0];window._update(window._ref(window._db,'orders/'+key),{driver:u,driverName:dr.name,status:'assigned',driverAccepted:false,rejectionReason:''})}};
+
+// ══ ACTIONS ══
+function assignDriver(key,val){if(!val)return;let uid='',name=val;if(val.includes('::')){[uid,name]=val.split('::')}else{const d=Object.entries(allDrivers).find(([,dr])=>dr.name===val);if(d){uid=d[0];name=d[1].name}}if(window._db)window._update(window._ref(window._db,'orders/'+key),{driver:uid,driverName:name,status:'assigned',driverAccepted:false,rejectionReason:''});showToast('✅ '+name)}
+function setStatus(key,status){if(window._db){window._update(window._ref(window._db,'orders/'+key),{status});if(status==='rejected')setTimeout(()=>window.reassignAfterReject(key),500)}showToast('📦 '+status)}
+function reassignOrder(key){const onl=Object.entries(allDrivers).filter(([,d])=>d.online);if(!onl.length){showToast('⚠️ Κανένας online');return}const avail=onl.filter(([uid])=>uid!==allOrders[key]?.driver);if(!avail.length){showToast('⚠️ Κανένας άλλος');return}if(window._db)window._update(window._ref(window._db,'orders/'+key),{driver:avail[0][0],driverName:avail[0][1].name,status:'assigned',driverAccepted:false,rejectionReason:''});showToast('🔄 Ανατέθηκε')}
+function deleteOrder(key){if(confirm('Διαγραφή;')){if(window._db)window._set(window._ref(window._db,'orders/'+key),null);showToast('🗑️ OK')}}
+function filterTab(f,el){currentFilter=f;document.querySelectorAll('#view-orders .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');window.renderTable()}
+function searchOrders(q){searchQ=q.toLowerCase();window.renderTable()}
+function openModal(){document.getElementById('orderOverlay').classList.add('open')}
+function closeModal(){document.getElementById('orderOverlay').classList.remove('open')}
+function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500)}
+</script>
+</body>
+</html>
