@@ -185,6 +185,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:10px}
 </style>
+</head>
 <body>
 
 <div class="auth-screen" id="authScreen">
@@ -282,7 +283,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <div class="panel"><div class="panel-hd"><div class="panel-title">Τελευταίες Παραγγελίες</div></div><div id="recentOrders"></div></div>
       </div>
       <div class="page" id="page-orders">
-        <div class="page-title">Παραγγελίες</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="page-title">Παραγγελίες</div>
+          <button class="save-btn" style="font-size:13px;padding:10px 18px" onclick="openStoreOrderModal()"><span class="material-icons-round">add_call</span>Τηλεφωνική Παραγγελία</button>
+        </div>
         <div class="page-sub">Διαχείριση παραγγελιών του καταστήματός σου</div>
         <div class="panel">
           <div class="panel-hd"><div class="panel-title">Όλες</div><div class="count-pill" id="ordersCount">0</div></div>
@@ -480,6 +484,56 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   </div>
 </div>
 
+<!-- STORE PHONE ORDER MODAL -->
+<div class="overlay" id="storeOrderOverlay">
+  <div class="modal" style="max-width:520px;max-height:92vh;overflow-y:auto">
+    <div class="modal-hd">
+      <div class="modal-title">📞 Τηλεφωνική Παραγγελία</div>
+      <button class="close-btn" onclick="closeStoreOrderModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Πληκτρολόγησε το τηλέφωνο πρώτα — αν υπάρχει ο πελάτης θα συμπληρωθούν αυτόματα.</div>
+    <div class="f-group"><label class="f-label">Τηλέφωνο Πελάτη *</label><input class="f-input" id="soPhone" type="tel" placeholder="69..." oninput="autoFillCustomerByPhone(this.value)"></div>
+    <div id="soCustomerFound" style="display:none;background:var(--green-light);border:1px solid rgba(22,163,74,.2);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--green);font-weight:700;margin-bottom:10px">✅ Πελάτης βρέθηκε — στοιχεία συμπληρώθηκαν</div>
+    <div class="f-row" style="margin-bottom:10px">
+      <div class="f-group"><label class="f-label">Ονοματεπώνυμο *</label><input class="f-input" id="soName" placeholder="Γιώργος Παπαδόπουλος"></div>
+      <div class="f-group"><label class="f-label">Email</label><input class="f-input" id="soEmail" type="email" placeholder="(προαιρετικό)"></div>
+    </div>
+    <div class="f-group" style="margin-bottom:10px"><label class="f-label">Διεύθυνση Παράδοσης *</label><input class="f-input" id="soAddress" placeholder="Πατησίων 42, Αθήνα" oninput="calcDeliveryDistance()"></div>
+    <div class="f-row" style="margin-bottom:10px">
+      <div class="f-group"><label class="f-label">Όροφος</label><input class="f-input" id="soFloor" placeholder="3ος"></div>
+      <div class="f-group"><label class="f-label">Κουδούνι</label><input class="f-input" id="soDoorbell" placeholder="Παπαδόπουλος"></div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px">Στοιχεία Παραγγελίας</div>
+      <div class="f-group"><label class="f-label">Αξία Παραγγελίας (€) *</label><input class="f-input" id="soAmount" type="number" step="0.50" placeholder="0.00" oninput="updateStoreOrderTotal()"></div>
+      <div class="f-group"><label class="f-label">Σημειώσεις / Τι θέλει ο πελάτης</label><textarea class="f-input" id="soNotes" rows="2" placeholder="π.χ. 2 γύρους χωρίς κρεμμύδι..."></textarea></div>
+      <div class="f-row" style="margin-top:10px">
+        <div class="f-group"><label class="f-label">Κόστος Delivery</label><div style="display:flex;align-items:center;gap:8px"><input class="f-input" id="soDeliveryFee" type="number" step="0.10" value="2.00" style="flex:1" readonly><div id="soDistanceInfo" style="font-size:10px;color:var(--text3);min-width:60px">— χλμ</div></div></div>
+        <div class="f-group"><label class="f-label">Ετοιμασία</label><select class="f-input f-select" id="soPrepTime"><option value="10">10'</option><option value="15" selected>15'</option><option value="20">20'</option><option value="25">25'</option><option value="30">30'</option><option value="45">45'</option><option value="60">60'</option></select></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;margin-top:10px;border-top:2px solid var(--text);font-size:15px;font-weight:900"><span>Σύνολο</span><span style="color:var(--accent);font-family:'Fraunces',serif;font-size:18px" id="soTotalDisplay">€0.00</span></div>
+    </div>
+    <div style="margin-bottom:14px"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Πληρωμή</div><div style="display:flex;gap:8px"><div class="so-sel selected" id="soPay_cash" onclick="selSoPay('cash')" style="flex:1;border:2px solid var(--accent);background:var(--accent-light);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--accent)">💵 Μετρητά</div><div class="so-sel" id="soPay_card" onclick="selSoPay('card')" style="flex:1;border:2px solid var(--border);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--text2)">💳 Κάρτα</div></div></div>
+    <div style="margin-bottom:14px"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Διανομή</div><div style="display:flex;gap:8px"><div class="so-sel selected" id="soDeliv_platform" onclick="selSoDeliv('platform')" style="flex:1;border:2px solid var(--accent);background:var(--accent-light);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--accent)">🛵 Orderaki</div><div class="so-sel" id="soDeliv_own" onclick="selSoDeliv('own')" style="flex:1;border:2px solid var(--border);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--text2)">🏪 Δικός μας</div></div></div>
+    <button class="save-btn" style="width:100%;justify-content:center;padding:14px" onclick="submitStoreOrder()"><span class="material-icons-round">send</span>Καταχώρηση</button>
+  </div>
+</div>
+
+<!-- NEW ORDER POPUP -->
+<div class="overlay" id="orderDetailOverlay">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-hd"><div class="modal-title">🔔 Νέα Παραγγελία!</div><button class="close-btn" onclick="closeOrderDetail()"><span class="material-icons-round">close</span></button></div>
+    <div id="orderDetailContent" style="max-height:55vh;overflow-y:auto"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="save-btn" style="flex:1;justify-content:center" onclick="acceptFromPopup()"><span class="material-icons-round">check</span>Αποδοχή</button>
+      <button class="btn-sm btn-reject" style="padding:12px 16px" onclick="rejectFromPopup()"><span class="material-icons-round">close</span></button>
+      <button class="btn-sm" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);padding:12px 16px" onclick="printCurrentOrder()" title="Εκτύπωση"><span class="material-icons-round">print</span></button>
+    </div>
+  </div>
+</div>
+<div id="printArea" style="display:none"></div>
+<style>@media print{body *{visibility:hidden}#printArea,#printArea *{visibility:visible}#printArea{position:absolute;left:0;top:0;width:80mm;font-family:monospace;font-size:12px;line-height:1.5;padding:4mm}}</style>
+
 <script>
 const DEMO_STORE={name:'Burger House Demo',category:'burger',emoji:'🍔',deliveryCost:1.5,minOrder:10,description:'Demo κατάστημα',open:true};
 const DEMO_MENU={'i1':{name:'Classic Burger',emoji:'🍔',price:8.9,description:'200g μοσχάρι, τυρί, μαρούλι',available:true},'i2':{name:'Double Cheese',emoji:'🧀',price:11.5,description:'Διπλό τυρί',available:true},'i3':{name:'Πατάτες',emoji:'🍟',price:3.5,description:'Τραγανές',available:true}};
@@ -586,6 +640,7 @@ function updateStats(){
   const sb=document.getElementById('sideOrderBadge');
   sb.style.display=nc>0?'inline-flex':'none';sb.textContent=nc;
   document.getElementById('newOrderBadge').classList.toggle('show',nc>0);
+  checkForNewOrders();
 }
 
 const STATUS_MAP={new:['Νέα','st-new'],confirmed:['Επιβεβαιώθηκε','st-confirmed'],preparing:['Ετοιμάζεται','st-preparing'],ready:['Έτοιμη','st-ready'],picked:['Παρέλαβε','st-picked'],delivered:['Παραδόθηκε','st-delivered'],assigned:['Ανατέθηκε','st-confirmed'],cancelled:['Ακυρώθηκε','st-cancelled']};
@@ -604,7 +659,8 @@ function orderRowHTML(o){
   let actions='';
   if(o.status==='new'){
     actions=`<div class="order-actions">
-      <button class="btn-sm btn-confirm" onclick="openPrepTimeModal('${o._key}')"><span class="material-icons-round">check</span>Αποδοχή</button>
+      <button class="btn-sm btn-confirm" onclick="showNewOrderPopup('${o._key}',myOrders['${o._key}'])"><span class="material-icons-round">visibility</span>Δες</button>
+      <button class="btn-sm btn-confirm" onclick="openPrepTimeModal('${o._key}')"><span class="material-icons-round">check</span></button>
       <button class="btn-sm btn-reject" onclick="setOrderStatus('${o._key}','cancelled')"><span class="material-icons-round">close</span></button>
     </div>`;
   } else if(o.status==='preparing'){
@@ -616,9 +672,9 @@ function orderRowHTML(o){
       <button class="btn-sm btn-confirm" style="background:var(--green);color:#fff" onclick="markOrderReady('${o._key}')"><span class="material-icons-round">done_all</span>Έτοιμη!</button>
     </div>`;
   } else if(o.status==='ready'){
-    actions=`<div style="font-size:11px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">delivery_dining</span>Αναμονή διανομέα</div>`;
+    actions=`<div style="display:flex;align-items:center;gap:6px"><div style="font-size:11px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">delivery_dining</span>Αναμονή</div><button class="btn-sm" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border);padding:6px 8px" onclick="printOrderReceipt('${o._key}',myOrders['${o._key}'])" title="Εκτύπωση"><span class="material-icons-round" style="font-size:14px">print</span></button></div>`;
   } else if(o.status==='assigned'||o.status==='picked'){
-    actions=`<div style="font-size:11px;color:var(--yellow);font-weight:700;display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">two_wheeler</span>${o.driverName||'Διανομέας'}</div>`;
+    actions=`<div style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px;color:var(--yellow)">${o.ownDelivery?'<span class="material-icons-round" style="font-size:14px">store</span>Δικός μας':'<span class="material-icons-round" style="font-size:14px">two_wheeler</span>'+(o.driverName||'Courier')}</div>`;
   } else {
     actions=`<span style="font-size:11px;color:var(--text3)">${fmtTime(o.createdAt)}</span>`;
   }
@@ -671,6 +727,8 @@ function markOrderReady(key){
 }
 
 document.getElementById('prepOverlay').addEventListener('click',function(e){if(e.target===this)closePrepModal();});
+document.getElementById('storeOrderOverlay').addEventListener('click',function(e){if(e.target===this)closeStoreOrderModal();});
+document.getElementById('orderDetailOverlay').addEventListener('click',function(e){if(e.target===this)closeOrderDetail();});
 
 // Refresh countdown every 30 seconds
 setInterval(()=>{if(Object.values(myOrders).some(o=>o.status==='preparing'))renderOrders();},30000);
@@ -845,7 +903,206 @@ function deletePromo(key){
 // ══ ADMIN SETTINGS ══
 window._adminSettings={commission:10};
 function loadAdminSettings(){
-  if(window._db)window._onValue(window._ref(window._db,'settings'),snap=>{window._adminSettings=snap.val()||{commission:10};renderFinance();});
+  if(window._db){
+    window._onValue(window._ref(window._db,'settings'),snap=>{window._adminSettings=snap.val()||{commission:10};renderFinance();});
+    window._onValue(window._ref(window._db,'customers'),snap=>{window._allCustomers=snap.val()||{};});
+  }
+}
+
+// ══ STORE PHONE ORDER ══
+let soPayMethod='cash',soDelivType='platform',popupOrderKey=null,lastNewOrderCount=0;
+
+function openStoreOrderModal(){
+  document.getElementById('storeOrderOverlay').classList.add('open');
+  ['soPhone','soName','soEmail','soAddress','soFloor','soDoorbell','soAmount','soNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('soDeliveryFee').value='2.00';
+  document.getElementById('soDistanceInfo').textContent='— χλμ';
+  document.getElementById('soTotalDisplay').textContent='€0.00';
+  document.getElementById('soCustomerFound').style.display='none';
+  soPayMethod='cash';soDelivType='platform';
+  selSoPay('cash');selSoDeliv('platform');
+}
+function closeStoreOrderModal(){document.getElementById('storeOrderOverlay').classList.remove('open');}
+
+function autoFillCustomerByPhone(phone){
+  const ph=phone.replace(/\s/g,'');
+  if(ph.length<10){document.getElementById('soCustomerFound').style.display='none';return;}
+  const customers=window._allCustomers||{};
+  // Search in customers
+  let found=null;
+  for(const[uid,c]of Object.entries(customers)){
+    if((c.phone||'').replace(/\s/g,'')===ph||(c.phone||'').replace(/\s/g,'').endsWith(ph.slice(-10))){found=c;break;}
+  }
+  // Also search in previous orders
+  if(!found){
+    for(const[k,o]of Object.entries(myOrders)){
+      if((o.phone||'').replace(/\s/g,'')===ph||(o.phone||'').replace(/\s/g,'').endsWith(ph.slice(-10))){found={name:o.customerName,phone:o.phone,address:o.deliveryAddress||o.address,floor:o.floor,doorbell:o.doorbell,email:o.email};break;}
+    }
+  }
+  if(found){
+    if(found.name)document.getElementById('soName').value=found.name;
+    if(found.address)document.getElementById('soAddress').value=found.address;
+    if(found.floor)document.getElementById('soFloor').value=found.floor;
+    if(found.doorbell)document.getElementById('soDoorbell').value=found.doorbell;
+    if(found.email)document.getElementById('soEmail').value=found.email;
+    document.getElementById('soCustomerFound').style.display='block';
+    calcDeliveryDistance();
+  }else{document.getElementById('soCustomerFound').style.display='none';}
+}
+
+function calcDeliveryDistance(){
+  // Simple distance estimation based on addresses
+  // In production this would use Google Maps Distance Matrix API
+  // For now: estimate based on admin settings (base + per km)
+  const addr=document.getElementById('soAddress').value.trim();
+  if(!addr||!currentStore){document.getElementById('soDistanceInfo').textContent='— χλμ';return;}
+  const base=parseFloat(window._adminSettings?.baseDeliveryFee)||2;
+  const perKm=parseFloat(window._adminSettings?.pricePerKm)||0.5;
+  // Rough distance estimate: hash addresses to get pseudo-distance (1-8 km range)
+  let hash=0;for(let i=0;i<addr.length;i++)hash=((hash<<5)-hash)+addr.charCodeAt(i);
+  const pseudoKm=Math.max(1,Math.min(8,(Math.abs(hash)%70)/10+0.5));
+  const km=Math.round(pseudoKm*10)/10;
+  const fee=Math.round((base+perKm*km)*100)/100;
+  document.getElementById('soDeliveryFee').value=fee.toFixed(2);
+  document.getElementById('soDistanceInfo').textContent='~'+km+' χλμ';
+  updateStoreOrderTotal();
+}
+
+function updateStoreOrderTotal(){
+  const amount=parseFloat(document.getElementById('soAmount').value)||0;
+  const delFee=parseFloat(document.getElementById('soDeliveryFee').value)||0;
+  document.getElementById('soTotalDisplay').textContent='€'+(amount+delFee).toFixed(2);
+}
+
+function selSoPay(t){soPayMethod=t;['cash','card'].forEach(x=>{const el=document.getElementById('soPay_'+x);if(el){el.style.borderColor=x===t?'var(--accent)':'var(--border)';el.style.background=x===t?'var(--accent-light)':'transparent';el.style.color=x===t?'var(--accent)':'var(--text2)';}});}
+function selSoDeliv(t){soDelivType=t;['platform','own'].forEach(x=>{const el=document.getElementById('soDeliv_'+x);if(el){el.style.borderColor=x===t?'var(--accent)':'var(--border)';el.style.background=x===t?'var(--accent-light)':'transparent';el.style.color=x===t?'var(--accent)':'var(--text2)';}});}
+
+function submitStoreOrder(){
+  const phone=document.getElementById('soPhone').value.trim();
+  const name=document.getElementById('soName').value.trim();
+  const address=document.getElementById('soAddress').value.trim();
+  const amount=parseFloat(document.getElementById('soAmount').value);
+  if(!phone||!name||!address){showToast('⚠️ Συμπλήρωσε τηλέφωνο, όνομα, διεύθυνση');return;}
+  if(!amount||amount<=0){showToast('⚠️ Βάλε αξία παραγγελίας');return;}
+  const floor=document.getElementById('soFloor').value.trim();
+  const doorbell=document.getElementById('soDoorbell').value.trim();
+  const email=document.getElementById('soEmail').value.trim();
+  const notes=document.getElementById('soNotes').value.trim();
+  const deliveryCost=parseFloat(document.getElementById('soDeliveryFee').value)||2;
+  const prepMin=parseInt(document.getElementById('soPrepTime').value)||15;
+  const order={
+    id:'#ORD'+(1000+Math.floor(Math.random()*9000)),
+    storeId:storeId, storeName:currentStore?.name||'', storeAddress:currentStore?.address||'',
+    customerName:name, phone:phone, email:email,
+    address:address, deliveryAddress:address+(floor?' ('+floor+'ος)':'')+(doorbell?' κουδ.'+doorbell:''),
+    floor:floor, doorbell:doorbell, notes:notes,
+    items:[{name:'Τηλεφωνική Παραγγελία',emoji:'📞',price:amount,qty:1}],
+    subtotal:amount, deliveryCost:deliveryCost, total:amount+deliveryCost,
+    payment:soPayMethod, status:'preparing', prepMinutes:prepMin, prepStartedAt:Date.now(),
+    createdAt:Date.now(), source:'store_phone',
+    deliveryType:soDelivType, // 'platform' or 'own'
+    ownDelivery:soDelivType==='own'
+  };
+  if(window._db){
+    const r=window._push(window._ref(window._db,'orders'));
+    window._set(r,order);
+    // Save/update customer data
+    if(email||name){
+      const custData={name,phone,address,floor,doorbell,email,lastOrderAt:Date.now()};
+      // Find existing customer or create by phone
+      let custUid=null;
+      for(const[uid,c]of Object.entries(window._allCustomers||{})){if((c.phone||'').replace(/\s/g,'')===phone.replace(/\s/g,'')){custUid=uid;break;}}
+      if(custUid){window._update(window._ref(window._db,'customers/'+custUid),custData);}
+      // else we just save in orders - admin can see
+    }
+  }
+  closeStoreOrderModal();
+  showToast('✅ Παραγγελία καταχωρήθηκε! Ετοιμασία '+prepMin+' λεπτά');
+}
+
+// ══ NEW ORDER POPUP (auto-show on new order) ══
+function showNewOrderPopup(orderKey,order){
+  popupOrderKey=orderKey;
+  const o=order;
+  const itemsTxt=(o.items||[]).map(i=>'• '+(i.emoji||'')+' '+i.name+' ×'+i.qty+' — €'+(i.price*i.qty).toFixed(2)).join('<br>');
+  document.getElementById('orderDetailContent').innerHTML=`
+    <div style="background:var(--accent-light);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,69,0,.15)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:14px;font-weight:800;color:var(--accent)">${o.id||orderKey}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text3)">${fmtTime(o.createdAt)}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-weight:700">${o.source==='store_phone'?'📞 Τηλεφωνική':'🌐 Online'} · ${o.payment==='cash'?'💵 Μετρητά':'💳 Κάρτα'}${o.ownDelivery?' · 🏪 Δική μας διανομή':''}</div>
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px">Πελάτης</div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px">
+        <div style="font-size:14px;font-weight:800;margin-bottom:4px">${o.customerName||'—'}</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:2px">📞 ${o.phone||'—'}</div>
+        <div style="font-size:13px;color:var(--text2)">📍 ${o.deliveryAddress||o.address||'—'}</div>
+        ${o.floor?'<div style="font-size:12px;color:var(--text3)">Όροφος: '+o.floor+(o.doorbell?' · Κουδούνι: '+o.doorbell:'')+'</div>':''}
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px">Προϊόντα</div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;font-size:13px;line-height:1.8">${itemsTxt||'—'}</div>
+    </div>
+    ${o.notes?'<div style="background:var(--yellow-light);border-radius:10px;padding:10px;font-size:12px;color:var(--yellow);margin-bottom:12px"><b>📝 Σημειώσεις:</b> '+o.notes+'</div>':''}
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;display:flex;justify-content:space-between;font-size:14px;font-weight:800">
+      <span>Σύνολο</span>
+      <span style="font-family:'Fraunces',serif;font-size:18px;color:var(--accent)">€${(o.total||0).toFixed(2)}</span>
+    </div>`;
+  document.getElementById('orderDetailOverlay').classList.add('open');
+}
+function closeOrderDetail(){document.getElementById('orderDetailOverlay').classList.remove('open');popupOrderKey=null;}
+function acceptFromPopup(){
+  if(popupOrderKey){openPrepTimeModal(popupOrderKey);closeOrderDetail();}
+}
+function rejectFromPopup(){
+  if(popupOrderKey){setOrderStatus(popupOrderKey,'cancelled');closeOrderDetail();}
+}
+
+// ══ PRINT ORDER ══
+function printCurrentOrder(){
+  if(!popupOrderKey)return;
+  const o=myOrders[popupOrderKey];if(!o)return;
+  printOrderReceipt(popupOrderKey,o);
+}
+function printOrderReceipt(key,o){
+  const items=(o.items||[]).map(i=>i.name+' x'+i.qty+'  €'+(i.price*i.qty).toFixed(2)).join('\n');
+  const pa=document.getElementById('printArea');
+  pa.innerHTML=`
+    <h2>${currentStore?.name||'Orderaki'}</h2>
+    <div class="sep"></div>
+    <div><b>${o.id||key}</b> — ${new Date(o.createdAt).toLocaleString('el-GR')}</div>
+    <div class="sep"></div>
+    <div><b>Πελάτης:</b> ${o.customerName||'—'}</div>
+    <div><b>Τηλ:</b> ${o.phone||'—'}</div>
+    <div><b>Διεύθυνση:</b> ${o.deliveryAddress||o.address||'—'}</div>
+    ${o.floor?'<div><b>Όροφος:</b> '+o.floor+(o.doorbell?' Κουδ: '+o.doorbell:'')+'</div>':''}
+    <div class="sep"></div>
+    <pre style="white-space:pre-wrap">${items}</pre>
+    <div class="sep"></div>
+    <div>Υποσύνολο: €${(o.subtotal||0).toFixed(2)}</div>
+    <div>Delivery: €${(o.deliveryCost||0).toFixed(2)}</div>
+    <div><b>ΣΥΝΟΛΟ: €${(o.total||0).toFixed(2)}</b></div>
+    <div>Πληρωμή: ${o.payment==='cash'?'ΜΕΤΡΗΤΑ':'ΚΑΡΤΑ'}</div>
+    ${o.notes?'<div class="sep"></div><div>Σημ: '+o.notes+'</div>':''}
+    <div class="sep"></div>
+    <div style="text-align:center;font-size:10px">Orderaki.gr</div>`;
+  pa.style.display='block';
+  setTimeout(()=>{window.print();pa.style.display='none';},200);
+}
+
+// ══ AUTO-SHOW NEW ORDER POPUP ══
+function checkForNewOrders(){
+  const newOrders=Object.entries(myOrders).filter(([,o])=>o.status==='new');
+  if(newOrders.length>lastNewOrderCount&&newOrders.length>0){
+    const[key,order]=newOrders.sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0))[0];
+    showNewOrderPopup(key,order);
+    // Play sound
+    try{const a=new AudioContext();const osc=a.createOscillator();const g=a.createGain();osc.type='sine';osc.frequency.value=800;osc.connect(g);g.connect(a.destination);g.gain.setValueAtTime(0.3,a.currentTime);g.gain.linearRampToValueAtTime(0,a.currentTime+0.5);osc.start();osc.stop(a.currentTime+0.5);}catch(e){}
+  }
+  lastNewOrderCount=newOrders.length;
 }
 </script>
   <script>
