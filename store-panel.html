@@ -261,7 +261,11 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div class="s-item active" data-page="overview" onclick="goToPage('overview',this)"><span class="material-icons-round">dashboard</span>Επισκόπηση</div>
       <div class="s-item" data-page="orders" onclick="goToPage('orders',this)"><span class="material-icons-round">receipt_long</span>Παραγγελίες<span class="s-badge" id="sideOrderBadge">0</span></div>
       <div class="s-item" data-page="menu" onclick="goToPage('menu',this)"><span class="material-icons-round">restaurant_menu</span>Μενού</div>
-      <div class="s-label">Άλλα</div>
+      <div class="s-label">Λειτουργία</div>
+      <div class="s-item" data-page="hours" onclick="goToPage('hours',this)"><span class="material-icons-round">schedule</span>Ωράριο</div>
+      <div class="s-item" data-page="finance" onclick="goToPage('finance',this)"><span class="material-icons-round">account_balance_wallet</span>Οικονομικά</div>
+      <div class="s-item" data-page="promotions" onclick="goToPage('promotions',this)"><span class="material-icons-round">local_offer</span>Προσφορές</div>
+      <div class="s-label">Ρυθμίσεις</div>
       <div class="s-item" data-page="settings" onclick="goToPage('settings',this)"><span class="material-icons-round">store</span>Κατάστημα</div>
       <div class="s-item" data-page="chat" onclick="goToPage('chat',this)"><span class="material-icons-round">chat</span>Chat Admin<span class="s-badge" id="sideChatBadge">!</span></div>
     </div>
@@ -336,6 +340,81 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
           <button class="save-btn" onclick="saveStoreSettings()"><span class="material-icons-round">save</span>Αποθήκευση</button>
         </div>
       </div>
+      <div class="page" id="page-hours">
+        <div class="page-title">Ωράριο Λειτουργίας</div>
+        <div class="page-sub">Ορισμός ωραρίου & ειδικών ημερών</div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">schedule</span>Εβδομαδιαίο Ωράριο</div>
+          <div id="weeklyHours" style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:grid;grid-template-columns:90px 1fr 30px 1fr 60px;gap:8px;align-items:center;font-size:12px;font-weight:700;color:var(--text3)"><span>Ημέρα</span><span>Άνοιγμα</span><span></span><span>Κλείσιμο</span><span>Ενεργό</span></div>
+          </div>
+          <script>
+            (function(){const days=['Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο','Κυριακή'];const c=document.getElementById('weeklyHours');days.forEach((d,i)=>{const r=document.createElement('div');r.style.cssText='display:grid;grid-template-columns:90px 1fr 30px 1fr 60px;gap:8px;align-items:center';r.innerHTML=`<span style="font-size:13px;font-weight:700">${d}</span><input type="time" class="f-input" id="hOpen${i}" value="09:00" style="padding:8px 10px;font-size:12px"><span style="text-align:center;color:var(--text3)">→</span><input type="time" class="f-input" id="hClose${i}" value="23:00" style="padding:8px 10px;font-size:12px"><div style="text-align:center"><input type="checkbox" checked id="hActive${i}" style="width:34px;height:18px;appearance:none;-webkit-appearance:none;background:var(--green);border-radius:20px;position:relative;cursor:pointer" onclick="this.style.background=this.checked?'var(--green)':'var(--text3)'"></div>`;c.appendChild(r);})})();
+          </script>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">event_busy</span>Ειδικές Ημέρες & Κλείσιμο</div>
+          <div class="f-group"><label class="f-label">Ημερομηνία Κλεισίματος</label><input type="date" class="f-input" id="specialCloseDate"></div>
+          <div class="f-group"><label class="f-label">Σημείωση</label><input class="f-input" id="specialCloseNote" placeholder="π.χ. Αργία, Ανακαίνιση κ.λπ."></div>
+          <button class="save-btn" onclick="showToast('✅ Σύντομα - Ειδικές ημέρες')" style="font-size:13px;padding:10px 18px"><span class="material-icons-round">add</span>Προσθήκη</button>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">tune</span>Κατάσταση Λειτουργίας</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-sm btn-confirm" onclick="setStoreMode('open')"><span class="material-icons-round">storefront</span>Ανοιχτό</button>
+            <button class="btn-sm" style="background:var(--yellow-light);color:var(--yellow);border:1px solid rgba(217,119,6,.2)" onclick="setStoreMode('busy')"><span class="material-icons-round">hourglass_top</span>Busy Mode</button>
+            <button class="btn-sm" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border)" onclick="setStoreMode('paused')"><span class="material-icons-round">pause_circle</span>Παύση Παραγγελιών</button>
+            <button class="btn-sm btn-reject" onclick="setStoreMode('closed')"><span class="material-icons-round">lock</span>Κλειστό</button>
+          </div>
+        </div>
+        <button class="save-btn" onclick="saveStoreHours()" style="margin-top:10px"><span class="material-icons-round">save</span>Αποθήκευση Ωραρίου</button>
+      </div>
+
+      <div class="page" id="page-finance">
+        <div class="page-title">Οικονομικά</div>
+        <div class="page-sub">Έσοδα, χρεώσεις & εκκαθαρίσεις</div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-val" id="finRevenue" style="color:var(--green)">€0</div><div class="stat-label">Έσοδα</div></div>
+          <div class="stat-card"><div class="stat-val" id="finFees" style="color:var(--red)">€0</div><div class="stat-label">Προμήθεια</div></div>
+          <div class="stat-card"><div class="stat-val" id="finNet" style="color:var(--text)">€0</div><div class="stat-label">Καθαρά</div></div>
+          <div class="stat-card"><div class="stat-val" id="finOrders" style="color:var(--blue)">0</div><div class="stat-label">Παραγγελίες</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-hd"><div class="panel-title">Αναλυτικά Σήμερα</div></div>
+          <div style="padding:16px 20px">
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">Πωλήσεις (αξία φαγητού)</span><span style="font-size:14px;font-weight:800" id="finSalesDetail">€0.00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">Χρεώσεις Delivery</span><span style="font-size:14px;font-weight:800" id="finDeliveryDetail">€0.00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--red)">Προμήθεια Πλατφόρμας (<span id="finCommRate">10</span>%)</span><span style="font-size:14px;font-weight:800;color:var(--red)" id="finCommDetail">-€0.00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">Πληρωμές Μετρητά</span><span style="font-size:14px;font-weight:800;color:var(--accent)" id="finCashDetail">€0.00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;color:var(--text2)">Πληρωμές Κάρτα</span><span style="font-size:14px;font-weight:800;color:var(--blue)" id="finCardDetail">€0.00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;margin-top:8px;border-top:2px solid var(--text)"><span style="font-size:14px;font-weight:800">Καθαρά προς εσάς</span><span style="font-size:16px;font-weight:900;color:var(--green)" id="finNetDetail">€0.00</span></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">Τα οικονομικά ενημερώνονται αυτόματα. Εκκαθάριση γίνεται από τον admin.</div>
+      </div>
+
+      <div class="page" id="page-promotions">
+        <div class="page-title">Προσφορές & Κουπόνια</div>
+        <div class="page-sub">Δημιούργησε προωθητικές ενέργειες</div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">local_offer</span>Νέα Προσφορά</div>
+          <div class="f-row" style="margin-bottom:12px">
+            <div class="f-group"><label class="f-label">Τύπος</label><select class="f-input f-select" id="promoType"><option value="percent">Ποσοστό (%)</option><option value="fixed">Σταθερό (€)</option><option value="freedelivery">Δωρεάν Delivery</option></select></div>
+            <div class="f-group"><label class="f-label">Τιμή / Ποσοστό</label><input class="f-input" id="promoValue" type="number" placeholder="π.χ. 10"></div>
+          </div>
+          <div class="f-row" style="margin-bottom:12px">
+            <div class="f-group"><label class="f-label">Κωδικός Κουπονιού</label><input class="f-input" id="promoCode" placeholder="π.χ. SUMMER20" style="text-transform:uppercase"></div>
+            <div class="f-group"><label class="f-label">Λήξη</label><input type="date" class="f-input" id="promoExpiry"></div>
+          </div>
+          <div class="f-group" style="margin-bottom:12px"><label class="f-label">Min Παραγγελία για ενεργοποίηση (€)</label><input class="f-input" id="promoMinOrder" type="number" placeholder="0"></div>
+          <button class="save-btn" onclick="savePromotion()"><span class="material-icons-round">add</span>Δημιουργία Προσφοράς</button>
+        </div>
+        <div class="panel">
+          <div class="panel-hd"><div class="panel-title">Ενεργές Προσφορές</div></div>
+          <div id="promosList" style="padding:16px"><div class="empty-state"><span class="material-icons-round">local_offer</span>Δεν υπάρχουν ενεργές προσφορές</div></div>
+        </div>
+      </div>
+
       <div class="page" id="page-chat">
         <div class="page-title">Chat με Admin</div>
         <div class="page-sub">Επικοινωνία με την ομάδα Orderaki</div>
@@ -464,6 +543,8 @@ function initStorePanel(user){
     window._onValue(window._ref(window._db,'stores/'+storeId+'/menu'),snap=>{myMenu=snap.val()||{};renderMenu();});
     window._onValue(window._ref(window._db,'orders'),snap=>{const all=snap.val()||{};myOrders={};for(const[k,v]of Object.entries(all)){if(v.storeId===storeId)myOrders[k]={...v,_key:k};}renderOrders();updateStats();});
     window._onValue(window._ref(window._db,'chat/stores/'+storeId),snap=>{const arr=snap.val();myChat=arr?(Array.isArray(arr)?arr:Object.values(arr)):[];renderChat();const u=myChat.filter(m=>m.from==='admin'&&!m.read).length;document.getElementById('chatBadge').classList.toggle('show',u>0);document.getElementById('sideChatBadge').style.display=u>0?'inline-flex':'none';});
+    loadAdminSettings();
+    loadPromotions();
   } else loadDemoData();
 }
 
@@ -672,12 +753,100 @@ function goToPage(name,el){
   document.getElementById('page-'+name).classList.add('active');
   if(el)el.classList.add('active');
   if(name==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;});document.getElementById('chatBadge').classList.remove('show');document.getElementById('sideChatBadge').style.display='none';renderChat();}
+  if(name==='finance')renderFinance();
 }
 
 document.getElementById('itemOverlay').addEventListener('click',function(e){if(e.target===this)closeItemModal();});
 
 let toastT;
 function showToast(msg){document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200);}
+
+// ══ STORE MODE ══
+function setStoreMode(mode){
+  const data={};
+  if(mode==='open'){data.open=true;data.busyMode=false;data.pauseOrders=false;}
+  else if(mode==='busy'){data.open=true;data.busyMode=true;data.pauseOrders=false;}
+  else if(mode==='paused'){data.open=true;data.busyMode=false;data.pauseOrders=true;}
+  else{data.open=false;data.busyMode=false;data.pauseOrders=false;}
+  if(window._db)window._update(window._ref(window._db,'stores/'+storeId),data);
+  else Object.assign(currentStore,data);
+  const labels={open:'✅ Ανοιχτό',busy:'⏳ Busy Mode',paused:'⏸ Παύση',closed:'🔒 Κλειστό'};
+  showToast(labels[mode]||'OK');
+  applyStoreData();
+}
+
+// ══ HOURS SAVE ══
+function saveStoreHours(){
+  const days=['mon','tue','wed','thu','fri','sat','sun'];
+  const hours={};
+  days.forEach((d,i)=>{hours[d]={open:document.getElementById('hOpen'+i).value,close:document.getElementById('hClose'+i).value,active:document.getElementById('hActive'+i).checked};});
+  if(window._db)window._update(window._ref(window._db,'stores/'+storeId),{operatingHours:hours});
+  showToast('✅ Ωράριο αποθηκεύτηκε!');
+}
+
+// ══ FINANCE ══
+function renderFinance(){
+  try{
+    const delivered=Object.values(myOrders).filter(o=>o.status==='delivered');
+    const revenue=delivered.reduce((s,o)=>s+(parseFloat(o.subtotal)||parseFloat(o.total)||0),0);
+    const deliveryTotal=delivered.reduce((s,o)=>s+(parseFloat(o.deliveryCost)||0),0);
+    const commRate=(window._adminSettings?.commission||10)/100;
+    const fees=revenue*commRate;
+    const net=revenue-fees;
+    const cashTotal=delivered.filter(o=>o.payment==='cash').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+    const cardTotal=delivered.filter(o=>o.payment==='card').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+    const el=id=>document.getElementById(id);
+    if(el('finRevenue'))el('finRevenue').textContent='€'+revenue.toFixed(0);
+    if(el('finFees'))el('finFees').textContent='-€'+fees.toFixed(0);
+    if(el('finNet'))el('finNet').textContent='€'+net.toFixed(0);
+    if(el('finOrders'))el('finOrders').textContent=delivered.length;
+    if(el('finSalesDetail'))el('finSalesDetail').textContent='€'+revenue.toFixed(2);
+    if(el('finDeliveryDetail'))el('finDeliveryDetail').textContent='€'+deliveryTotal.toFixed(2);
+    if(el('finCommRate'))el('finCommRate').textContent=(commRate*100).toFixed(0);
+    if(el('finCommDetail'))el('finCommDetail').textContent='-€'+fees.toFixed(2);
+    if(el('finCashDetail'))el('finCashDetail').textContent='€'+cashTotal.toFixed(2);
+    if(el('finCardDetail'))el('finCardDetail').textContent='€'+cardTotal.toFixed(2);
+    if(el('finNetDetail'))el('finNetDetail').textContent='€'+net.toFixed(2);
+  }catch(e){console.error('Finance error',e);}
+}
+
+// ══ PROMOTIONS ══
+function savePromotion(){
+  const type=document.getElementById('promoType').value;
+  const value=parseFloat(document.getElementById('promoValue').value);
+  const code=document.getElementById('promoCode').value.trim().toUpperCase();
+  const expiry=document.getElementById('promoExpiry').value;
+  const minOrder=parseFloat(document.getElementById('promoMinOrder').value)||0;
+  if(!code||!value){showToast('⚠️ Συμπλήρωσε κωδικό και τιμή');return;}
+  const promo={type,value,code,expiry,minOrder,storeId,active:true,createdAt:Date.now()};
+  if(window._db){const r=window._push(window._ref(window._db,'stores/'+storeId+'/promotions'));window._set(r,promo);}
+  showToast('✅ Προσφορά δημιουργήθηκε: '+code);
+  document.getElementById('promoCode').value='';document.getElementById('promoValue').value='';
+  loadPromotions();
+}
+function loadPromotions(){
+  if(!window._db)return;
+  window._onValue(window._ref(window._db,'stores/'+storeId+'/promotions'),snap=>{
+    const data=snap.val()||{};
+    const list=document.getElementById('promosList');
+    const entries=Object.entries(data);
+    if(!entries.length){list.innerHTML='<div class="empty-state"><span class="material-icons-round">local_offer</span>Δεν υπάρχουν προσφορές</div>';return;}
+    list.innerHTML=entries.map(([k,p])=>{
+      const typeLabel={percent:p.value+'%',fixed:'€'+p.value,freedelivery:'Free Delivery'}[p.type]||p.value;
+      return`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="background:var(--accent-light);color:var(--accent);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:800;font-family:monospace">${p.code}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${typeLabel}</div><div style="font-size:11px;color:var(--text3)">Min: €${p.minOrder||0} ${p.expiry?'· Λήξη: '+p.expiry:''}</div></div><button class="btn-sm btn-reject" onclick="deletePromo('${k}')"><span class="material-icons-round">delete</span></button></div>`;
+    }).join('');
+  });
+}
+function deletePromo(key){
+  if(confirm('Διαγραφή προσφοράς;')&&window._db)window._remove(window._ref(window._db,'stores/'+storeId+'/promotions/'+key));
+  showToast('🗑️ Διαγράφηκε');
+}
+
+// ══ ADMIN SETTINGS ══
+window._adminSettings={commission:10};
+function loadAdminSettings(){
+  if(window._db)window._onValue(window._ref(window._db,'settings'),snap=>{window._adminSettings=snap.val()||{commission:10};renderFinance();});
+}
 </script>
   <script>
     if('serviceWorker' in navigator){

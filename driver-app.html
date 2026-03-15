@@ -14,6 +14,8 @@
 <title>Orderaki — Driver App</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
 const CFG = {
   apiKey: "AIzaSyA_MyIsYGScuuK-7qXAg4vPSPk5RS0uxNA",
@@ -196,6 +198,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     </div>
     <div class="online-toggle on" id="onlineToggle" onclick="toggleOnline()"><div class="online-dot"></div><span class="online-label" id="onlineLabel">Online</span></div>
   </div>
+  <div id="gpsIndicator" style="display:flex;align-items:center;gap:4px;justify-content:center;padding:4px 0;background:rgba(255,255,255,.05);"></div>
   <div class="earnings-bar">
     <div class="earn-item"><div class="earn-val" id="earnToday">€0</div><div class="earn-label">Σήμερα</div></div>
     <div class="earn-item"><div class="earn-val" id="earnDeliveries">0</div><div class="earn-label">Παραδόσεις</div></div>
@@ -241,8 +244,53 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
         <div class="profile-avatar" id="profAvatar">?</div><div class="profile-name" id="profName">—</div><div class="profile-email" id="profEmail">—</div>
         <div style="margin-top:10px; display:inline-block; background:rgba(34,197,94,.12); color:var(--green); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;">Εγκεκριμένος Οδηγός</div>
       </div>
-      <div class="profile-menu-item"><span class="material-icons-round" style="color:var(--text2)">phone</span><span class="profile-menu-label" id="profPhone" style="flex:1; font-weight:600; margin-left:12px">—</span></div>
-      <div class="profile-menu-item" onclick="doSignOut()"><span class="material-icons-round" style="color:var(--red)">logout</span><span style="flex:1; font-weight:600; color:var(--red); margin-left:12px">Αποσύνδεση</span></div>
+
+      <!-- COLLAPSED: Τα Στοιχεία μου -->
+      <div class="profile-menu-item" onclick="toggleSection('secMyDetails')" style="cursor:pointer">
+        <span class="material-icons-round" style="color:var(--accent)">badge</span>
+        <span style="flex:1;font-weight:700;margin-left:8px">Τα Στοιχεία μου</span>
+        <span class="material-icons-round" style="color:var(--text3);font-size:20px" id="secMyDetailsArrow">expand_more</span>
+      </div>
+      <div id="secMyDetails" style="display:none;padding:0 4px;margin-bottom:8px">
+        <div class="profile-menu-item" style="margin:4px 0"><span class="material-icons-round" style="color:var(--text2)">phone</span><span id="profPhone" style="flex:1;font-weight:600;margin-left:12px">—</span></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin:6px 0">
+          <div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Όχημα</div>
+          <div class="f-group"><label class="f-label">Τύπος</label><select class="f-input" id="profVehicle" style="background:var(--surface2)"><option value="scooter">Scooter</option><option value="motorcycle">Μηχανή</option><option value="bicycle">Ποδήλατο</option><option value="car">Αυτοκίνητο</option><option value="walk">Πεζός</option></select></div>
+          <div class="f-group"><label class="f-label">Πινακίδα</label><input class="f-input" id="profPlate" placeholder="ABC-1234"></div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin:6px 0">
+          <div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Πληρωμές & Φορολογικά</div>
+          <div class="f-group"><label class="f-label">IBAN</label><input class="f-input" id="profIBAN" placeholder="GR12 0000 0000 ..."></div>
+          <div class="f-group"><label class="f-label">ΑΦΜ</label><input class="f-input" id="profAFM" placeholder="123456789"></div>
+          <div class="f-group"><label class="f-label">ΔΟΥ</label><input class="f-input" id="profDOY" placeholder="π.χ. Πειραιά"></div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin:6px 0">
+          <div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Ειδοποιήσεις</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="font-size:13px;font-weight:600">Ήχος Παραγγελιών</span><input type="checkbox" id="profSoundOrders" checked style="width:34px;height:18px;appearance:none;-webkit-appearance:none;background:var(--green);border-radius:20px;position:relative;cursor:pointer;transition:background .2s" onclick="this.style.background=this.checked?'var(--green)':'var(--text3)'"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="font-size:13px;font-weight:600">Push Notifications</span><input type="checkbox" id="profPushNotif" checked style="width:34px;height:18px;appearance:none;-webkit-appearance:none;background:var(--green);border-radius:20px;position:relative;cursor:pointer;transition:background .2s" onclick="this.style.background=this.checked?'var(--green)':'var(--text3)'"></div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin:6px 0">
+          <div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Πλατφόρμα</div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="font-size:12px;color:var(--text3)">Αμοιβή/παράδοση</span><span style="font-size:13px;font-weight:800" id="infoCourierFee">€3.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="font-size:12px;color:var(--text3)">Bonus/χλμ</span><span style="font-size:13px;font-weight:800" id="infoCourierBonus">€0.50</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="font-size:12px;color:var(--text3)">Support</span><span style="font-size:13px;font-weight:800" id="infoSupportPhone">—</span></div>
+        </div>
+        <button style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:13px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;margin:8px 0" onclick="saveDriverProfile()"><span class="material-icons-round" style="vertical-align:middle;font-size:18px;margin-right:6px">save</span>Αποθήκευση</button>
+      </div>
+
+      <!-- COLLAPSED: Ιστορικό Παραδόσεων -->
+      <div class="profile-menu-item" onclick="toggleSection('secHistory')" style="cursor:pointer">
+        <span class="material-icons-round" style="color:var(--green)">history</span>
+        <span style="flex:1;font-weight:700;margin-left:8px">Ιστορικό Παραδόσεων</span>
+        <span class="material-icons-round" style="color:var(--text3);font-size:20px" id="secHistoryArrow">expand_more</span>
+      </div>
+      <div id="secHistory" style="display:none;margin-bottom:8px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+          <div id="deliveryHistory" style="max-height:400px;overflow-y:auto;padding:4px"><div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Φόρτωση...</div></div>
+        </div>
+      </div>
+
+      <div class="profile-menu-item" onclick="doSignOut()" style="margin-top:10px"><span class="material-icons-round" style="color:var(--red)">logout</span><span style="flex:1;font-weight:600;color:var(--red);margin-left:12px">Αποσύνδεση</span></div>
     </div>
   </div>
 
@@ -251,6 +299,22 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <div class="nav-item" id="nav-chat" onclick="goPage('chat')"><span class="material-icons-round">chat</span><span class="nav-label">Chat</span><div class="nav-badge" id="chatBadge" style="display:none">!</div></div>
     <div class="nav-item" id="nav-earnings" onclick="goPage('earnings')"><span class="material-icons-round">account_balance_wallet</span><span class="nav-label">Κέρδη</span></div>
     <div class="nav-item" id="nav-profile" onclick="goPage('profile')"><span class="material-icons-round">person</span><span class="nav-label">Προφίλ</span></div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="orderMapPopup" style="z-index:250;background:rgba(0,0,0,.85)">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
+    <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:10px;display:flex;align-items:center;gap:8px"><span class="material-icons-round" style="color:var(--accent)">delivery_dining</span>Νέα Παραγγελία!</div>
+    <div id="orderMapContainer" style="width:100%;max-width:400px;height:260px;border-radius:16px;overflow:hidden;border:2px solid var(--accent);box-shadow:0 8px 40px rgba(255,69,0,.3)"></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3)">Κλείνει αυτόματα...</div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="orderDetailSheet" style="z-index:180">
+  <div class="sheet" style="max-height:60dvh">
+    <div style="font-size:16px;font-weight:800;margin-bottom:14px;text-align:center">📦 Στοιχεία Παραγγελίας</div>
+    <div id="orderDetailContent" style="font-size:14px"></div>
+    <div class="reject-opt" style="margin-top:14px;color:var(--text3)" onclick="document.getElementById('orderDetailSheet').classList.remove('open')">Κλείσιμο</div>
   </div>
 </div>
 
@@ -360,6 +424,67 @@ function startHeartbeat(){
   const uid=window._currentUser?.uid; if(!uid||!window._db)return;
   window._update(window._ref(window._db,'drivers/'+uid), {online:true});
   setInterval(()=>{if(window._currentUser)window._update(window._ref(window._db,'drivers/'+window._currentUser.uid), {online:true});},30000);
+  startGPSTracking();
+}
+
+// ══════ GPS LIVE TRACKING ══════
+let gpsWatchId=null, lastGPSSend=0, gpsActive=false;
+const GPS_SEND_INTERVAL=8000; // Send every 8 seconds max
+
+function startGPSTracking(){
+  if(!navigator.geolocation){updateGPSIndicator('off','No GPS');return;}
+  if(gpsWatchId!==null)return; // Already tracking
+  
+  updateGPSIndicator('searching','Αναζήτηση GPS...');
+  
+  gpsWatchId=navigator.geolocation.watchPosition(
+    pos=>{
+      gpsActive=true;
+      const lat=pos.coords.latitude, lng=pos.coords.longitude, acc=Math.round(pos.coords.accuracy);
+      updateGPSIndicator('active','GPS: '+acc+'m');
+      
+      // Throttle Firebase writes
+      const now=Date.now();
+      if(now-lastGPSSend<GPS_SEND_INTERVAL)return;
+      lastGPSSend=now;
+      
+      if(window._db&&window._currentUser&&isOnline){
+        window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{
+          lat:lat, lng:lng, lastGPS:Date.now(), gpsAccuracy:acc
+        });
+        checkGeoFence(lat,lng);
+      }
+    },
+    err=>{
+      gpsActive=false;
+      if(err.code===1)updateGPSIndicator('off','GPS blocked');
+      else if(err.code===2)updateGPSIndicator('off','GPS unavail');
+      else updateGPSIndicator('off','GPS error');
+      console.warn('GPS Error:',err.message);
+    },
+    {enableHighAccuracy:true, timeout:15000, maximumAge:5000}
+  );
+}
+
+function stopGPSTracking(){
+  if(gpsWatchId!==null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
+  gpsActive=false;
+  updateGPSIndicator('off','GPS off');
+  // Clear location from Firebase
+  if(window._db&&window._currentUser){
+    window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{lat:null,lng:null,lastGPS:null});
+  }
+}
+
+function updateGPSIndicator(state,text){
+  const el=document.getElementById('gpsIndicator');
+  if(!el)return;
+  const colors={active:'#22c55e',searching:'#f59e0b',off:'#666'};
+  const icons={active:'gps_fixed',searching:'gps_not_fixed',off:'gps_off'};
+  el.innerHTML=`<span class="material-icons-round" style="font-size:12px;color:${colors[state]}">${icons[state]}</span><span style="font-size:10px;color:${colors[state]};font-weight:700">${text}</span>`;
+  if(state==='active')el.style.background='rgba(34,197,94,.12)';
+  else if(state==='searching')el.style.background='rgba(245,158,11,.12)';
+  else el.style.background='rgba(255,255,255,.05)';
 }
 window._storesCache={};
 function loadStoresCache(){if(window._db)window._onValue(window._ref(window._db,'stores'),snap=>{window._storesCache=snap.val()||{};});}
@@ -380,14 +505,14 @@ function loadDriverApp(){
 
   if(window._db&&window._currentUser){
     window._onValue(window._ref(window._db,'drivers/'+window._currentUser.uid), snap=>{
-      const d=snap.val()||{}; driverData.earnings=d.earnings||0; driverData.earningsToday=d.earningsToday||0; driverData.orders=d.orders||0; driverData.cashToday=d.cashToday||0;
+      const d=snap.val()||{}; Object.assign(driverData,d); driverData.earnings=d.earnings||0; driverData.earningsToday=d.earningsToday||0; driverData.orders=d.orders||0; driverData.cashToday=d.cashToday||0;
       updateEarningsUI(d.earnings, d.earningsToday, d.orders, d.cashToday);
     });
   }
   
   if(window._db){
     window._onValue(window._ref(window._db,'orders'),snap=>{
-      const all=snap.val()||{}; myOrders={};
+      const all=snap.val()||{}; window._allOrders=all; myOrders={};
       for(const[k,v]of Object.entries(all)){if(v.driver===driverData.uid){if(['assigned','picked','pending_acceptance'].includes(v.status))myOrders[k]={...v,_key:k};}}
       renderOrders();
     });
@@ -403,7 +528,12 @@ function loadDriverApp(){
 function renderOrders(){
   const keys=Object.keys(myOrders); 
   const pendingCount = keys.filter(k=> ['assigned','pending_acceptance'].includes(myOrders[k].status) && !myOrders[k].driverAccepted).length;
-  if(pendingCount > lastOrderCount) startOrderAlarm(); 
+  if(pendingCount > lastOrderCount) { 
+    startOrderAlarm(); 
+    // Show map popup for newest order
+    const newestKey = keys.find(k => ['assigned','pending_acceptance'].includes(myOrders[k].status) && !myOrders[k].driverAccepted);
+    if(newestKey) showOrderMapPopup(myOrders[newestKey]);
+  }
   lastOrderCount = pendingCount;
   
   document.getElementById('navBadge').textContent=keys.length; document.getElementById('navBadge').style.display=keys.length>0?'flex':'none';
@@ -530,18 +660,166 @@ function openReject(k){rejectingKey=k;document.getElementById('rejectSheet').cla
 function closeSheet(){document.getElementById('rejectSheet').classList.remove('open');rejectingKey=null;}
 function rejectOrder(reason){if(window._db)window._update(window._ref(window._db,'orders/'+rejectingKey),{status:'rejected',rejectionReason:reason,driver:'', driverAccepted: false}); closeSheet();}
 
-function toggleOnline(){isOnline=!isOnline; document.getElementById('onlineToggle').className='online-toggle'+(isOnline?' on':''); document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline'; if(window._db)window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:isOnline});}
+function toggleOnline(){isOnline=!isOnline; document.getElementById('onlineToggle').className='online-toggle'+(isOnline?' on':''); document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline'; if(window._db)window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:isOnline}); if(isOnline){startGPSTracking();}else{stopGPSTracking();}}
 function renderChat(){const area=document.getElementById('chatMsgs'); area.innerHTML=myChat.map(m=>`<div class="msg ${m.from==='driver'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div>`).join(''); setTimeout(()=>area.scrollTop=area.scrollHeight,50);}
-function sendMsg(){const inp=document.getElementById('chatInput'),text=input.value.trim(); if(!text)return; inp.value=''; if(window._db)window._set(window._push(window._ref(window._db,'chat/drivers/'+window._currentUser.uid)),{from:'driver',text,time:Date.now(),read:false});}
-function goPage(p){['orders','chat','earnings','profile'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none'; document.getElementById('nav-'+x).classList.toggle('active',x===p);}); if(p==='chat'){myChat.forEach(m=>{m.read=true;}); document.getElementById('chatBadge').style.display='none';renderChat(); stopAlarms();}}
+function sendMsg(){const inp=document.getElementById('chatInput'),text=inp.value.trim(); if(!text)return; inp.value=''; if(window._db)window._set(window._push(window._ref(window._db,'chat/drivers/'+window._currentUser.uid)),{from:'driver',text,time:Date.now(),read:false});}
+function goPage(p){['orders','chat','earnings','profile'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none'; document.getElementById('nav-'+x).classList.toggle('active',x===p);}); if(p==='chat'){myChat.forEach(m=>{m.read=true;}); document.getElementById('chatBadge').style.display='none';renderChat(); stopAlarms();}if(p==='profile'){loadDriverProfileFields();loadDeliveryHistory();loadAdminInfo();}}
+
+// ══ PROFILE SAVE/LOAD ══
+function saveDriverProfile(){
+  if(!window._db||!window._currentUser)return;
+  const data={vehicle:document.getElementById('profVehicle').value,plate:document.getElementById('profPlate').value.trim(),iban:document.getElementById('profIBAN').value.trim(),afm:document.getElementById('profAFM').value.trim(),doy:document.getElementById('profDOY').value.trim(),soundOrders:document.getElementById('profSoundOrders').checked,pushNotif:document.getElementById('profPushNotif').checked};
+  window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),data);
+  showToast('✅ Αποθηκεύτηκε!');
+}
+function loadDriverProfileFields(){
+  if(!driverData)return;
+  if(driverData.vehicle)document.getElementById('profVehicle').value=driverData.vehicle;
+  if(driverData.plate)document.getElementById('profPlate').value=driverData.plate;
+  if(driverData.iban)document.getElementById('profIBAN').value=driverData.iban;
+  if(driverData.afm)document.getElementById('profAFM').value=driverData.afm;
+  if(driverData.doy)document.getElementById('profDOY').value=driverData.doy;
+  if(driverData.soundOrders!==undefined){const el=document.getElementById('profSoundOrders');el.checked=driverData.soundOrders;el.style.background=el.checked?'var(--green)':'var(--text3)';}
+  if(driverData.pushNotif!==undefined){const el=document.getElementById('profPushNotif');el.checked=driverData.pushNotif;el.style.background=el.checked?'var(--green)':'var(--text3)';}
+}
+
+// ══ DELIVERY HISTORY ══
+function loadDeliveryHistory(){
+  const container=document.getElementById('deliveryHistory');if(!container)return;
+  const delivered=Object.entries(window._allOrders||{}).filter(([,o])=>o.driver===driverData?.uid&&o.status==='delivered').sort((a,b)=>(b[1].deliveredAt||b[1].createdAt||0)-(a[1].deliveredAt||a[1].createdAt||0));
+  if(!delivered.length){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Δεν υπάρχει ιστορικό ακόμα</div>';return;}
+  container.innerHTML=delivered.slice(0,30).map(([k,o])=>{
+    const earned=parseFloat(o.deliveryCost)||2;const isCash=o.payment==='cash';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer" onclick="showOrderDetail('${k}')"><div style="flex-shrink:0;width:32px;height:32px;border-radius:10px;background:rgba(34,197,94,.12);display:flex;align-items:center;justify-content:center"><span class="material-icons-round" style="font-size:16px;color:var(--green)">check_circle</span></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.storeName||'—'} → ${o.customerName||'—'}</div><div style="font-size:10px;color:var(--text3)">${new Date(o.deliveredAt||o.createdAt).toLocaleDateString('el-GR')} ${fmtTime(o.deliveredAt||o.createdAt)} ${isCash?'💵':'💳'}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--green)">+${fmtCur(earned)}</div><span class="material-icons-round" style="font-size:14px;color:var(--text3)">chevron_right</span></div></div>`;
+  }).join('');
+}
+
+// ══ ADMIN SETTINGS INFO ══
+function loadAdminInfo(){
+  if(!window._db)return;
+  window._onValue(window._ref(window._db,'settings'),snap=>{
+    const s=snap.val()||{};
+    const el=id=>document.getElementById(id);
+    if(el('infoCourierFee'))el('infoCourierFee').textContent=fmtCur(s.courierFee||3);
+    if(el('infoCourierBonus'))el('infoCourierBonus').textContent=fmtCur(s.courierBonus||0.5);
+    if(el('infoSupportPhone'))el('infoSupportPhone').textContent=s.supportPhone||'—';
+  });
+}
 function doSignOut(){if(window._auth)window._signOut(window._auth);}
+
+// ══ TOGGLE SECTION (collapsed profile) ══
+function toggleSection(id){
+  const el=document.getElementById(id);
+  const arrow=document.getElementById(id+'Arrow');
+  if(!el)return;
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(arrow)arrow.textContent=open?'expand_less':'expand_more';
+}
+
+// ══ ORDER MAP POPUP (5 sec) ══
+let orderMapInstance=null;
+function showOrderMapPopup(order){
+  const popup=document.getElementById('orderMapPopup');
+  if(!popup)return;
+  popup.classList.add('open');
+  
+  setTimeout(()=>{
+    const container=document.getElementById('orderMapContainer');
+    if(orderMapInstance){orderMapInstance.remove();orderMapInstance=null;}
+    
+    // Get store location
+    const store=window._storesCache?.[order.storeId];
+    const storeLat=store?.lat||store?.location?.lat;
+    const storeLng=store?.lng||store?.location?.lng;
+    
+    // Customer location from address (use store location as fallback center)
+    const centerLat=storeLat||37.9429;
+    const centerLng=storeLng||23.6439;
+    
+    orderMapInstance=L.map(container,{zoomControl:false,attributionControl:false}).setView([centerLat,centerLng],14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(orderMapInstance);
+    
+    // Store marker
+    if(storeLat&&storeLng){
+      const storeIcon=L.divIcon({className:'',html:'<div style="background:#ff6d00;color:#fff;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.4)">🏪</div>',iconSize:[32,32],iconAnchor:[16,16]});
+      L.marker([storeLat,storeLng],{icon:storeIcon}).addTo(orderMapInstance);
+    }
+    
+    // Customer marker (if we have coords in order)
+    const custLat=order.customerLat||order.deliveryLat;
+    const custLng=order.customerLng||order.deliveryLng;
+    if(custLat&&custLng){
+      const custIcon=L.divIcon({className:'',html:'<div style="background:#22c55e;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.4)">📍</div>',iconSize:[32,32],iconAnchor:[16,16]});
+      L.marker([custLat,custLng],{icon:custIcon}).addTo(orderMapInstance);
+      if(storeLat&&storeLng)orderMapInstance.fitBounds([[storeLat,storeLng],[custLat,custLng]],{padding:[30,30]});
+    }
+    
+    setTimeout(()=>orderMapInstance.invalidateSize(),100);
+  },100);
+  
+  // Auto close after 5 sec
+  setTimeout(()=>{popup.classList.remove('open');},5500);
+}
+
+// ══ ORDER DETAIL POPUP (for history) ══
+function showOrderDetail(orderKey){
+  const o=(window._allOrders||{})[orderKey];
+  if(!o)return;
+  const content=document.getElementById('orderDetailContent');
+  content.innerHTML=`
+    <div style="background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">${o.storeName||'—'}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="material-icons-round" style="font-size:18px;color:var(--text3)">person</span><span style="font-weight:700">${o.customerName||'—'}</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="material-icons-round" style="font-size:18px;color:var(--text3)">phone</span><a href="tel:${o.phone||''}" style="color:var(--green);font-weight:700;text-decoration:none">${o.phone||'—'}</a></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="material-icons-round" style="font-size:18px;color:var(--text3)">location_on</span><span>${o.deliveryAddress||o.address||'—'}</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span class="material-icons-round" style="font-size:18px;color:var(--text3)">payment</span><span>${o.payment==='cash'?'💵 Μετρητά':'💳 Κάρτα'} — €${(o.total||0).toFixed(2)}</span></div>
+    </div>
+    ${o.notes?`<div style="background:rgba(245,158,11,.1);border-radius:10px;padding:10px;font-size:12px;color:var(--yellow)"><b>Σημειώσεις:</b> ${o.notes}</div>`:''}
+  `;
+  document.getElementById('orderDetailSheet').classList.add('open');
+}
+
+// ══ GEO-FENCING: 50m proximity notification ══
+let notifiedOrders={};
+function checkGeoFence(lat,lng){
+  if(!lat||!lng)return;
+  Object.entries(myOrders).forEach(([k,o])=>{
+    if(o.status!=='picked'||notifiedOrders[k])return;
+    // Check if order has customer coordinates or use address
+    const custLat=o.customerLat||o.deliveryLat;
+    const custLng=o.customerLng||o.deliveryLng;
+    if(!custLat||!custLng)return;
+    
+    const dist=getDistance(lat,lng,custLat,custLng);
+    if(dist<=50){
+      notifiedOrders[k]=true;
+      // Notify customer via Firebase
+      if(window._db){
+        window._push(window._ref(window._db,'notifications/customer'),{
+          orderKey:k, type:'driver_arrived', customerUid:o.customerUid,
+          message:'Ο διανομέας έφτασε στη διεύθυνσή σας!', time:Date.now()
+        });
+        // Also push to order
+        window._update(window._ref(window._db,'orders/'+k),{driverArrived:true,driverArrivedAt:Date.now()});
+      }
+      showToast('📍 Έφτασες! Ειδοποιήθηκε ο πελάτης');
+      if(navigator.vibrate)navigator.vibrate([200,100,200]);
+    }
+  });
+}
+function getDistance(lat1,lng1,lat2,lng2){
+  const R=6371e3;const p=Math.PI/180;
+  const a=Math.sin((lat2-lat1)*p/2)**2+Math.cos(lat1*p)*Math.cos(lat2*p)*Math.sin((lng2-lng1)*p/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
 
 let toastT; function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
 document.addEventListener('click', e => { if(e.target.classList.contains('sheet-overlay')) e.target.classList.remove('open'); });
 </script>
 <script>
   if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  window.addEventListener('beforeunload', ()=> { if(window._db&&window._currentUser) window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:false}); });
+  window.addEventListener('beforeunload', ()=> { if(window._db&&window._currentUser) window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:false,lat:null,lng:null,lastGPS:null}); if(gpsWatchId!==null)navigator.geolocation.clearWatch(gpsWatchId); });
 </script>
 </body>
 </html>
