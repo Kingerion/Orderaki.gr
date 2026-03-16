@@ -174,6 +174,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <div id="registerForm" style="display:none">
       <div class="f-row"><div class="f-group"><label class="f-label">Όνομα</label><input class="f-input" id="rFirst"></div><div class="f-group"><label class="f-label">Επώνυμο</label><input class="f-input" id="rLast"></div></div>
       <div class="f-group"><label class="f-label">Τηλέφωνο</label><input class="f-input" id="rPhone" type="tel"></div><div class="f-group"><label class="f-label">Email</label><input class="f-input" id="rEmail" type="email"></div><div class="f-group"><label class="f-label">Κωδικός</label><input class="f-input" id="rPass" type="password"></div>
+      <div style="background:rgba(255,255,255,.04);border:1.5px solid var(--border);border-radius:14px;padding:14px;margin:12px 0">
+        <div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Διανομέας Καταστήματος (Προαιρετικό)</div>
+        <div class="f-group" style="margin-bottom:6px"><label class="f-label">Κωδικός Καταστήματος</label><input class="f-input" id="rStoreCode" placeholder="π.χ. BURG-7X3K" style="text-transform:uppercase;letter-spacing:1px"></div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.5">Αν είσαι διανομέας καταστήματος, ζήτα τον κωδικό από το κατάστημά σου. Αν δεν έχεις κωδικό, άφησε κενό για εγγραφή ως courier πλατφόρμας.</div>
+      </div>
       <button class="auth-btn" onclick="doRegister()">Αίτηση Εγγραφής</button>
     </div>
   </div>
@@ -182,7 +187,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 <div class="screen" id="screenPending">
   <div class="pending-wrap">
     <div class="pending-icon"><span class="material-icons-round">hourglass_top</span></div>
-    <div class="pending-title">Αναμονή Έγκρισης</div><div class="pending-sub">Η αίτησή σου στάλθηκε στον admin.</div>
+    <div class="pending-title">Αναμονή Έγκρισης</div>
+    <div class="pending-sub" id="pendingMessage">Η αίτησή σου στάλθηκε στον admin.</div>
+    <div id="pendingStoreInfo" style="display:none;background:rgba(255,165,0,.1);border:1px solid rgba(255,165,0,.25);border-radius:12px;padding:12px;text-align:center;max-width:280px">
+      <div style="font-size:12px;color:#ff9800;font-weight:700">🏪 Διανομέας Καταστήματος</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px" id="pendingStoreName"></div>
+    </div>
     <button style="background:transparent;border:1.5px solid var(--border);color:var(--text2);border-radius:12px;padding:12px 24px;margin-top:8px" onclick="doSignOut()">Αποσύνδεση</button>
   </div>
 </div>
@@ -406,7 +416,44 @@ function switchTab(t){document.getElementById('tabL').classList.toggle('active',
 function doLogin(){const e=document.getElementById('lEmail').value.trim(),p=document.getElementById('lPass').value; if(e&&p&&window._auth)window._signIn(window._auth,e,p).catch(()=>showErr('Λάθος στοιχεία'));}
 function doRegister(){
   const f=document.getElementById('rFirst').value.trim(),l=document.getElementById('rLast').value.trim(),ph=document.getElementById('rPhone').value.trim(),em=document.getElementById('rEmail').value.trim(),pa=document.getElementById('rPass').value;
-  if(f&&l&&ph&&em&&pa.length>=6&&window._auth){
+  const storeCode=(document.getElementById('rStoreCode')?.value||'').trim().toUpperCase();
+  if(!f||!l||!ph||!em||pa.length<6){showErr('Συμπλήρωσε όλα τα πεδία (κωδικός min 6)');return;}
+  if(!window._auth)return;
+  
+  // If store code provided, validate it first
+  if(storeCode){
+    if(!window._db){showErr('Δεν υπάρχει σύνδεση');return;}
+    // Search for store with this code
+    window._onValue(window._ref(window._db,'stores'),function(snap){
+      const stores=snap.val()||{};
+      let foundStoreId=null,foundStoreName='';
+      for(const[sid,s]of Object.entries(stores)){
+        if((s.storeCode||'').toUpperCase()===storeCode){
+          foundStoreId=sid;foundStoreName=s.name||'';break;
+        }
+      }
+      if(!foundStoreId){showErr('❌ Κωδικός καταστήματος δεν βρέθηκε! Ζήτα τον σωστό κωδικό.');return;}
+      // Check max slots
+      const store=stores[foundStoreId];
+      const maxSlots=store.maxCourierSlots||0;
+      const existingCouriers=Object.values(snap.val()||{}).length; // approximate
+      
+      // Create user as store courier
+      window._createUser(window._auth,em,pa).then(u=>{
+        window._set(window._ref(window._db,'drivers/'+u.user.uid),{
+          name:f+' '+l, phone:ph, email:em, online:false, orders:0, earnings:0, cashToday:0,
+          status:'pending_store_courier', uid:u.user.uid,
+          storeCourier:true, storeId:foundStoreId, storeName:foundStoreName, storeCode:storeCode
+        });
+        window._push(window._ref(window._db,'notifications'),{
+          type:'new_store_courier', driverId:u.user.uid, name:f+' '+l, phone:ph, email:em,
+          storeId:foundStoreId, storeName:foundStoreName, time:Date.now(), read:false
+        });
+        showErr(''); // clear errors
+      }).catch(e=>showErr(e.message));
+    },{onlyOnce:true});
+  } else {
+    // Normal platform courier registration
     window._createUser(window._auth,em,pa).then(u=>{
       window._set(window._ref(window._db,'drivers/'+u.user.uid),{name:f+' '+l,phone:ph,email:em,online:false,orders:0,earnings:0,cashToday:0,status:'pending',uid:u.user.uid});
       window._push(window._ref(window._db,'notifications'),{type:'new_driver',driverId:u.user.uid,name:f+' '+l,phone:ph,email:em,time:Date.now(),read:false});
@@ -417,7 +464,14 @@ function checkDriverStatus(user){
   if(window._db)window._onValue(window._ref(window._db,'drivers/'+user.uid),snap=>{
     const d=snap.val(); if(!d){showScreen('auth');return;}
     driverData={...d,uid:user.uid};
-    if(d.status==='pending'||d.status==='rejected') showScreen('pending'); else loadDriverApp();
+    if(d.status==='pending'||d.status==='rejected'||d.status==='pending_store_courier'){
+      showScreen('pending');
+      if(d.status==='pending_store_courier'&&d.storeName){
+        document.getElementById('pendingMessage').textContent='Η αίτησή σου ως διανομέας καταστήματος στάλθηκε στον admin.';
+        document.getElementById('pendingStoreInfo').style.display='block';
+        document.getElementById('pendingStoreName').textContent=d.storeName;
+      }
+    } else loadDriverApp();
   });
 }
 function startHeartbeat(){

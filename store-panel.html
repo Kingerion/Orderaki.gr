@@ -15,6 +15,8 @@
 <title>Orderaki — Store Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyA_MyIsYGScuuK-7qXAg4vPSPk5RS0uxNA",
@@ -362,7 +364,31 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
           <div id="ownDelivInfo" style="display:none;background:var(--yellow-light);border:1px solid rgba(217,119,6,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--yellow);margin-bottom:12px">
             <b>ℹ️ Δικοί διανομείς:</b> Οι διανομείς σας πρέπει να εγκριθούν από τον admin. Μπορείτε να έχετε μέχρι <b id="maxSlotsDisplay">0</b> διανομείς. Χρέωση: <span id="billingInfoDisplay">—</span>
           </div>
+          <!-- STORE CODE -->
+          <div id="storeCodeSection" style="display:none;background:var(--blue-light);border:1px solid rgba(37,99,235,.2);border-radius:12px;padding:14px;margin-bottom:12px">
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--blue);margin-bottom:8px">📋 Κωδικός Καταστήματος για Διανομείς</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div id="storeCodeDisplay" style="flex:1;background:var(--surface);border:2px dashed var(--blue);border-radius:10px;padding:12px 16px;font-size:20px;font-weight:900;letter-spacing:3px;text-align:center;font-family:monospace;color:var(--text)">—</div>
+              <button onclick="copyStoreCode()" style="width:44px;height:44px;border-radius:12px;background:var(--blue);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center"><span class="material-icons-round" style="font-size:20px">content_copy</span></button>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:8px;line-height:1.5">Δώσε αυτόν τον κωδικό στους διανομείς σου. Θα τον βάλουν στην εγγραφή τους στο Driver App.</div>
+            <button onclick="generateNewStoreCode()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;color:var(--text3)">🔄 Δημιουργία Νέου Κωδικού</button>
+          </div>
           <div id="ownCourierSection" style="display:none">
+            <!-- LIVE MAP -->
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">🗺️ Χάρτης Live — Διανομείς & Παραγγελίες</div>
+            <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;position:relative">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border)">
+                <div style="display:flex;align-items:center;gap:12px;font-size:10px;font-weight:700;color:var(--text3)">
+                  <span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block"></span>Διανομείς</span>
+                  <span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:50%;background:#ff4500;display:inline-block"></span>Παραγγελίες</span>
+                  <span style="display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:8px;background:#ff6d00;display:inline-block;width:10px;height:10px"></span>Κατάστημα</span>
+                </div>
+                <button onclick="refreshStoreMap()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;color:var(--text3);font-weight:700">↻ Refresh</button>
+              </div>
+              <div id="storeOwnMap" style="height:340px;width:100%"></div>
+            </div>
+
             <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Οι Διανομείς σας</div>
             <div id="storeCourierList" style="background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:10px">
               <div style="text-align:center;color:var(--text3);font-size:12px;padding:12px">Δεν υπάρχουν ακόμα διανομείς</div>
@@ -629,6 +655,8 @@ function initStorePanel(user){
     window._onValue(window._ref(window._db,'chat/stores/'+storeId),snap=>{const arr=snap.val();myChat=arr?(Array.isArray(arr)?arr:Object.values(arr)):[];renderChat();const u=myChat.filter(m=>m.from==='admin'&&!m.read).length;document.getElementById('chatBadge').classList.toggle('show',u>0);document.getElementById('sideChatBadge').style.display=u>0?'inline-flex':'none';});
     loadAdminSettings();
     loadPromotions();
+    // Persistent drivers listener for map
+    window._onValue(window._ref(window._db,'drivers'),function(snap){window._firebaseDriversAll=snap.val()||{};});
   } else loadDemoData();
 }
 
@@ -1153,8 +1181,40 @@ function updateDeliveryModeUI(mode){
   if(pBtn){pBtn.style.borderColor=mode==='platform'?'var(--accent)':'var(--border)';pBtn.style.background=mode==='platform'?'var(--accent-light)':'transparent';}
   if(oBtn){oBtn.style.borderColor=mode==='own'?'var(--accent)':'var(--border)';oBtn.style.background=mode==='own'?'var(--accent-light)':'transparent';}
   document.getElementById('ownDelivInfo')&&(document.getElementById('ownDelivInfo').style.display=mode==='own'?'block':'none');
+  document.getElementById('storeCodeSection')&&(document.getElementById('storeCodeSection').style.display=mode==='own'?'block':'none');
   document.getElementById('ownCourierSection')&&(document.getElementById('ownCourierSection').style.display=mode==='own'?'block':'none');
-  if(mode==='own'){loadStoreCouriers();loadBillingInfo();}
+  if(mode==='own'){loadStoreCouriers();loadBillingInfo();loadOrGenerateStoreCode();setTimeout(initStoreOwnMap,300);}
+  else{destroyStoreMap();}
+}
+
+function loadOrGenerateStoreCode(){
+  if(!currentStore)return;
+  if(currentStore.storeCode){
+    document.getElementById('storeCodeDisplay').textContent=currentStore.storeCode;
+  }else{
+    generateNewStoreCode();
+  }
+}
+function generateNewStoreCode(){
+  // Generate code: first 4 chars of store name (uppercase) + dash + 4 random alphanumeric
+  const prefix=(currentStore?.name||'STORE').replace(/[^a-zA-Zα-ωΑ-Ω]/g,'').substring(0,4).toUpperCase()||'SHOP';
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code=prefix+'-';
+  for(let i=0;i<4;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('storeCodeDisplay').textContent=code;
+  if(window._db&&storeId)window._update(window._ref(window._db,'stores/'+storeId),{storeCode:code});
+  if(currentStore)currentStore.storeCode=code;
+  showToast('✅ Νέος κωδικός: '+code);
+}
+function copyStoreCode(){
+  const code=document.getElementById('storeCodeDisplay').textContent;
+  if(code&&code!=='—'){
+    navigator.clipboard?.writeText(code).then(()=>showToast('📋 Αντιγράφηκε: '+code)).catch(()=>{
+      // Fallback
+      const inp=document.createElement('input');inp.value=code;document.body.appendChild(inp);inp.select();document.execCommand('copy');document.body.removeChild(inp);
+      showToast('📋 Αντιγράφηκε: '+code);
+    });
+  }
 }
 function loadStoreCouriers(){
   if(!window._db||!storeId)return;
@@ -1184,6 +1244,84 @@ function loadBillingInfo(){
       if(ch>0){document.getElementById('billingNotice')&&(document.getElementById('billingNotice').style.display='block');document.getElementById('billingAmount')&&(document.getElementById('billingAmount').textContent='€'+ch.toFixed(2));}
     }
   },{onlyOnce:true});
+}
+
+// ══ STORE OWN COURIER MAP ══
+let storeMap=null,storeMapMarkers=[],storeMapTimer=null;
+
+function initStoreOwnMap(){
+  const container=document.getElementById('storeOwnMap');
+  if(!container)return;
+  if(storeMap){storeMap.remove();storeMap=null;}
+  storeMapMarkers=[];
+  
+  // Center on store address or default
+  const lat=currentStore?.lat||37.9429;
+  const lng=currentStore?.lng||23.6439;
+  storeMap=L.map(container,{zoomControl:true}).setView([lat,lng],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(storeMap);
+  
+  // Store marker
+  const storeIcon=L.divIcon({className:'',html:'<div style="background:#fff;border:2.5px solid #ff6d00;border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 3px 12px rgba(0,0,0,.3)">🏪</div>',iconSize:[34,34],iconAnchor:[17,17]});
+  L.marker([lat,lng],{icon:storeIcon,zIndexOffset:50}).addTo(storeMap).bindPopup('<b>'+( currentStore?.name||'Κατάστημα')+'</b><br><span style="font-size:11px;color:#666">Το κατάστημά σας</span>');
+  
+  setTimeout(()=>{storeMap.invalidateSize();},300);
+  
+  // Start auto-refresh
+  updateStoreOwnMapMarkers();
+  if(storeMapTimer)clearInterval(storeMapTimer);
+  storeMapTimer=setInterval(updateStoreOwnMapMarkers,6000);
+}
+
+function updateStoreOwnMapMarkers(){
+  if(!storeMap||!window._db)return;
+  
+  // Clear old markers
+  storeMapMarkers.forEach(m=>storeMap.removeLayer(m));
+  storeMapMarkers=[];
+  
+  // Get own couriers
+  const allDrivers=window._firebaseDriversAll||{};
+  Object.entries(allDrivers).forEach(([uid,d])=>{
+    if(!d.storeCourier||d.storeId!==storeId)return;
+    if(!d.lat||!d.lng)return;
+    const isOnline=d.online===true||d.online==='true';
+    if(!isOnline)return;
+    
+    const icon=L.divIcon({className:'',html:`<div style="position:relative"><div style="background:#22c55e;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(34,197,94,.4)">${(d.name||'?').charAt(0)}</div></div>`,iconSize:[30,30],iconAnchor:[15,15]});
+    const m=L.marker([d.lat,d.lng],{icon:icon,zIndexOffset:200}).addTo(storeMap);
+    m.bindPopup(`<div style="text-align:center"><b>🏍 ${d.name||'—'}</b><br><span style="font-size:11px;color:#22c55e;font-weight:700">Online</span><br><span style="font-size:11px;color:#666">${d.phone||''}</span></div>`);
+    storeMapMarkers.push(m);
+  });
+  
+  // Get active orders (own delivery, not delivered)
+  const activeOrders=Object.entries(myOrders||{}).filter(([,o])=>o.ownDelivery&&['new','preparing','ready','assigned','picked'].includes(o.status));
+  activeOrders.forEach(([key,o])=>{
+    // Try to get customer location
+    const custLat=o.customerLat||o.deliveryLat;
+    const custLng=o.customerLng||o.deliveryLng;
+    if(!custLat||!custLng)return;
+    
+    const statusColors={new:'#3b82f6',preparing:'#f59e0b',ready:'#22c55e',assigned:'#ff6b35',picked:'#8b5cf6'};
+    const statusLabels={new:'Νέα',preparing:'Ετοιμ.',ready:'Έτοιμη',assigned:'Σε δρόμο',picked:'Παρελ.'};
+    const color=statusColors[o.status]||'#ff4500';
+    
+    const icon=L.divIcon({className:'',html:`<div style="position:relative;display:flex;flex-direction:column;align-items:center"><div style="background:${color};color:#fff;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:0 4px">📦</div><div style="background:rgba(0,0,0,.8);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;margin-top:2px;white-space:nowrap">${o.id||key.substring(0,6)}</div></div>`,iconSize:[30,36],iconAnchor:[15,18]});
+    const m=L.marker([custLat,custLng],{icon:icon,zIndexOffset:100}).addTo(storeMap);
+    m.bindPopup(`<div style="min-width:140px"><b>${o.id||key}</b><br><span style="font-size:11px;color:${color};font-weight:700">${statusLabels[o.status]||o.status}</span><br><span style="font-size:11px">${o.customerName||'—'}</span><br><span style="font-size:11px;color:#666">${o.deliveryAddress||o.address||'—'}</span><br><span style="font-size:12px;font-weight:800">€${(o.total||0).toFixed(2)}</span></div>`);
+    storeMapMarkers.push(m);
+  });
+}
+
+function refreshStoreMap(){
+  updateStoreOwnMapMarkers();
+  showToast('🗺️ Χάρτης ανανεώθηκε');
+}
+
+function destroyStoreMap(){
+  if(storeMapTimer){clearInterval(storeMapTimer);storeMapTimer=null;}
+  if(storeMap){storeMap.remove();storeMap=null;}
+  storeMapMarkers=[];
 }
 </script>
   <script>
