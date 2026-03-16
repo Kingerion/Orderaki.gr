@@ -343,6 +343,36 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
           </div>
           <button class="save-btn" onclick="saveStoreSettings()"><span class="material-icons-round">save</span>Αποθήκευση</button>
         </div>
+        <!-- DELIVERY MODE PERSISTENT -->
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">delivery_dining</span>Τρόπος Διανομής (Μόνιμος)</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Η επιλογή ισχύει για όλες τις παραγγελίες. Μπορείτε να αλλάξετε ανά παραγγελία αν χρειαστεί.</div>
+          <div style="display:flex;gap:10px;margin-bottom:14px">
+            <div id="delivModeBtn_platform" onclick="setDeliveryMode('platform')" style="flex:1;border:2px solid var(--accent);background:var(--accent-light);border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:all .15s">
+              <div style="font-size:28px;margin-bottom:6px">🛵</div>
+              <div style="font-size:13px;font-weight:800;color:var(--accent)">Orderaki Couriers</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px">Χρησιμοποιεί τους διανομείς της πλατφόρμας</div>
+            </div>
+            <div id="delivModeBtn_own" onclick="setDeliveryMode('own')" style="flex:1;border:2px solid var(--border);border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:all .15s">
+              <div style="font-size:28px;margin-bottom:6px">🏪</div>
+              <div style="font-size:13px;font-weight:800;color:var(--text2)">Δικοί μας Διανομείς</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px">Διανομή με δικά σας μέσα</div>
+            </div>
+          </div>
+          <div id="ownDelivInfo" style="display:none;background:var(--yellow-light);border:1px solid rgba(217,119,6,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--yellow);margin-bottom:12px">
+            <b>ℹ️ Δικοί διανομείς:</b> Οι διανομείς σας πρέπει να εγκριθούν από τον admin. Μπορείτε να έχετε μέχρι <b id="maxSlotsDisplay">0</b> διανομείς. Χρέωση: <span id="billingInfoDisplay">—</span>
+          </div>
+          <div id="ownCourierSection" style="display:none">
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Οι Διανομείς σας</div>
+            <div id="storeCourierList" style="background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:10px">
+              <div style="text-align:center;color:var(--text3);font-size:12px;padding:12px">Δεν υπάρχουν ακόμα διανομείς</div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Για να προσθέσετε διανομέα, ο οδηγός κάνει εγγραφή στην Driver App και σας ζητάει το κωδικό καταστήματος.</div>
+          </div>
+          <div id="billingNotice" style="display:none;background:var(--red-light);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--red);margin-top:10px">
+            <b>⚠️ Εκκρεμής πληρωμή:</b> <span id="billingAmount">€0.00</span> για τον τρέχοντα μήνα. Παρακαλώ επικοινωνήστε με τον admin.
+          </div>
+        </div>
       </div>
       <div class="page" id="page-hours">
         <div class="page-title">Ωράριο Λειτουργίας</div>
@@ -620,6 +650,8 @@ function applyStoreData(){
   document.getElementById('sDesc').value=currentStore.description||'';
   selectedEmoji=currentStore.emoji||'🍔';
   document.querySelectorAll('.emoji-opt').forEach(el=>el.classList.toggle('selected',el.dataset.e===selectedEmoji));
+  // Load persistent delivery mode
+  if(typeof updateDeliveryModeUI==='function')updateDeliveryModeUI(currentStore.defaultDeliveryMode||'platform');
 }
 
 function toggleStoreStatus(){
@@ -919,8 +951,10 @@ function openStoreOrderModal(){
   document.getElementById('soDistanceInfo').textContent='— χλμ';
   document.getElementById('soTotalDisplay').textContent='€0.00';
   document.getElementById('soCustomerFound').style.display='none';
-  soPayMethod='cash';soDelivType='platform';
-  selSoPay('cash');selSoDeliv('platform');
+  soPayMethod='cash';
+  // Use persistent delivery mode as default
+  soDelivType=currentStore?.defaultDeliveryMode||'platform';
+  selSoPay('cash');selSoDeliv(soDelivType);
 }
 function closeStoreOrderModal(){document.getElementById('storeOrderOverlay').classList.remove('open');}
 
@@ -1103,6 +1137,53 @@ function checkForNewOrders(){
     try{const a=new AudioContext();const osc=a.createOscillator();const g=a.createGain();osc.type='sine';osc.frequency.value=800;osc.connect(g);g.connect(a.destination);g.gain.setValueAtTime(0.3,a.currentTime);g.gain.linearRampToValueAtTime(0,a.currentTime+0.5);osc.start();osc.stop(a.currentTime+0.5);}catch(e){}
   }
   lastNewOrderCount=newOrders.length;
+}
+
+// ══ PERSISTENT DELIVERY MODE ══
+function setDeliveryMode(mode){
+  if(!window._db||!storeId)return;
+  window._update(window._ref(window._db,'stores/'+storeId),{defaultDeliveryMode:mode});
+  if(currentStore)currentStore.defaultDeliveryMode=mode;
+  updateDeliveryModeUI(mode);
+  showToast(mode==='own'?'🏪 Δικοί διανομείς — μόνιμο':'🛵 Orderaki Couriers — μόνιμο');
+}
+function updateDeliveryModeUI(mode){
+  const pBtn=document.getElementById('delivModeBtn_platform');
+  const oBtn=document.getElementById('delivModeBtn_own');
+  if(pBtn){pBtn.style.borderColor=mode==='platform'?'var(--accent)':'var(--border)';pBtn.style.background=mode==='platform'?'var(--accent-light)':'transparent';}
+  if(oBtn){oBtn.style.borderColor=mode==='own'?'var(--accent)':'var(--border)';oBtn.style.background=mode==='own'?'var(--accent-light)':'transparent';}
+  document.getElementById('ownDelivInfo')&&(document.getElementById('ownDelivInfo').style.display=mode==='own'?'block':'none');
+  document.getElementById('ownCourierSection')&&(document.getElementById('ownCourierSection').style.display=mode==='own'?'block':'none');
+  if(mode==='own'){loadStoreCouriers();loadBillingInfo();}
+}
+function loadStoreCouriers(){
+  if(!window._db||!storeId)return;
+  window._onValue(window._ref(window._db,'drivers'),function(snap){
+    const all=snap.val()||{};
+    const mine=Object.entries(all).filter(([,d])=>d.storeId===storeId&&d.storeCourier);
+    const list=document.getElementById('storeCourierList');if(!list)return;
+    if(!mine.length){list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:12px;padding:12px">Δεν έχετε διανομείς ακόμα</div>';return;}
+    const ordArr=Object.values(myOrders||{});
+    list.innerHTML=mine.map(([uid,d])=>{
+      const del=ordArr.filter(o=>o.driver===uid&&o.status==='delivered'&&o.ownDelivery);
+      const cash=del.filter(o=>o.payment==='cash').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+      return`<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--border)"><div style="width:28px;height:28px;border-radius:50%;background:${d.online?'var(--green-light)':'var(--surface)'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${d.online?'var(--green)':'var(--text3)'}">${(d.name||'?')[0]}</div><div style="flex:1"><div style="font-size:12px;font-weight:800">${d.name}</div><div style="font-size:10px;color:var(--text3)">${d.online?'🟢 Online':'⚫ Off'} · ${del.length} παραδ.</div></div><div style="font-size:11px;font-weight:800;color:var(--accent)">💵€${cash.toFixed(2)}</div></div>`;
+    }).join('');
+  },{onlyOnce:true});
+  if(currentStore?.maxCourierSlots)document.getElementById('maxSlotsDisplay')&&(document.getElementById('maxSlotsDisplay').textContent=currentStore.maxCourierSlots);
+}
+function loadBillingInfo(){
+  if(!window._db)return;
+  window._onValue(window._ref(window._db,'settings'),function(snap){
+    const s=snap.val()||{};const mode=s.scBillingMode||'per_order';const amt=s.scBillingAmount||0.10;
+    document.getElementById('billingInfoDisplay')&&(document.getElementById('billingInfoDisplay').textContent=mode==='per_order'?'€'+amt.toFixed(2)+'/παραγγελία':'€'+amt.toFixed(2)+'/μήνα/διανομέα');
+    if(new Date().getDate()>=28){
+      const ms=new Date();ms.setDate(1);ms.setHours(0,0,0,0);
+      const own=Object.values(myOrders||{}).filter(o=>o.ownDelivery&&o.status==='delivered'&&o.createdAt>=ms.getTime());
+      let ch=mode==='per_order'?own.length*amt:0;
+      if(ch>0){document.getElementById('billingNotice')&&(document.getElementById('billingNotice').style.display='block');document.getElementById('billingAmount')&&(document.getElementById('billingAmount').textContent='€'+ch.toFixed(2));}
+    }
+  },{onlyOnce:true});
 }
 </script>
   <script>
