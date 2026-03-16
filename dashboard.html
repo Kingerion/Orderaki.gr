@@ -221,6 +221,7 @@ body{flex-direction:column;overflow-y:auto}
     <div class="nav-item active" onclick="navTo(this)"><span class="material-icons-round">receipt_long</span> Orders <span class="nav-badge" id="navCount">0</span></div>
     <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">storefront</span> Stores</div>
     <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">two_wheeler</span> Couriers <span class="nav-badge green" id="navDrivers">0</span></div>
+    <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">delivery_dining</span> StoreCouriers</div>
     <div class="nav-label">Οικονομικά & Λειτουργίες</div>
     <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">map</span> Zones</div>
     <div class="nav-item" onclick="navTo(this)"><span class="material-icons-round">account_balance_wallet</span> Finance</div>
@@ -318,6 +319,41 @@ body{flex-direction:column;overflow-y:auto}
     </div>
   </div>
 
+  <!-- ══ STORE COURIERS ══ -->
+  <div class="view-section" id="view-storecouriers">
+    <div class="topbar"><div class="topbar-title">Διανομείς Καταστημάτων</div><div class="tabs"><div class="tab active" onclick="filterSCTab('all',this)">Όλοι</div><div class="tab" onclick="filterSCTab('pending',this)">Αιτήματα</div><div class="tab" onclick="filterSCTab('active',this)">Ενεργοί</div></div></div>
+    <div class="content">
+      <div class="stats" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Σύνολο</div><div class="stat-value" id="scTotal">0</div></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Ενεργοί</div><div class="stat-value" id="scActive" style="color:var(--green)">0</div></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Αιτήματα</div><div class="stat-value" id="scPending" style="color:var(--yellow)">0</div></div></div></div>
+        <div class="stat"><div class="stat-top"><div><div class="stat-label">Καταστήματα</div><div class="stat-value" id="scStores" style="color:var(--blue)">0</div></div></div></div>
+      </div>
+      <!-- Billing Settings -->
+      <div class="panel" style="flex:0 0 auto">
+        <div class="panel-hd"><div class="panel-title">Χρέωση Υπηρεσίας</div></div>
+        <div style="padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <select class="finput" id="scBillingMode" style="width:auto;min-width:180px" onchange="saveSCBilling()">
+            <option value="per_order">€ ανά παραγγελία</option>
+            <option value="monthly">€ / μήνα / λογαριασμό</option>
+          </select>
+          <input type="number" id="scBillingAmount" class="finput" style="width:100px" value="0.10" min="0" step="0.01" onchange="saveSCBilling()">
+          <span style="font-size:11px;color:var(--muted)" id="scBillingDesc">€0.10 ανά παραγγελία</span>
+        </div>
+      </div>
+      <!-- Store Courier List -->
+      <div class="panel" style="flex:1">
+        <div class="panel-hd"><div class="panel-title">Λίστα Διανομέων Καταστημάτων</div><div class="search-wrap"><span class="material-icons-round">search</span><input type="text" id="scSearchInput" placeholder="Αναζήτηση..." oninput="renderStoreCouriers()"></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Διανομέας</th><th>Κατάστημα</th><th>Παραδόσεις</th><th>Χρέωση</th><th>Status</th><th></th></tr></thead><tbody id="scBody"></tbody></table></div>
+      </div>
+      <!-- Store Courier Slots per Store -->
+      <div class="panel" style="flex:0 0 auto">
+        <div class="panel-hd"><div class="panel-title">Θέσεις Διανομέων ανά Κατάστημα</div></div>
+        <div class="table-wrap"><table><thead><tr><th>Κατάστημα</th><th>Max Θέσεις</th><th>Ενεργοί</th><th>Μηνιαία Χρέωση</th><th></th></tr></thead><tbody id="scSlotsBody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
   <div class="view-section" id="view-zones"><div class="topbar"><div class="topbar-title">Ζώνες</div><button class="btn btn-primary" onclick="showToast('Σύντομα')">+ Νέα Ζώνη</button></div><div class="content"><div class="panel"><div class="table-wrap"><table><thead><tr><th>Περιοχή</th><th>Min</th><th>Χρέωση</th><th>Status</th></tr></thead><tbody><tr><td><b>Πειραιάς</b></td><td>€5.00</td><td>€1.50</td><td><span class="status-tag s-delivered">Ενεργή</span></td></tr></tbody></table></div></div></div></div>
   <div class="view-section" id="view-promotions"><div class="topbar"><div class="topbar-title">Προσφορές</div><button class="btn btn-primary" onclick="showToast('Σύντομα')">+ Κουπόνι</button></div><div class="content"><div class="panel"><div class="table-wrap"><table><thead><tr><th>Κωδικός</th><th>Έκπτωση</th><th>Λήξη</th><th>Status</th></tr></thead><tbody><tr><td><b>WELCOME10</b></td><td>10%</td><td>31/12/2026</td><td><span class="status-tag s-delivered">Ενεργό</span></td></tr></tbody></table></div></div></div></div>
 
@@ -371,6 +407,14 @@ body{flex-direction:column;overflow-y:auto}
           <div class="toggle-row"><span class="toggle-row-label">Maintenance Mode</span><input type="checkbox" id="togMaintenance" class="toggle-check"></div>
           <div class="fhint" style="margin-top:4px">Εμφανίζει «Εργασίες συντήρησης» στους πελάτες.</div>
         </div>
+        <div class="settings-card">
+          <div class="settings-card-title"><span class="material-icons-round">delivery_dining</span> Χρεώσεις Διανομέων Καταστημάτων</div>
+          <div class="frow">
+            <div class="fgroup"><label class="flabel">Μοντέλο Χρέωσης</label><select class="finput" id="setScBillingMode"><option value="per_order">Ανά Παραγγελία</option><option value="monthly">Μηνιαία / Λογαριασμό</option></select></div>
+            <div class="fgroup"><label class="flabel">Ποσό (€)</label><input type="number" id="setScBillingAmount" class="finput" value="0.10" min="0" step="0.01"></div>
+          </div>
+          <div class="fhint">Ανά παραγγελία: π.χ. €0.10/order. Μηνιαία: π.χ. €10/μήνα/διανομέα.</div>
+        </div>
       </div>
       <button class="btn btn-primary" onclick="if(window.saveAdminSettings)window.saveAdminSettings()" style="width:100%;max-width:380px;justify-content:center;margin:8px auto 0;padding:11px;font-size:12px"><span class="material-icons-round" style="font-size:16px">save</span> Αποθήκευση Ρυθμίσεων</button>
     </div>
@@ -396,8 +440,8 @@ const fmtCur=v=>"€"+(parseFloat(v)||0).toFixed(2);
 
 document.addEventListener('DOMContentLoaded',()=>{try{if(window.renderTable)window.renderTable();if(window.renderDrivers)window.renderDrivers();if(window.updateStats)window.updateStats(allOrders);if(window.updateAutoDispatchUI)window.updateAutoDispatchUI();if(window.initMap)window.initMap();setTimeout(()=>{const sel=document.getElementById('fStore');if(sel&&window._firebaseStores){Object.entries(window._firebaseStores).forEach(([k,s])=>{if(s.status==='approved'||s.status==='active'){const o=document.createElement('option');o.value=k;o.textContent=s.name||k;sel.appendChild(o)}})}},3000)}catch(e){console.error(e)}});
 
-function switchView(vid,el){try{document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));if(el)el.classList.add('active');const views=['view-orders','view-stores','view-drivers','view-finance','view-settlements','view-customers','view-zones','view-promotions','view-settings'];if(views.includes('view-'+vid)){views.forEach(v=>{const sec=document.getElementById(v);if(sec)sec.style.display=v===('view-'+vid)?'flex':'none'});if(vid==='orders'&&window.map)setTimeout(()=>window.map.invalidateSize(),100);if(vid==='stores'&&window.renderAdminStoresTable)window.renderAdminStoresTable();if(vid==='drivers'&&window.renderAdminDriversTable)window.renderAdminDriversTable();if((vid==='finance'||vid==='settlements')&&window.renderFinanceAndSettlements)window.renderFinanceAndSettlements();if(vid==='customers'&&window.renderAdminCustomersTable)window.renderAdminCustomersTable()}else{showToast('🚧 Υπό κατασκευή!')}}catch(e){console.error(e)}}
-function navTo(el){const t=el.textContent;if(t.includes('Orders'))switchView('orders',el);else if(t.includes('Stores'))switchView('stores',el);else if(t.includes('Couriers'))switchView('drivers',el);else if(t.includes('Customers'))switchView('customers',el);else if(t.includes('Finance'))switchView('finance',el);else if(t.includes('Settlements'))switchView('settlements',el);else if(t.includes('Zones'))switchView('zones',el);else if(t.includes('Promotions'))switchView('promotions',el);else if(t.includes('Settings'))switchView('settings',el);else showToast('🚧 Υπό κατασκευή!')}
+function switchView(vid,el){try{document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));if(el)el.classList.add('active');const views=['view-orders','view-stores','view-drivers','view-storecouriers','view-finance','view-settlements','view-customers','view-zones','view-promotions','view-settings'];if(views.includes('view-'+vid)){views.forEach(v=>{const sec=document.getElementById(v);if(sec)sec.style.display=v===('view-'+vid)?'flex':'none'});if(vid==='orders'&&window.map)setTimeout(()=>window.map.invalidateSize(),100);if(vid==='stores'&&window.renderAdminStoresTable)window.renderAdminStoresTable();if(vid==='drivers'&&window.renderAdminDriversTable)window.renderAdminDriversTable();if(vid==='storecouriers'&&window.renderStoreCouriers)window.renderStoreCouriers();if((vid==='finance'||vid==='settlements')&&window.renderFinanceAndSettlements)window.renderFinanceAndSettlements();if(vid==='customers'&&window.renderAdminCustomersTable)window.renderAdminCustomersTable()}else{showToast('🚧 Υπό κατασκευή!')}}catch(e){console.error(e)}}
+function navTo(el){const t=el.textContent;if(t.includes('Orders'))switchView('orders',el);else if(t.includes('StoreCouriers'))switchView('storecouriers',el);else if(t.includes('Stores'))switchView('stores',el);else if(t.includes('Couriers'))switchView('drivers',el);else if(t.includes('Customers'))switchView('customers',el);else if(t.includes('Finance'))switchView('finance',el);else if(t.includes('Settlements'))switchView('settlements',el);else if(t.includes('Zones'))switchView('zones',el);else if(t.includes('Promotions'))switchView('promotions',el);else if(t.includes('Settings'))switchView('settings',el);else showToast('🚧 Υπό κατασκευή!')}
 
 // ══ STORES ══
 function filterStoresTab(f,el){adminStoreFilter=f;document.querySelectorAll('#view-stores .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');window.renderAdminStoresTable()}
@@ -422,10 +466,102 @@ window.renderAdminCustomersTable=function(){try{const tbody=document.getElementB
 window.toggleCustomerBlock=function(uid,bl){if(confirm(bl?'Ξεμπλοκάρισμα;':'Μπλοκάρισμα;')){if(window._db)window._update(window._ref(window._db,'customers/'+uid),{blocked:!bl});showToast(bl?'✅ Ξεμπλοκαρίστηκε':'🚫 Μπλοκαρίστηκε')}};
 
 // ══ SETTINGS SAVE ══
-window.saveAdminSettings=function(){const s={commission:parseFloat(document.getElementById('setCommission').value)||10,radius:parseFloat(document.getElementById('setRadius').value)||5,baseDeliveryFee:parseFloat(document.getElementById('setBaseDeliveryFee').value)||2,pricePerKm:parseFloat(document.getElementById('setPricePerKm').value)||0.5,minOrder:parseFloat(document.getElementById('setMinOrder').value)||5,surcharge:parseFloat(document.getElementById('setSurcharge').value)||0,vat:parseFloat(document.getElementById('setVAT').value)||24,courierFee:parseFloat(document.getElementById('setCourierFee').value)||3,courierBonus:parseFloat(document.getElementById('setCourierBonus').value)||0.5,maxDispatchRetries:parseInt(document.getElementById('setMaxRetries').value)||3,dispatchTimeout:parseInt(document.getElementById('setDispatchTimeout').value)||60,openTime:document.getElementById('setOpenTime').value||'09:00',closeTime:document.getElementById('setCloseTime').value||'23:00',codEnabled:document.getElementById('togCOD').checked,cardEnabled:document.getElementById('togCard').checked,pushOrders:document.getElementById('togPushOrders').checked,pushDrivers:document.getElementById('togPushDrivers').checked,smsEnabled:document.getElementById('togSMS').checked,emailEnabled:document.getElementById('togEmail').checked,platformName:document.getElementById('setPlatformName').value||'2Fast Delivery',supportPhone:document.getElementById('setSupportPhone').value||'',supportEmail:document.getElementById('setSupportEmail').value||'',maintenanceMode:document.getElementById('togMaintenance').checked};if(window._db){window._update(window._ref(window._db,'settings'),s);showToast('✅ Αποθηκεύτηκαν!');window.adminSettings=s;if(window.renderFinanceAndSettlements)window.renderFinanceAndSettlements()}else{showToast('⚠️ No Firebase')}};
+window.saveAdminSettings=function(){const s={commission:parseFloat(document.getElementById('setCommission').value)||10,radius:parseFloat(document.getElementById('setRadius').value)||5,baseDeliveryFee:parseFloat(document.getElementById('setBaseDeliveryFee').value)||2,pricePerKm:parseFloat(document.getElementById('setPricePerKm').value)||0.5,minOrder:parseFloat(document.getElementById('setMinOrder').value)||5,surcharge:parseFloat(document.getElementById('setSurcharge').value)||0,vat:parseFloat(document.getElementById('setVAT').value)||24,courierFee:parseFloat(document.getElementById('setCourierFee').value)||3,courierBonus:parseFloat(document.getElementById('setCourierBonus').value)||0.5,maxDispatchRetries:parseInt(document.getElementById('setMaxRetries').value)||3,dispatchTimeout:parseInt(document.getElementById('setDispatchTimeout').value)||60,openTime:document.getElementById('setOpenTime').value||'09:00',closeTime:document.getElementById('setCloseTime').value||'23:00',codEnabled:document.getElementById('togCOD').checked,cardEnabled:document.getElementById('togCard').checked,pushOrders:document.getElementById('togPushOrders').checked,pushDrivers:document.getElementById('togPushDrivers').checked,smsEnabled:document.getElementById('togSMS').checked,emailEnabled:document.getElementById('togEmail').checked,platformName:document.getElementById('setPlatformName').value||'2Fast Delivery',supportPhone:document.getElementById('setSupportPhone').value||'',supportEmail:document.getElementById('setSupportEmail').value||'',maintenanceMode:document.getElementById('togMaintenance').checked,scBillingMode:document.getElementById('setScBillingMode')?.value||'per_order',scBillingAmount:parseFloat(document.getElementById('setScBillingAmount')?.value)||0.10};if(window._db){window._update(window._ref(window._db,'settings'),s);showToast('✅ Αποθηκεύτηκαν!');window.adminSettings=s;if(window.renderFinanceAndSettlements)window.renderFinanceAndSettlements()}else{showToast('⚠️ No Firebase')}};
+
+// ══ STORE COURIERS ══
+let scFilter='all';
+function filterSCTab(f,el){scFilter=f;document.querySelectorAll('#view-storecouriers .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderStoreCouriers();}
+
+function saveSCBilling(){
+  const mode=document.getElementById('scBillingMode')?.value||'per_order';
+  const amount=parseFloat(document.getElementById('scBillingAmount')?.value)||0.10;
+  const desc=mode==='per_order'?'€'+amount.toFixed(2)+' ανά παραγγελία':'€'+amount.toFixed(2)+' / μήνα / λογαριασμό';
+  document.getElementById('scBillingDesc').textContent=desc;
+  if(window._db)window._update(window._ref(window._db,'settings'),{scBillingMode:mode,scBillingAmount:amount});
+}
+
+window.renderStoreCouriers=function(){
+  try{
+    const allD=window._firebaseDriversAll||{};
+    const stores=window._firebaseStores||{};
+    const orders=Object.values(allOrders||{});
+    
+    // Store couriers are drivers with storeCourier: true or storeId set
+    let couriers=Object.entries(allD).filter(([,d])=>d.storeCourier||d.storeId).map(([k,v])=>({...v,uid:k}));
+    
+    // Stats
+    const total=couriers.length;
+    const active=couriers.filter(c=>c.status==='approved').length;
+    const pending=couriers.filter(c=>c.status==='pending_store_courier').length;
+    const storeSet=new Set(couriers.map(c=>c.storeId).filter(Boolean));
+    
+    if(document.getElementById('scTotal'))document.getElementById('scTotal').textContent=total;
+    if(document.getElementById('scActive'))document.getElementById('scActive').textContent=active;
+    if(document.getElementById('scPending'))document.getElementById('scPending').textContent=pending;
+    if(document.getElementById('scStores'))document.getElementById('scStores').textContent=storeSet.size;
+    
+    // Load billing settings
+    const bMode=window.adminSettings?.scBillingMode||'per_order';
+    const bAmount=window.adminSettings?.scBillingAmount||0.10;
+    if(document.getElementById('scBillingMode'))document.getElementById('scBillingMode').value=bMode;
+    if(document.getElementById('scBillingAmount'))document.getElementById('scBillingAmount').value=bAmount;
+    if(document.getElementById('scBillingDesc'))document.getElementById('scBillingDesc').textContent=bMode==='per_order'?'€'+bAmount.toFixed(2)+' ανά παραγγελία':'€'+bAmount.toFixed(2)+' / μήνα / λογαριασμό';
+    if(document.getElementById('setScBillingMode'))document.getElementById('setScBillingMode').value=bMode;
+    if(document.getElementById('setScBillingAmount'))document.getElementById('setScBillingAmount').value=bAmount;
+    
+    // Filter
+    if(scFilter==='pending')couriers=couriers.filter(c=>c.status==='pending_store_courier');
+    else if(scFilter==='active')couriers=couriers.filter(c=>c.status==='approved');
+    
+    // Search
+    const q=document.getElementById('scSearchInput')?.value.toLowerCase()||'';
+    if(q)couriers=couriers.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q));
+    
+    // Table
+    const tbody=document.getElementById('scBody');
+    if(tbody){
+      tbody.innerHTML=couriers.length?couriers.map((c,i)=>{
+        const color=COLORS[i%COLORS.length];
+        const store=stores[c.storeId];
+        const storeName=store?.name||c.storeId||'—';
+        const cOrders=orders.filter(o=>o.driver===c.uid&&o.ownDelivery&&o.status==='delivered');
+        const orderCount=cOrders.length;
+        const charge=bMode==='per_order'?(orderCount*bAmount):bAmount;
+        const isApproved=c.status==='approved';
+        return`<tr><td><div style="display:flex;align-items:center;gap:7px"><div style="width:28px;height:28px;border-radius:50%;background:${color}18;color:${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800">${initials(c.name)}</div><div><div style="font-weight:800;font-size:11px">${c.name||'—'}</div><div style="font-size:8px;color:var(--blue)">${c.email||'—'}</div></div></div></td><td style="font-size:10px;font-weight:700">${storeName}</td><td style="font-size:11px"><b>${orderCount}</b></td><td style="font-size:11px;font-weight:700;color:var(--accent)">${fmtCur(charge)}</td><td><span class="status-tag ${isApproved?'s-delivered':'s-new'}">${isApproved?'Ενεργός':'Αίτημα'}</span></td><td><div style="display:flex;gap:3px">${!isApproved?`<button class="act-btn" style="color:var(--green)" onclick="approveStoreCourier('${c.uid}')"><span class="material-icons-round">check_circle</span></button>`:''}<button class="act-btn" style="color:var(--red)" onclick="removeStoreCourier('${c.uid}')"><span class="material-icons-round">block</span></button></div></td></tr>`;
+      }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Δεν υπάρχουν διανομείς καταστημάτων</td></tr>';
+    }
+    
+    // Slots per store
+    const slotsBody=document.getElementById('scSlotsBody');
+    if(slotsBody){
+      const storeEntries=Array.from(storeSet).map(sid=>{
+        const s=stores[sid]||{};
+        const sCouriers=couriers.filter(c=>c.storeId===sid&&c.status==='approved');
+        const maxSlots=s.maxCourierSlots||0;
+        const monthlyCharge=bMode==='monthly'?sCouriers.length*bAmount:0;
+        return{sid,name:s.name||sid,maxSlots,active:sCouriers.length,monthlyCharge};
+      });
+      slotsBody.innerHTML=storeEntries.length?storeEntries.map(s=>`<tr><td style="font-weight:800;font-size:11px">${s.name}</td><td><input type="number" class="finput" value="${s.maxSlots}" min="0" max="20" style="width:60px;padding:4px 8px;font-size:11px;text-align:center" onchange="setStoreMaxCouriers('${s.sid}',this.value)"></td><td style="font-size:11px"><b>${s.active}</b></td><td style="font-size:11px;font-weight:700;color:var(--accent)">${fmtCur(s.monthlyCharge)}/μήνα</td><td></td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Κανένα κατάστημα με ιδίους διανομείς</td></tr>';
+    }
+  }catch(e){console.error('renderStoreCouriers error:',e);}
+};
+
+window.approveStoreCourier=function(uid){
+  if(window._db)window._update(window._ref(window._db,'drivers/'+uid),{status:'approved',storeCourier:true});
+  showToast('✅ Εγκρίθηκε');
+};
+window.removeStoreCourier=function(uid){
+  if(confirm('Αφαίρεση διανομέα καταστήματος;')&&window._db)window._update(window._ref(window._db,'drivers/'+uid),{status:'disabled',storeCourier:false});
+  showToast('🚫 Αφαιρέθηκε');
+};
+window.setStoreMaxCouriers=function(storeId,max){
+  if(window._db)window._update(window._ref(window._db,'stores/'+storeId),{maxCourierSlots:parseInt(max)||0});
+  showToast('✅ Max θέσεις: '+max);
+};
 
 // ══ FINANCE ══
-window.renderFinanceAndSettlements=function(){try{const orders=Object.values(allOrders).filter(o=>o.status==='delivered');let tS=0,tD=0,tC=0,cash=0,card=0;let ss={},ds={};const cr=(window.adminSettings.commission||10)/100;orders.forEach(o=>{const v=parseFloat(o.subtotal)||0;const df=parseFloat(o.deliveryCost)||(window.adminSettings.baseDeliveryFee||2);const cm=v*cr;tS+=v;tD+=df;tC+=cm;if(o.payment==='cash')cash+=(v+df);else card+=(v+df);if(o.storeId){if(!ss[o.storeId])ss[o.storeId]={name:o.storeName,orders:0,sales:0,comm:0};ss[o.storeId].orders++;ss[o.storeId].sales+=v;ss[o.storeId].comm+=cm}if(o.driver){if(!ds[o.driver])ds[o.driver]={name:o.driverName,orders:0,earned:0,cash:0};ds[o.driver].orders++;ds[o.driver].earned+=df;if(o.payment==='cash')ds[o.driver].cash+=(v+df)}});const el=id=>document.getElementById(id);if(el('finSales')){el('finSales').textContent=fmtCur(tS);el('finDelivery').textContent=fmtCur(tD);el('finComm').textContent=fmtCur(tC);el('finCash').textContent=fmtCur(cash);el('finCard').textContent=fmtCur(card)}if(el('setStoresBody')){el('setStoresBody').innerHTML=Object.values(ss).length?Object.values(ss).map(s=>{const n=s.sales-s.comm;return`<tr><td><b>${s.name}</b></td><td>${s.orders}</td><td>${fmtCur(s.sales)}</td><td style="color:var(--red)">${fmtCur(s.comm)}</td><td style="font-weight:800;color:var(--green)">${fmtCur(n)}</td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">—</td></tr>';el('setDriversBody').innerHTML=Object.values(ds).length?Object.values(ds).map(d=>{const b=d.earned-d.cash;return`<tr><td><b>${d.name}</b></td><td>${d.orders}</td><td style="color:var(--green)">${fmtCur(d.earned)}</td><td style="color:var(--accent)">${fmtCur(d.cash)}</td><td style="font-weight:800;color:${b<0?'var(--red)':'var(--green)'}">${fmtCur(b)}</td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">—</td></tr>'}}catch(e){console.error(e)}};
+window.renderFinanceAndSettlements=function(){try{const allOrd=Object.values(allOrders).filter(o=>o.status==='delivered');const orders=allOrd.filter(o=>!o.ownDelivery);let tS=0,tD=0,tC=0,cash=0,card=0;let ss={},ds={};const cr=(window.adminSettings.commission||10)/100;orders.forEach(o=>{const v=parseFloat(o.subtotal)||0;const df=parseFloat(o.deliveryCost)||(window.adminSettings.baseDeliveryFee||2);const cm=v*cr;tS+=v;tD+=df;tC+=cm;if(o.payment==='cash')cash+=(v+df);else card+=(v+df);if(o.storeId){if(!ss[o.storeId])ss[o.storeId]={name:o.storeName,orders:0,sales:0,comm:0};ss[o.storeId].orders++;ss[o.storeId].sales+=v;ss[o.storeId].comm+=cm}if(o.driver){if(!ds[o.driver])ds[o.driver]={name:o.driverName,orders:0,earned:0,cash:0};ds[o.driver].orders++;ds[o.driver].earned+=df;if(o.payment==='cash')ds[o.driver].cash+=(v+df)}});const el=id=>document.getElementById(id);if(el('finSales')){el('finSales').textContent=fmtCur(tS);el('finDelivery').textContent=fmtCur(tD);el('finComm').textContent=fmtCur(tC);el('finCash').textContent=fmtCur(cash);el('finCard').textContent=fmtCur(card)}if(el('setStoresBody')){el('setStoresBody').innerHTML=Object.values(ss).length?Object.values(ss).map(s=>{const n=s.sales-s.comm;return`<tr><td><b>${s.name}</b></td><td>${s.orders}</td><td>${fmtCur(s.sales)}</td><td style="color:var(--red)">${fmtCur(s.comm)}</td><td style="font-weight:800;color:var(--green)">${fmtCur(n)}</td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">—</td></tr>';el('setDriversBody').innerHTML=Object.values(ds).length?Object.values(ds).map(d=>{const b=d.earned-d.cash;return`<tr><td><b>${d.name}</b></td><td>${d.orders}</td><td style="color:var(--green)">${fmtCur(d.earned)}</td><td style="color:var(--accent)">${fmtCur(d.cash)}</td><td style="font-weight:800;color:${b<0?'var(--red)':'var(--green)'}">${fmtCur(b)}</td></tr>`}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">—</td></tr>'}}catch(e){console.error(e)}};
 
 // ══ AUTO-DISPATCH ══
 function toggleAutoDispatch(){autoDispatch=!autoDispatch;updateAutoDispatchUI();showToast(autoDispatch?'🤖 Auto ON':'✋ Manual');if(autoDispatch)runAutoDispatch(allOrders)}
