@@ -566,7 +566,37 @@ window.renderFinanceAndSettlements=function(){try{const allOrd=Object.values(all
 // ══ AUTO-DISPATCH ══
 function toggleAutoDispatch(){autoDispatch=!autoDispatch;updateAutoDispatchUI();showToast(autoDispatch?'🤖 Auto ON':'✋ Manual');if(autoDispatch)runAutoDispatch(allOrders)}
 function updateAutoDispatchUI(){const w=document.getElementById('adWrap'),t=document.getElementById('adToggle'),l=document.getElementById('adLabel'),ic=document.getElementById('adIcon');if(w){if(autoDispatch){w.className='auto-dispatch-wrap on';t.className='toggle-switch on';l.textContent='Auto-Dispatch: ON';ic.style.color='var(--green)'}else{w.className='auto-dispatch-wrap';t.className='toggle-switch';l.textContent='Auto-Dispatch: OFF';ic.style.color='var(--muted)'}}}
-window.runAutoDispatch=function(orders){if(!autoDispatch)return;const toAssign=Object.entries(orders||{}).filter(([,o])=>(o.status==='ready'&&(!o.driver||!o.driverAccepted))||(o.status==='rejected'&&!o.driverAccepted));const onl=Object.entries(allDrivers).filter(([,d])=>d.online&&(!d.status||d.status==='approved'));if(!toAssign.length||!onl.length)return;toAssign.forEach(([key,o])=>{const rej=o.rejectedBy||{};const avail=onl.filter(([uid])=>!rej[uid]);if(!avail.length)return;const loads={};avail.forEach(([uid])=>{loads[uid]=0});Object.values(allOrders).forEach(ord=>{if((ord.status==='assigned'||ord.status==='picked')&&ord.driver&&loads[ord.driver]!==undefined)loads[ord.driver]++});const[bUid,bDr]=avail.reduce((a,b)=>(loads[a[0]]||0)<=(loads[b[0]]||0)?a:b);setTimeout(()=>{if(window._db)window._update(window._ref(window._db,'orders/'+key),{driver:bUid,driverName:bDr.name,status:'assigned',driverAccepted:false,rejectionReason:''})},1000)})};
+window.runAutoDispatch=function(orders){if(!autoDispatch)return;
+const stores=window._firebaseStores||{};
+const toAssign=Object.entries(orders||{}).filter(([,o])=>(o.status==='ready'&&(!o.driver||!o.driverAccepted))||(o.status==='rejected'&&!o.driverAccepted));
+if(!toAssign.length)return;
+const allD=window._firebaseDriversAll||{};
+toAssign.forEach(([key,o])=>{
+  // Check if this order should go to store courier or platform courier
+  const store=stores[o.storeId];
+  const isOwnDelivery=o.ownDelivery||(store?.defaultDeliveryMode==='own');
+  
+  let availableDrivers;
+  if(isOwnDelivery){
+    // Only assign to store's own couriers
+    availableDrivers=Object.entries(allD).filter(([,d])=>d.online&&d.storeCourier&&d.storeId===o.storeId&&(d.status==='approved'));
+  }else{
+    // Only assign to platform couriers (NOT store couriers)
+    availableDrivers=Object.entries(allDrivers).filter(([,d])=>d.online&&!d.storeCourier&&(!d.status||d.status==='approved'));
+  }
+  if(!availableDrivers.length)return;
+  
+  const rej=o.rejectedBy||{};
+  const avail=availableDrivers.filter(([uid])=>!rej[uid]);
+  if(!avail.length)return;
+  const loads={};avail.forEach(([uid])=>{loads[uid]=0});
+  Object.values(allOrders).forEach(ord=>{if((ord.status==='assigned'||ord.status==='picked')&&ord.driver&&loads[ord.driver]!==undefined)loads[ord.driver]++});
+  const[bUid,bDr]=avail.reduce((a,b)=>(loads[a[0]]||0)<=(loads[b[0]]||0)?a:b);
+  // Mark ownDelivery on the order if store uses own delivery
+  const updateData={driver:bUid,driverName:bDr.name,status:'assigned',driverAccepted:false,rejectionReason:''};
+  if(isOwnDelivery)updateData.ownDelivery=true;
+  setTimeout(()=>{if(window._db)window._update(window._ref(window._db,'orders/'+key),updateData)},1000);
+})};
 
 // ══ ORDERS ══
 window.renderOrdersFromFirebase=d=>{try{allOrders=d||{};renderTable();window.updateStats(allOrders);if(window.updateStoreMarkers)window.updateStoreMarkers()}catch(e){console.error(e)}};

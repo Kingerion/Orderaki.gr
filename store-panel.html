@@ -266,6 +266,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div class="s-item" data-page="menu" onclick="goToPage('menu',this)"><span class="material-icons-round">restaurant_menu</span>Μενού</div>
       <div class="s-label">Λειτουργία</div>
       <div class="s-item" data-page="hours" onclick="goToPage('hours',this)"><span class="material-icons-round">schedule</span>Ωράριο</div>
+      <div class="s-item" data-page="couriers" onclick="goToPage('couriers',this)"><span class="material-icons-round">two_wheeler</span>Διανομείς</div>
       <div class="s-item" data-page="finance" onclick="goToPage('finance',this)"><span class="material-icons-round">account_balance_wallet</span>Οικονομικά</div>
       <div class="s-item" data-page="promotions" onclick="goToPage('promotions',this)"><span class="material-icons-round">local_offer</span>Προσφορές</div>
       <div class="s-label">Ρυθμίσεις</div>
@@ -430,6 +431,57 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <button class="save-btn" onclick="saveStoreHours()" style="margin-top:10px"><span class="material-icons-round">save</span>Αποθήκευση Ωραρίου</button>
       </div>
 
+      <div class="page" id="page-couriers">
+        <div class="page-title">Διανομείς Καταστήματος</div>
+        <div class="page-sub">Διαχείριση των δικών σας διανομέων</div>
+        <div id="couriersOwnOnly" style="display:none">
+          <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+            <div class="stat-card"><div class="stat-val" id="scOwnTotal" style="color:var(--text)">0</div><div class="stat-label">Διανομείς</div></div>
+            <div class="stat-card"><div class="stat-val" id="scOwnDeliveries" style="color:var(--green)">0</div><div class="stat-label">Παραδόσεις Σήμερα</div></div>
+            <div class="stat-card"><div class="stat-val" id="scOwnCash" style="color:var(--accent)">€0</div><div class="stat-label">Μετρητά Σήμερα</div></div>
+          </div>
+          <!-- Courier Pay Settings -->
+          <div class="settings-card" style="margin-bottom:16px">
+            <div class="settings-card-title"><span class="material-icons-round">payments</span>Αμοιβές Διανομέων</div>
+            <div class="f-row" style="margin-bottom:10px">
+              <div class="f-group"><label class="f-label">Τρόπος Πληρωμής</label>
+                <select class="f-input f-select" id="courierPayMode" onchange="saveCourierPaySettings()">
+                  <option value="hourly">Ωριαία αμοιβή</option>
+                  <option value="monthly">Μηνιαία αμοιβή</option>
+                </select>
+              </div>
+              <div class="f-group"><label class="f-label">Ποσό (€)</label>
+                <input class="f-input" type="number" id="courierPayAmount" value="5" min="0" step="0.5" onchange="saveCourierPaySettings()">
+                <div style="font-size:10px;color:var(--text3);margin-top:3px" id="courierPayDesc">€5.00/ώρα</div>
+              </div>
+            </div>
+          </div>
+          <!-- Courier List -->
+          <div class="panel">
+            <div class="panel-hd"><div class="panel-title">Οι Διανομείς σας</div></div>
+            <div id="courierDetailList"></div>
+          </div>
+          <!-- Selected Courier Detail -->
+          <div class="panel" id="courierDetailPanel" style="display:none;margin-top:16px">
+            <div class="panel-hd"><div class="panel-title" id="courierDetailName">—</div><button class="close-btn" onclick="document.getElementById('courierDetailPanel').style.display='none'" style="margin-left:auto"><span class="material-icons-round">close</span></button></div>
+            <div style="padding:16px">
+              <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+                <div class="stat-card"><div class="stat-val" id="cdDeliveries" style="color:var(--green);font-size:22px">0</div><div class="stat-label">Παραδόσεις</div></div>
+                <div class="stat-card"><div class="stat-val" id="cdCash" style="color:var(--accent);font-size:22px">€0</div><div class="stat-label">Εισέπραξε</div></div>
+                <div class="stat-card"><div class="stat-val" id="cdOwed" style="color:var(--blue);font-size:22px">€0</div><div class="stat-label">Αμοιβή</div></div>
+              </div>
+              <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Ιστορικό Παραδόσεων</div>
+              <div id="cdHistory" style="max-height:250px;overflow-y:auto"></div>
+            </div>
+          </div>
+        </div>
+        <div id="couriersNotOwnMsg" style="text-align:center;padding:40px;color:var(--text3)">
+          <span class="material-icons-round" style="font-size:44px;opacity:.3;display:block;margin:0 auto 10px">two_wheeler</span>
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px">Δεν χρησιμοποιείτε δικούς διανομείς</div>
+          <div style="font-size:12px">Για να ενεργοποιήσετε δικούς διανομείς, πηγαίνετε στο <b>Κατάστημα</b> → <b>Τρόπος Διανομής</b> → <b>Δικοί μας</b></div>
+        </div>
+      </div>
+
       <div class="page" id="page-finance">
         <div class="page-title">Οικονομικά</div>
         <div class="page-sub">Έσοδα, χρεώσεις & εκκαθαρίσεις</div>
@@ -447,6 +499,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
             <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--red)">Προμήθεια Πλατφόρμας (<span id="finCommRate">10</span>%)</span><span style="font-size:14px;font-weight:800;color:var(--red)" id="finCommDetail">-€0.00</span></div>
             <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">Πληρωμές Μετρητά</span><span style="font-size:14px;font-weight:800;color:var(--accent)" id="finCashDetail">€0.00</span></div>
             <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;color:var(--text2)">Πληρωμές Κάρτα</span><span style="font-size:14px;font-weight:800;color:var(--blue)" id="finCardDetail">€0.00</span></div>
+            <div id="finScBillingRow" style="display:none;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border)"><span style="font-size:13px;color:var(--red)">🏪 Χρέωση Δικών Διανομέων (<span id="finScBillingDesc">0</span>)</span><span style="font-size:14px;font-weight:800;color:var(--red)" id="finScBillingDetail">-€0.00</span></div>
             <div style="display:flex;justify-content:space-between;padding:12px 0;margin-top:8px;border-top:2px solid var(--text)"><span style="font-size:14px;font-weight:800">Καθαρά προς εσάς</span><span style="font-size:16px;font-weight:900;color:var(--green)" id="finNetDetail">€0.00</span></div>
           </div>
         </div>
@@ -872,6 +925,117 @@ function goToPage(name,el){
   if(el)el.classList.add('active');
   if(name==='chat'){myChat.forEach(m=>{if(m.from==='admin')m.read=true;});document.getElementById('chatBadge').classList.remove('show');document.getElementById('sideChatBadge').style.display='none';renderChat();}
   if(name==='finance')renderFinance();
+  if(name==='couriers')renderCouriersPage();
+}
+
+// ══ COURIERS PAGE ══
+function renderCouriersPage(){
+  const isOwn=currentStore?.defaultDeliveryMode==='own';
+  document.getElementById('couriersOwnOnly').style.display=isOwn?'block':'none';
+  document.getElementById('couriersNotOwnMsg').style.display=isOwn?'none':'block';
+  if(!isOwn)return;
+  
+  const allD=window._firebaseDriversAll||{};
+  const mine=Object.entries(allD).filter(([,d])=>d.storeCourier&&d.storeId===storeId&&d.status==='approved');
+  const ordArr=Object.values(myOrders||{});
+  const todayStart=new Date();todayStart.setHours(0,0,0,0);
+  
+  let totalDeliveries=0,totalCash=0;
+  mine.forEach(([uid,d])=>{
+    const del=ordArr.filter(o=>o.driver===uid&&o.status==='delivered'&&o.ownDelivery&&o.createdAt>=todayStart.getTime());
+    totalDeliveries+=del.length;
+    totalCash+=del.filter(o=>o.payment==='cash').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+  });
+  
+  document.getElementById('scOwnTotal').textContent=mine.length;
+  document.getElementById('scOwnDeliveries').textContent=totalDeliveries;
+  document.getElementById('scOwnCash').textContent='€'+totalCash.toFixed(0);
+  
+  // Load pay settings
+  const payMode=currentStore?.courierPayMode||'hourly';
+  const payAmount=currentStore?.courierPayAmount||5;
+  document.getElementById('courierPayMode').value=payMode;
+  document.getElementById('courierPayAmount').value=payAmount;
+  document.getElementById('courierPayDesc').textContent=payMode==='hourly'?'€'+payAmount.toFixed(2)+'/ώρα':'€'+payAmount.toFixed(2)+'/μήνα';
+  
+  // Courier list
+  const list=document.getElementById('courierDetailList');
+  if(!mine.length){list.innerHTML='<div class="empty-state"><span class="material-icons-round">two_wheeler</span>Δεν υπάρχουν διανομείς</div>';return;}
+  
+  list.innerHTML=mine.map(([uid,d],i)=>{
+    const del=ordArr.filter(o=>o.driver===uid&&o.status==='delivered'&&o.ownDelivery);
+    const todayDel=del.filter(o=>o.createdAt>=todayStart.getTime());
+    const cash=todayDel.filter(o=>o.payment==='cash').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+    const isOn=d.online===true||d.online==='true';
+    return`<div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-top:1px solid var(--border);cursor:pointer;transition:background .15s" onclick="showCourierDetail('${uid}')" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div style="width:38px;height:38px;border-radius:50%;background:${isOn?'var(--green-light)':'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:${isOn?'var(--green)':'var(--text3)'}">
+        ${(d.name||'?').charAt(0)}
+        <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:${isOn?'var(--green)':'var(--text3)'};border:2px solid var(--surface)"></div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:800">${d.name||'—'}</div>
+        <div style="font-size:11px;color:var(--text3)">${isOn?'🟢 Online':'⚫ Offline'} · ${d.phone||''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:800;color:var(--green)">${todayDel.length} παραδ.</div>
+        <div style="font-size:11px;color:var(--accent);font-weight:700">💵 €${cash.toFixed(2)}</div>
+      </div>
+      <span class="material-icons-round" style="color:var(--text3);font-size:18px">chevron_right</span>
+    </div>`;
+  }).join('');
+}
+
+function showCourierDetail(uid){
+  const allD=window._firebaseDriversAll||{};
+  const d=allD[uid];if(!d)return;
+  
+  document.getElementById('courierDetailPanel').style.display='block';
+  document.getElementById('courierDetailName').textContent='🏍 '+d.name;
+  
+  const ordArr=Object.values(myOrders||{});
+  const del=ordArr.filter(o=>o.driver===uid&&o.status==='delivered'&&o.ownDelivery);
+  const todayStart=new Date();todayStart.setHours(0,0,0,0);
+  const todayDel=del.filter(o=>o.createdAt>=todayStart.getTime());
+  const cash=todayDel.filter(o=>o.payment==='cash').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+  
+  // Calculate owed
+  const payMode=currentStore?.courierPayMode||'hourly';
+  const payAmount=currentStore?.courierPayAmount||5;
+  let owed=0;
+  if(payMode==='hourly'){
+    // Estimate hours worked today (rough: first delivery to last delivery)
+    if(todayDel.length>1){
+      const sorted=todayDel.sort((a,b)=>a.createdAt-b.createdAt);
+      const hours=(sorted[sorted.length-1].createdAt-sorted[0].createdAt)/3600000;
+      owed=Math.max(hours,1)*payAmount;
+    }else if(todayDel.length===1){owed=payAmount;} // Min 1 hour
+  }else{owed=payAmount;} // Monthly
+  
+  document.getElementById('cdDeliveries').textContent=todayDel.length;
+  document.getElementById('cdCash').textContent='€'+cash.toFixed(2);
+  document.getElementById('cdOwed').textContent='€'+owed.toFixed(2);
+  
+  // History
+  const hist=document.getElementById('cdHistory');
+  hist.innerHTML=del.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,20).map(o=>{
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span class="material-icons-round" style="font-size:16px;color:var(--green)">check_circle</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700">${o.id||'—'} → ${o.customerName||'—'}</div>
+        <div style="font-size:10px;color:var(--text3)">${new Date(o.createdAt).toLocaleDateString('el-GR')} ${fmtTime(o.createdAt)} · ${o.payment==='cash'?'💵':'💳'}</div>
+      </div>
+      <div style="font-size:12px;font-weight:800">€${(o.total||0).toFixed(2)}</div>
+    </div>`;
+  }).join('')||'<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Δεν υπάρχει ιστορικό</div>';
+}
+
+function saveCourierPaySettings(){
+  const mode=document.getElementById('courierPayMode').value;
+  const amount=parseFloat(document.getElementById('courierPayAmount').value)||5;
+  document.getElementById('courierPayDesc').textContent=mode==='hourly'?'€'+amount.toFixed(2)+'/ώρα':'€'+amount.toFixed(2)+'/μήνα';
+  if(window._db&&storeId)window._update(window._ref(window._db,'stores/'+storeId),{courierPayMode:mode,courierPayAmount:amount});
+  if(currentStore){currentStore.courierPayMode=mode;currentStore.courierPayAmount=amount;}
+  showToast('✅ Αμοιβή αποθηκεύτηκε');
 }
 
 document.getElementById('itemOverlay').addEventListener('click',function(e){if(e.target===this)closeItemModal();});
@@ -909,14 +1073,22 @@ function renderFinance(){
     const revenue=delivered.reduce((s,o)=>s+(parseFloat(o.subtotal)||parseFloat(o.total)||0),0);
     const deliveryTotal=delivered.reduce((s,o)=>s+(parseFloat(o.deliveryCost)||0),0);
     const commRate=(window._adminSettings?.commission||10)/100;
-    const fees=revenue*commRate;
+    // Only platform orders get commission
+    const platformOrders=delivered.filter(o=>!o.ownDelivery);
+    const ownOrders=delivered.filter(o=>o.ownDelivery);
+    const fees=platformOrders.reduce((s,o)=>s+((parseFloat(o.subtotal)||parseFloat(o.total)||0)*commRate),0);
     const net=revenue-fees;
     const cashTotal=delivered.filter(o=>o.payment==='cash').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
     const cardTotal=delivered.filter(o=>o.payment==='card').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+    // Store courier billing
+    const scBillingMode=window._adminSettings?.scBillingMode||'per_order';
+    const scBillingAmount=window._adminSettings?.scBillingAmount||0.10;
+    const scCharge=scBillingMode==='per_order'?ownOrders.length*scBillingAmount:0;
+    
     const el=id=>document.getElementById(id);
     if(el('finRevenue'))el('finRevenue').textContent='€'+revenue.toFixed(0);
-    if(el('finFees'))el('finFees').textContent='-€'+fees.toFixed(0);
-    if(el('finNet'))el('finNet').textContent='€'+net.toFixed(0);
+    if(el('finFees'))el('finFees').textContent='-€'+(fees+scCharge).toFixed(0);
+    if(el('finNet'))el('finNet').textContent='€'+(net-scCharge).toFixed(0);
     if(el('finOrders'))el('finOrders').textContent=delivered.length;
     if(el('finSalesDetail'))el('finSalesDetail').textContent='€'+revenue.toFixed(2);
     if(el('finDeliveryDetail'))el('finDeliveryDetail').textContent='€'+deliveryTotal.toFixed(2);
@@ -924,7 +1096,13 @@ function renderFinance(){
     if(el('finCommDetail'))el('finCommDetail').textContent='-€'+fees.toFixed(2);
     if(el('finCashDetail'))el('finCashDetail').textContent='€'+cashTotal.toFixed(2);
     if(el('finCardDetail'))el('finCardDetail').textContent='€'+cardTotal.toFixed(2);
-    if(el('finNetDetail'))el('finNetDetail').textContent='€'+net.toFixed(2);
+    if(el('finNetDetail'))el('finNetDetail').textContent='€'+(net-scCharge).toFixed(2);
+    // Show store courier billing line
+    if(ownOrders.length>0&&el('finScBillingRow')){
+      el('finScBillingRow').style.display='flex';
+      el('finScBillingDetail').textContent='-€'+scCharge.toFixed(2);
+      el('finScBillingDesc').textContent=scBillingMode==='per_order'?ownOrders.length+' παρ. × €'+scBillingAmount.toFixed(2):'Μηνιαία χρέωση';
+    }
   }catch(e){console.error('Finance error',e);}
 }
 
@@ -1052,6 +1230,8 @@ function submitStoreOrder(){
   const notes=document.getElementById('soNotes').value.trim();
   const deliveryCost=parseFloat(document.getElementById('soDeliveryFee').value)||2;
   const prepMin=parseInt(document.getElementById('soPrepTime').value)||15;
+  // Use persistent delivery mode as default, but allow per-order override
+  const isOwnDeliv=soDelivType==='own';
   const order={
     id:'#ORD'+(1000+Math.floor(Math.random()*9000)),
     storeId:storeId, storeName:currentStore?.name||'', storeAddress:currentStore?.address||'',
@@ -1062,24 +1242,40 @@ function submitStoreOrder(){
     subtotal:amount, deliveryCost:deliveryCost, total:amount+deliveryCost,
     payment:soPayMethod, status:'preparing', prepMinutes:prepMin, prepStartedAt:Date.now(),
     createdAt:Date.now(), source:'store_phone',
-    deliveryType:soDelivType, // 'platform' or 'own'
-    ownDelivery:soDelivType==='own'
+    deliveryType:soDelivType,
+    ownDelivery:isOwnDeliv
   };
-  if(window._db){
-    const r=window._push(window._ref(window._db,'orders'));
-    window._set(r,order);
-    // Save/update customer data
-    if(email||name){
-      const custData={name,phone,address,floor,doorbell,email,lastOrderAt:Date.now()};
-      // Find existing customer or create by phone
-      let custUid=null;
-      for(const[uid,c]of Object.entries(window._allCustomers||{})){if((c.phone||'').replace(/\s/g,'')===phone.replace(/\s/g,'')){custUid=uid;break;}}
-      if(custUid){window._update(window._ref(window._db,'customers/'+custUid),custData);}
-      // else we just save in orders - admin can see
+  // Geocode address then save
+  geocodeAddress(address,function(lat,lng){
+    if(lat&&lng){order.customerLat=lat;order.customerLng=lng;order.deliveryLat=lat;order.deliveryLng=lng;}
+    if(window._db){
+      const r=window._push(window._ref(window._db,'orders'));
+      window._set(r,order);
+      if(email||name){
+        const custData={name,phone,address,floor,doorbell,email,lastOrderAt:Date.now()};
+        if(lat&&lng){custData.lat=lat;custData.lng=lng;}
+        let custUid=null;
+        for(const[uid,c]of Object.entries(window._allCustomers||{})){if((c.phone||'').replace(/\s/g,'')===phone.replace(/\s/g,'')){custUid=uid;break;}}
+        if(custUid)window._update(window._ref(window._db,'customers/'+custUid),custData);
+      }
     }
-  }
-  closeStoreOrderModal();
-  showToast('✅ Παραγγελία καταχωρήθηκε! Ετοιμασία '+prepMin+' λεπτά');
+    closeStoreOrderModal();
+    showToast('✅ Παραγγελία καταχωρήθηκε! '+(isOwnDeliv?'🏪 Δικός διανομέας':'🛵 Orderaki'));
+  });
+}
+
+// ══ GEOCODE ADDRESS → LAT/LNG ══
+function geocodeAddress(address,callback){
+  if(!address){callback(null,null);return;}
+  // Use Nominatim (free, no API key)
+  const q=encodeURIComponent(address+', Ελλάδα');
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1&countrycodes=gr')
+    .then(r=>r.json())
+    .then(data=>{
+      if(data&&data.length>0){callback(parseFloat(data[0].lat),parseFloat(data[0].lon));}
+      else{callback(null,null);}
+    })
+    .catch(()=>{callback(null,null);});
 }
 
 // ══ NEW ORDER POPUP (auto-show on new order) ══
@@ -1297,25 +1493,38 @@ function updateStoreOwnMapMarkers(){
   // Get active orders (own delivery, not delivered)
   const activeOrders=Object.entries(myOrders||{}).filter(([,o])=>o.ownDelivery&&['new','preparing','ready','assigned','picked'].includes(o.status));
   activeOrders.forEach(([key,o])=>{
-    // Try to get customer location
     const custLat=o.customerLat||o.deliveryLat;
     const custLng=o.customerLng||o.deliveryLng;
-    if(!custLat||!custLng)return;
     
-    const statusColors={new:'#3b82f6',preparing:'#f59e0b',ready:'#22c55e',assigned:'#ff6b35',picked:'#8b5cf6'};
-    const statusLabels={new:'Νέα',preparing:'Ετοιμ.',ready:'Έτοιμη',assigned:'Σε δρόμο',picked:'Παρελ.'};
-    const color=statusColors[o.status]||'#ff4500';
-    
-    const icon=L.divIcon({className:'',html:`<div style="position:relative;display:flex;flex-direction:column;align-items:center"><div style="background:${color};color:#fff;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:0 4px">📦</div><div style="background:rgba(0,0,0,.8);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;margin-top:2px;white-space:nowrap">${o.id||key.substring(0,6)}</div></div>`,iconSize:[30,36],iconAnchor:[15,18]});
-    const m=L.marker([custLat,custLng],{icon:icon,zIndexOffset:100}).addTo(storeMap);
-    m.bindPopup(`<div style="min-width:140px"><b>${o.id||key}</b><br><span style="font-size:11px;color:${color};font-weight:700">${statusLabels[o.status]||o.status}</span><br><span style="font-size:11px">${o.customerName||'—'}</span><br><span style="font-size:11px;color:#666">${o.deliveryAddress||o.address||'—'}</span><br><span style="font-size:12px;font-weight:800">€${(o.total||0).toFixed(2)}</span></div>`);
-    storeMapMarkers.push(m);
+    if(custLat&&custLng){
+      addOrderMarkerToStoreMap(key,o,custLat,custLng);
+    }else if(o.deliveryAddress||o.address){
+      // Geocode on the fly
+      geocodeAddress(o.deliveryAddress||o.address,function(lat,lng){
+        if(lat&&lng){
+          addOrderMarkerToStoreMap(key,o,lat,lng);
+          // Save back to Firebase so we don't geocode again
+          if(window._db)window._update(window._ref(window._db,'orders/'+key),{customerLat:lat,customerLng:lng,deliveryLat:lat,deliveryLng:lng});
+        }
+      });
+    }
   });
 }
 
 function refreshStoreMap(){
   updateStoreOwnMapMarkers();
   showToast('🗺️ Χάρτης ανανεώθηκε');
+}
+
+function addOrderMarkerToStoreMap(key,o,lat,lng){
+  if(!storeMap)return;
+  const statusColors={new:'#3b82f6',preparing:'#f59e0b',ready:'#22c55e',assigned:'#ff6b35',picked:'#8b5cf6'};
+  const statusLabels={new:'Νέα',preparing:'Ετοιμ.',ready:'Έτοιμη',assigned:'Σε δρόμο',picked:'Παρελ.'};
+  const color=statusColors[o.status]||'#ff4500';
+  const icon=L.divIcon({className:'',html:`<div style="position:relative;display:flex;flex-direction:column;align-items:center"><div style="background:${color};color:#fff;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:0 4px">📦</div><div style="background:rgba(0,0,0,.8);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;margin-top:2px;white-space:nowrap">${o.id||key.substring(0,6)}</div></div>`,iconSize:[30,36],iconAnchor:[15,18]});
+  const m=L.marker([lat,lng],{icon:icon,zIndexOffset:100}).addTo(storeMap);
+  m.bindPopup(`<div style="min-width:140px"><b>${o.id||key}</b><br><span style="font-size:11px;color:${color};font-weight:700">${statusLabels[o.status]||o.status}</span><br><span style="font-size:11px">${o.customerName||'—'}</span><br><span style="font-size:11px;color:#666">${o.deliveryAddress||o.address||'—'}</span><br><span style="font-size:12px;font-weight:800">€${(o.total||0).toFixed(2)}</span></div>`);
+  storeMapMarkers.push(m);
 }
 
 function destroyStoreMap(){

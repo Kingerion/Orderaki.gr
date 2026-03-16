@@ -522,9 +522,19 @@ function submitOrder(){
   saveProfile();
   const items=Object.values(cart);const sub=items.reduce((s,{item,qty})=>s+item.price*qty,0);
   const deliveryFee=activeStore.deliveryCost||(window._platformSettings?.baseDeliveryFee||2);
-  const order={id:'#ORD'+(1000+Math.floor(Math.random()*9000)),storeId:activeStore._key,storeName:activeStore.name,storeAddress:activeStore.address||'',customerName:name,phone,email,address,deliveryAddress:address+(floor?' ('+floor+'ος)':'')+(doorbell?' κουδ. '+doorbell:''),floor,doorbell,notes:document.getElementById('oNotes')?.value||'',customerUid:window._uid||'',items:items.map(({item,qty})=>({name:item.name,emoji:item.emoji||'',price:item.price,qty})),subtotal:sub,deliveryCost:deliveryFee,total:sub+deliveryFee,payment:selectedPay,status:'new',createdAt:Date.now()};
-  if(window._db){const r=window._push(window._ref(window._db,'orders'));window._set(r,order);}
-  showSuccess(order);
+  const isOwnDeliv=activeStore.defaultDeliveryMode==='own';
+  const order={id:'#ORD'+(1000+Math.floor(Math.random()*9000)),storeId:activeStore._key,storeName:activeStore.name,storeAddress:activeStore.address||'',customerName:name,phone,email,address,deliveryAddress:address+(floor?' ('+floor+'ος)':'')+(doorbell?' κουδ. '+doorbell:''),floor,doorbell,notes:document.getElementById('oNotes')?.value||'',customerUid:window._uid||'',items:items.map(({item,qty})=>({name:item.name,emoji:item.emoji||'',price:item.price,qty})),subtotal:sub,deliveryCost:deliveryFee,total:sub+deliveryFee,payment:selectedPay,status:'new',createdAt:Date.now(),ownDelivery:isOwnDeliv,deliveryType:isOwnDeliv?'own':'platform'};
+  // Geocode then save
+  const q=encodeURIComponent(address+', Ελλάδα');
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1&countrycodes=gr')
+    .then(r=>r.json()).then(data=>{
+      if(data&&data.length>0){order.customerLat=parseFloat(data[0].lat);order.customerLng=parseFloat(data[0].lon);order.deliveryLat=order.customerLat;order.deliveryLng=order.customerLng;}
+      if(window._db){const r2=window._push(window._ref(window._db,'orders'));window._set(r2,order);}
+      showSuccess(order);
+    }).catch(()=>{
+      if(window._db){const r2=window._push(window._ref(window._db,'orders'));window._set(r2,order);}
+      showSuccess(order);
+    });
 }
 function showSuccess(order){
   document.getElementById('orderModalBox').innerHTML=`
