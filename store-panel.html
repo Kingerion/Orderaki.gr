@@ -998,22 +998,39 @@ function showCourierDetail(uid){
   const todayDel=del.filter(o=>o.createdAt>=todayStart.getTime());
   const cash=todayDel.filter(o=>o.payment==='cash').reduce((s,o)=>s+(parseFloat(o.total)||0),0);
   
-  // Calculate owed
+  // Calculate owed using actual tracked hours
   const payMode=currentStore?.courierPayMode||'hourly';
   const payAmount=currentStore?.courierPayAmount||5;
+  const trackedHoursToday=parseFloat(d.hoursToday)||0;
+  const trackedHoursWeek=parseFloat(d.hoursWeek)||0;
+  // Add current shift elapsed time if on shift
+  let activeShiftHours=0;
+  if(d.isOnShift&&d.shiftStartTime){activeShiftHours=(Date.now()-d.shiftStartTime)/3600000;}
+  const totalHoursToday=trackedHoursToday+activeShiftHours;
+  
   let owed=0;
   if(payMode==='hourly'){
-    // Estimate hours worked today (rough: first delivery to last delivery)
-    if(todayDel.length>1){
-      const sorted=todayDel.sort((a,b)=>a.createdAt-b.createdAt);
-      const hours=(sorted[sorted.length-1].createdAt-sorted[0].createdAt)/3600000;
-      owed=Math.max(hours,1)*payAmount;
-    }else if(todayDel.length===1){owed=payAmount;} // Min 1 hour
+    owed=totalHoursToday*payAmount;
   }else{owed=payAmount;} // Monthly
   
   document.getElementById('cdDeliveries').textContent=todayDel.length;
   document.getElementById('cdCash').textContent='€'+cash.toFixed(2);
   document.getElementById('cdOwed').textContent='€'+owed.toFixed(2);
+  
+  // Show hours info
+  const cdPanel=document.getElementById('courierDetailPanel');
+  let hoursInfo=cdPanel.querySelector('.hours-info');
+  if(!hoursInfo){hoursInfo=document.createElement('div');hoursInfo.className='hours-info';hoursInfo.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0';cdPanel.querySelector('.panel-hd').after(hoursInfo);}
+  hoursInfo.innerHTML=`
+    <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:18px;font-weight:800;color:var(--green)">${totalHoursToday.toFixed(1)}ω</div>
+      <div style="font-size:10px;color:var(--text3);font-weight:700">ΩΡΕΣ ΣΗΜΕΡΑ</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:18px;font-weight:800;color:var(--accent)">${(trackedHoursWeek+activeShiftHours).toFixed(1)}ω</div>
+      <div style="font-size:10px;color:var(--text3);font-weight:700">ΩΡΕΣ ΕΒΔΟΜΑΔΑ</div>
+    </div>
+  `+(d.isOnShift?'<div style="grid-column:span 2;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--green)">🟢 Σε βάρδια τώρα — '+totalHoursToday.toFixed(1)+' ώρες</div>':'<div style="grid-column:span 2;text-align:center;font-size:11px;color:var(--text3)">⚪ Εκτός βάρδιας</div>');
   
   // History
   const hist=document.getElementById('cdHistory');
@@ -1332,29 +1349,64 @@ function printCurrentOrder(){
   printOrderReceipt(popupOrderKey,o);
 }
 function printOrderReceipt(key,o){
-  const items=(o.items||[]).map(i=>i.name+' x'+i.qty+'  €'+(i.price*i.qty).toFixed(2)).join('\n');
-  const pa=document.getElementById('printArea');
-  pa.innerHTML=`
-    <h2>${currentStore?.name||'Orderaki'}</h2>
+  const storeName=currentStore?.name||'Orderaki';
+  const storeAddr=currentStore?.address||'';
+  const storePhone=currentStore?.phone||'';
+  const items=(o.items||[]).map(i=>`<tr><td style="padding:2px 0">${i.emoji||''} ${i.name} ×${i.qty}</td><td style="text-align:right;padding:2px 0">€${(i.price*i.qty).toFixed(2)}</td></tr>`).join('');
+  const now=new Date(o.createdAt||Date.now());
+  const dateStr=now.toLocaleDateString('el-GR')+' '+now.toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
+  
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    @page{size:80mm auto;margin:0}
+    body{font-family:'Courier New',monospace;width:72mm;margin:0 auto;padding:3mm;font-size:12px;line-height:1.4;color:#000}
+    .center{text-align:center}
+    .bold{font-weight:bold}
+    .big{font-size:16px;font-weight:bold}
+    .sep{border-top:1px dashed #000;margin:4px 0}
+    .sep2{border-top:2px solid #000;margin:6px 0}
+    table{width:100%;border-collapse:collapse}
+    td{font-size:12px}
+    .total-row td{font-size:14px;font-weight:bold;padding-top:4px}
+    .notes{background:#f0f0f0;padding:4px;border-radius:3px;margin-top:4px;font-size:11px}
+  </style></head><body>
+    <div class="center bold big">${storeName}</div>
+    ${storeAddr?'<div class="center" style="font-size:10px">'+storeAddr+'</div>':''}
+    ${storePhone?'<div class="center" style="font-size:10px">Τηλ: '+storePhone+'</div>':''}
+    <div class="sep2"></div>
+    <div class="center bold" style="font-size:14px">ΠΑΡΑΓΓΕΛΙΑ ${o.id||key}</div>
+    <div class="center" style="font-size:10px">${dateStr}</div>
+    <div style="font-size:10px;margin-top:2px;text-align:center">${o.source==='store_phone'?'📞 Τηλεφωνική':'🌐 Online'} · ${o.payment==='cash'?'💵 Μετρητά':'💳 Κάρτα'}${o.ownDelivery?' · 🏪 Δικός μας':''}</div>
+    <div class="sep2"></div>
+    <div class="bold">ΠΕΛΑΤΗΣ</div>
+    <div>${o.customerName||'—'} · ${o.phone||'—'}</div>
+    <div>📍 ${o.deliveryAddress||o.address||'—'}</div>
+    ${o.floor?'<div style="font-size:11px">Όροφος: '+o.floor+(o.doorbell?' · Κουδούνι: '+o.doorbell:'')+'</div>':''}
     <div class="sep"></div>
-    <div><b>${o.id||key}</b> — ${new Date(o.createdAt).toLocaleString('el-GR')}</div>
+    <div class="bold">ΠΡΟΪΟΝΤΑ</div>
+    <table>${items}</table>
     <div class="sep"></div>
-    <div><b>Πελάτης:</b> ${o.customerName||'—'}</div>
-    <div><b>Τηλ:</b> ${o.phone||'—'}</div>
-    <div><b>Διεύθυνση:</b> ${o.deliveryAddress||o.address||'—'}</div>
-    ${o.floor?'<div><b>Όροφος:</b> '+o.floor+(o.doorbell?' Κουδ: '+o.doorbell:'')+'</div>':''}
-    <div class="sep"></div>
-    <pre style="white-space:pre-wrap">${items}</pre>
-    <div class="sep"></div>
-    <div>Υποσύνολο: €${(o.subtotal||0).toFixed(2)}</div>
-    <div>Delivery: €${(o.deliveryCost||0).toFixed(2)}</div>
-    <div><b>ΣΥΝΟΛΟ: €${(o.total||0).toFixed(2)}</b></div>
-    <div>Πληρωμή: ${o.payment==='cash'?'ΜΕΤΡΗΤΑ':'ΚΑΡΤΑ'}</div>
-    ${o.notes?'<div class="sep"></div><div>Σημ: '+o.notes+'</div>':''}
-    <div class="sep"></div>
-    <div style="text-align:center;font-size:10px">Orderaki.gr</div>`;
-  pa.style.display='block';
-  setTimeout(()=>{window.print();pa.style.display='none';},200);
+    <table>
+      <tr><td>Υποσύνολο</td><td style="text-align:right">€${(o.subtotal||0).toFixed(2)}</td></tr>
+      <tr><td>Delivery</td><td style="text-align:right">€${(o.deliveryCost||0).toFixed(2)}</td></tr>
+      <tr class="total-row"><td>ΣΥΝΟΛΟ</td><td style="text-align:right">€${(o.total||0).toFixed(2)}</td></tr>
+    </table>
+    ${o.notes?'<div class="sep"></div><div class="notes">📝 '+o.notes+'</div>':''}
+    <div class="sep2"></div>
+    <div class="center" style="font-size:10px">Orderaki.gr — Καλή σας όρεξη!</div>
+    <div style="height:10mm"></div>
+  </body></html>`;
+  
+  // Iframe approach - works with thermal printers
+  const iframe=document.createElement('iframe');
+  iframe.style.cssText='position:fixed;left:-9999px;top:0;width:80mm;height:0;border:none';
+  document.body.appendChild(iframe);
+  const doc=iframe.contentWindow.document;
+  doc.open();doc.write(html);doc.close();
+  iframe.contentWindow.onload=function(){
+    try{iframe.contentWindow.focus();iframe.contentWindow.print();}catch(e){window.print();}
+  };
+  iframe.contentWindow.onafterprint=function(){document.body.removeChild(iframe);};
+  setTimeout(function(){if(document.body.contains(iframe))document.body.removeChild(iframe);},15000);
 }
 
 // ══ AUTO-SHOW NEW ORDER POPUP ══

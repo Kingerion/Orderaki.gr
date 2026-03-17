@@ -545,7 +545,7 @@ function loadStoresCache(){if(window._db)window._onValue(window._ref(window._db,
 function getStoreAddress(storeId,storeName){const s=window._storesCache[storeId]; return s?s.address:(Object.values(window._storesCache).find(x=>x.name===storeName)?.address||'');}
 
 function loadDriverApp(){
-  showScreen('app'); setTimeout(startHeartbeat,1000); loadStoresCache();
+  showScreen('app'); setTimeout(function(){startHeartbeat();if(driverData&&driverData.storeCourier&&isOnline)startShiftTimer();},1000); loadStoresCache();
   
   // ΠΡΟΣΘΗΚΗ ΠΡΟΦΙΛ (ΟΝΟΜΑ/ΤΗΛΕΦΩΝΟ)
   const n = driverData.name || 'Οδηγός';
@@ -572,6 +572,29 @@ function loadDriverApp(){
     window._onValue(window._ref(window._db,'drivers/'+window._currentUser.uid), snap=>{
       const d=snap.val()||{}; Object.assign(driverData,d); driverData.earnings=d.earnings||0; driverData.earningsToday=d.earningsToday||0; driverData.orders=d.orders||0; driverData.cashToday=d.cashToday||0;
       updateEarningsUI(d.earnings, d.earningsToday, d.orders, d.cashToday);
+      
+      // Resume shift timer if store courier was on shift
+      if(d.storeCourier && d.isOnShift && d.shiftStartTime && !shiftTimerInterval){
+        shiftStartTime=d.shiftStartTime;
+        shiftTimerInterval=setInterval(updateShiftHours,30000);
+        updateShiftHours();
+      }
+      
+      // Reset daily hours at midnight
+      if(d.storeCourier && d.lastShiftEnd){
+        const lastEnd=new Date(d.lastShiftEnd);
+        const today=new Date();
+        if(lastEnd.toDateString()!==today.toDateString()){
+          window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{hoursToday:0});
+          driverData.hoursToday=0;
+        }
+        // Reset weekly on Monday
+        const dayOfWeek=today.getDay();
+        if(dayOfWeek===1 && lastEnd.getDay()!==1){
+          window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{hoursWeek:0});
+          driverData.hoursWeek=0;
+        }
+      }
     });
   }
   
@@ -798,7 +821,69 @@ function openReject(k){rejectingKey=k;document.getElementById('rejectSheet').cla
 function closeSheet(){document.getElementById('rejectSheet').classList.remove('open');rejectingKey=null;}
 function rejectOrder(reason){if(window._db)window._update(window._ref(window._db,'orders/'+rejectingKey),{status:'rejected',rejectionReason:reason,driver:'', driverAccepted: false}); closeSheet();}
 
-function toggleOnline(){isOnline=!isOnline; document.getElementById('onlineToggle').className='online-toggle'+(isOnline?' on':''); document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline'; if(window._db)window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:isOnline}); if(isOnline){startGPSTracking();}else{stopGPSTracking();}}
+function toggleOnline(){isOnline=!isOnline; document.getElementById('onlineToggle').className='online-toggle'+(isOnline?' on':''); document.getElementById('onlineLabel').textContent=isOnline?'Online':'Offline'; if(window._db)window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:isOnline}); if(isOnline){startGPSTracking();startShiftTimer();}else{stopGPSTracking();stopShiftTimer();}}
+
+// ══ SHIFT TIMER (Store Courier Hours) ══
+let shiftStartTime=null, shiftTimerInterval=null;
+
+function startShiftTimer(){
+  if(!driverData||!driverData.storeCourier)return;
+  shiftStartTime=Date.now();
+  // Save shift start to Firebase
+  if(window._db&&window._currentUser){
+    window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{
+      shiftStartTime:shiftStartTime,
+      isOnShift:true
+    });
+  }
+  // Update every 30 seconds
+  if(shiftTimerInterval)clearInterval(shiftTimerInterval);
+  shiftTimerInterval=setInterval(updateShiftHours,30000);
+  updateShiftHours();
+}
+
+function stopShiftTimer(){
+  if(!driverData||!driverData.storeCourier||!shiftStartTime)return;
+  const elapsed=(Date.now()-shiftStartTime)/3600000; // hours
+  // Add elapsed time to today's hours
+  const prevHours=parseFloat(driverData.hoursToday)||0;
+  const newHours=prevHours+elapsed;
+  const prevWeek=parseFloat(driverData.hoursWeek)||0;
+  const newWeek=prevWeek+elapsed;
+  
+  if(window._db&&window._currentUser){
+    window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{
+      hoursToday:Math.round(newHours*100)/100,
+      hoursWeek:Math.round(newWeek*100)/100,
+      isOnShift:false,
+      shiftStartTime:null,
+      lastShiftEnd:Date.now()
+    });
+    driverData.hoursToday=newHours;
+    driverData.hoursWeek=newWeek;
+  }
+  
+  shiftStartTime=null;
+  if(shiftTimerInterval){clearInterval(shiftTimerInterval);shiftTimerInterval=null;}
+  updateEarningsUI(driverData.earnings,driverData.earningsToday,driverData.orders,driverData.cashToday);
+}
+
+function updateShiftHours(){
+  if(!shiftStartTime||!driverData||!driverData.storeCourier)return;
+  const elapsed=(Date.now()-shiftStartTime)/3600000;
+  const totalToday=(parseFloat(driverData.hoursToday)||0)+elapsed;
+  const totalWeek=(parseFloat(driverData.hoursWeek)||0)+elapsed;
+  const hourlyRate=parseFloat(driverData.hourlyRate)||parseFloat(driverData.storePayAmount)||5;
+  
+  const el=id=>document.getElementById(id);
+  el('earnToday').textContent=totalToday.toFixed(1)+'ω';
+  el('earnWeek').textContent='€'+(totalWeek*hourlyRate).toFixed(0);
+  
+  // Also update earnings page if visible
+  if(el('earnBigMonth'))el('earnBigMonth').textContent='€'+(totalWeek*hourlyRate).toFixed(2);
+  if(el('earnStatToday'))el('earnStatToday').textContent='€'+(totalToday*hourlyRate).toFixed(2);
+  if(el('earnStatWeek'))el('earnStatWeek').textContent='€'+(totalWeek*hourlyRate).toFixed(2);
+}
 function renderChat(){const area=document.getElementById('chatMsgs'); area.innerHTML=myChat.map(m=>`<div class="msg ${m.from==='driver'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div>`).join(''); setTimeout(()=>area.scrollTop=area.scrollHeight,50);}
 function sendMsg(){const inp=document.getElementById('chatInput'),text=inp.value.trim(); if(!text)return; inp.value=''; if(window._db)window._set(window._push(window._ref(window._db,'chat/drivers/'+window._currentUser.uid)),{from:'driver',text,time:Date.now(),read:false});}
 function goPage(p){['orders','chat','earnings','profile'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none'; document.getElementById('nav-'+x).classList.toggle('active',x===p);}); if(p==='chat'){myChat.forEach(m=>{m.read=true;}); document.getElementById('chatBadge').style.display='none';renderChat(); stopAlarms();}if(p==='profile'){loadDriverProfileFields();loadDeliveryHistory();loadAdminInfo();}}
@@ -959,7 +1044,7 @@ document.addEventListener('click', e => { if(e.target.classList.contains('sheet-
 </script>
 <script>
   if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  window.addEventListener('beforeunload', ()=> { if(window._db&&window._currentUser) window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:false,lat:null,lng:null,lastGPS:null}); if(gpsWatchId!==null)navigator.geolocation.clearWatch(gpsWatchId); });
+  window.addEventListener('beforeunload', ()=> { if(window._db&&window._currentUser){ window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{online:false,lat:null,lng:null,lastGPS:null}); if(shiftStartTime&&driverData&&driverData.storeCourier){const elapsed=(Date.now()-shiftStartTime)/3600000;window._update(window._ref(window._db,'drivers/'+window._currentUser.uid),{hoursToday:Math.round(((parseFloat(driverData.hoursToday)||0)+elapsed)*100)/100,hoursWeek:Math.round(((parseFloat(driverData.hoursWeek)||0)+elapsed)*100)/100,isOnShift:false,shiftStartTime:null,lastShiftEnd:Date.now()});} } if(gpsWatchId!==null)navigator.geolocation.clearWatch(gpsWatchId); });
 </script>
 </body>
 </html>
