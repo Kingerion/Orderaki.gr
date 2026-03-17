@@ -543,21 +543,86 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   </div>
 </div>
 
-<div class="overlay" id="itemOverlay">
-  <div class="modal">
-    <div class="modal-hd">
+<div class="overlay" id="itemOverlay" style="z-index:120">
+  <div class="modal" style="max-width:520px;max-height:92vh;overflow-y:auto;padding:0">
+    <div style="position:sticky;top:0;background:var(--surface);z-index:1;padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
       <div class="modal-title" id="itemModalTitle">Νέο Προϊόν</div>
-      <button class="close-btn" onclick="closeItemModal()"><span class="material-icons-round">close</span></button>
+      <div style="display:flex;gap:8px">
+        <button class="save-btn" onclick="saveItem()" style="font-size:12px;padding:8px 14px"><span class="material-icons-round" style="font-size:16px">save</span>Αποθήκευση</button>
+        <button class="close-btn" onclick="closeItemModal()"><span class="material-icons-round">close</span></button>
+      </div>
     </div>
-    <div class="f-row" style="margin-bottom:12px">
-      <div class="f-group"><label class="f-label">Εικονίδιο</label><input class="f-input" id="iEmoji" placeholder="🍔" style="font-size:22px;text-align:center"></div>
-      <div class="f-group"><label class="f-label">Τιμή (€) *</label><input class="f-input" id="iPrice" type="number" placeholder="9.50" step="0.50"></div>
-    </div>
-    <div class="f-group" style="margin-bottom:12px"><label class="f-label">Όνομα Προϊόντος *</label><input class="f-input" id="iName" placeholder="π.χ. Classic Burger"></div>
-    <div class="f-group" style="margin-bottom:20px"><label class="f-label">Περιγραφή</label><input class="f-input" id="iDesc" placeholder="π.χ. 200g μοσχάρι, τυρί, σαλάτα"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn-sm" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);padding:10px 16px" onclick="closeItemModal()">Ακύρωση</button>
-      <button class="save-btn" onclick="saveItem()" style="font-size:13px;padding:10px 18px"><span class="material-icons-round">save</span>Αποθήκευση</button>
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:16px">
+
+      <!-- Section 1: Βασικά -->
+      <div class="panel"><div class="panel-hd"><div class="panel-title" style="font-size:13px">📦 Γενικά</div></div>
+        <div class="f-row" style="margin-bottom:10px">
+          <div class="f-group" style="max-width:80px"><label class="f-label">Εικονίδιο</label><input class="f-input" id="iEmoji" placeholder="🍔" style="font-size:22px;text-align:center"></div>
+          <div class="f-group" style="flex:2"><label class="f-label">Όνομα Προϊόντος *</label><input class="f-input" id="iName" placeholder="π.χ. Classic Burger" oninput="autoSuggestExtras(this.value)"></div>
+        </div>
+        <div class="f-group" style="margin-bottom:10px"><label class="f-label">Περιγραφή</label><input class="f-input" id="iDesc" placeholder="π.χ. 200g μοσχάρι, τυρί, σαλάτα"></div>
+        <div class="f-row">
+          <div class="f-group"><label class="f-label">Κατηγορία</label><select class="f-input f-select" id="iCategory" onchange="autoSuggestExtras(document.getElementById('iName').value)"><option value="">—</option><option value="burger">🍔 Burger</option><option value="pizza">🍕 Pizza</option><option value="souvlaki">🌯 Souvlaki</option><option value="pasta">🍝 Pasta</option><option value="salad">🥗 Σαλάτα</option><option value="sandwich">🥪 Sandwich</option><option value="coffee">☕ Ρόφημα</option><option value="dessert">🍰 Γλυκό</option><option value="drink">🥤 Ποτό</option><option value="sushi">🍣 Sushi</option><option value="other">🍴 Άλλο</option></select></div>
+          <div class="f-group"><label class="f-label">Βασική Τιμή (€) *</label><input class="f-input" id="iPrice" type="number" placeholder="9.50" step="0.50"></div>
+        </div>
+        <div class="f-row" style="margin-top:10px">
+          <div class="f-group"><label class="f-label">Τιμή Προσφοράς (€)</label><input class="f-input" id="iDiscountPrice" type="number" placeholder="" step="0.50"></div>
+          <div class="f-group"><label class="f-label">Prep Time (λεπτά)</label><input class="f-input" id="iPrepTime" type="number" value="15" min="1"></div>
+        </div>
+      </div>
+
+      <!-- Section 2: Variations (Μέγεθος κτλ) -->
+      <div class="panel"><div class="panel-hd"><div class="panel-title" style="font-size:13px">📐 Παραλλαγές (Μεγέθη κτλ)</div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px"><label class="f-label" style="margin:0;font-size:10px">Ενεργό</label><input type="checkbox" id="iHasVariations" onclick="document.getElementById('variationsArea').style.display=this.checked?'block':'none'" style="width:30px;height:16px;appearance:none;-webkit-appearance:none;background:var(--text3);border-radius:20px;cursor:pointer" onchange="this.style.background=this.checked?'var(--green)':'var(--text3)'"></div>
+      </div>
+        <div id="variationsArea" style="display:none">
+          <div id="variationsList"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input class="f-input" id="newVarName" placeholder="π.χ. Μεγάλη" style="flex:1;font-size:12px;padding:8px">
+            <input class="f-input" id="newVarPrice" type="number" placeholder="+€" style="width:70px;font-size:12px;padding:8px" step="0.50">
+            <button onclick="addVariation()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">+ Προσθήκη</button>
+          </div>
+          <div id="varSuggestions" style="display:none;margin-top:8px"></div>
+        </div>
+      </div>
+
+      <!-- Section 3: Extra Groups (Τοπικά, Σάλτσες κτλ) -->
+      <div class="panel"><div class="panel-hd"><div class="panel-title" style="font-size:13px">🧀 Extras & Επιλογές</div>
+        <button onclick="addExtraGroup()" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">+ Ομάδα</button>
+      </div>
+        <div id="extraGroupsList"></div>
+        <div id="extraSuggestions" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Section 4: Διατροφικά -->
+      <div class="panel"><div class="panel-hd"><div class="panel-title" style="font-size:13px">🥬 Διατροφικά</div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <label style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer"><input type="checkbox" id="iVegetarian" style="width:14px;height:14px;accent-color:var(--green)">🥬 Vegetarian</label>
+          <label style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer"><input type="checkbox" id="iVegan" style="width:14px;height:14px;accent-color:var(--green)">🌱 Vegan</label>
+          <label style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer"><input type="checkbox" id="iGlutenFree" style="width:14px;height:14px;accent-color:var(--green)">🌾 Gluten Free</label>
+          <label style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer"><input type="checkbox" id="iFasting" style="width:14px;height:14px;accent-color:var(--green)">☦️ Νηστίσιμο</label>
+          <label style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer"><input type="checkbox" id="iSpicy" style="width:14px;height:14px;accent-color:var(--accent)">🌶️ Πικάντικο</label>
+        </div>
+        <div class="f-group" style="margin-top:10px"><label class="f-label">Αλλεργιογόνα</label><input class="f-input" id="iAllergens" placeholder="π.χ. γάλα, γλουτένη, αυγό" style="font-size:12px"></div>
+        <div class="f-row" style="margin-top:8px">
+          <div class="f-group"><label class="f-label">Βάρος/Μερίδα</label><input class="f-input" id="iWeight" placeholder="π.χ. 350g" style="font-size:12px"></div>
+          <div class="f-group"><label class="f-label">Θερμίδες</label><input class="f-input" id="iCalories" placeholder="π.χ. 450 kcal" style="font-size:12px"></div>
+        </div>
+      </div>
+
+      <!-- Section 5: Διαθεσιμότητα -->
+      <div class="panel"><div class="panel-hd"><div class="panel-title" style="font-size:13px">📅 Διαθεσιμότητα</div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600"><input type="checkbox" id="iAvailable" checked style="width:14px;height:14px;accent-color:var(--green)">Διαθέσιμο</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600"><input type="checkbox" id="iFeatured" style="width:14px;height:14px;accent-color:var(--accent)">⭐ Featured</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600"><input type="checkbox" id="iNew" style="width:14px;height:14px;accent-color:#3b82f6">🆕 Νέο</label>
+        </div>
+        <div class="f-row" style="margin-top:8px">
+          <div class="f-group"><label class="f-label">Max/Παραγγελία</label><input class="f-input" id="iMaxQty" type="number" placeholder="∞" min="1" style="font-size:12px"></div>
+          <div class="f-group"><label class="f-label">Ημερήσιο Limit</label><input class="f-input" id="iDailyLimit" type="number" placeholder="∞" min="1" style="font-size:12px"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -848,35 +913,338 @@ setInterval(()=>{if(Object.values(myOrders).some(o=>o.status==='preparing'))rend
 
 function renderMenu(){
   const items=Object.entries(myMenu);
-  document.getElementById('menuGrid').innerHTML=items.map(([k,item])=>`
-    <div class="menu-card">
+  document.getElementById('menuGrid').innerHTML=items.map(([k,item])=>{
+    const badges=[];
+    if(item.variations&&item.variations.length)badges.push(`<span style="background:#eef2ff;color:#3730a3;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px">${item.variations.length} μεγέθη</span>`);
+    if(item.extraGroups&&item.extraGroups.length)badges.push(`<span style="background:rgba(212,35,0,.06);color:var(--accent);font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px">${item.extraGroups.length} extras</span>`);
+    if(item.vegetarian)badges.push(`<span style="font-size:9px">🥬</span>`);
+    if(item.vegan)badges.push(`<span style="font-size:9px">🌱</span>`);
+    if(item.spicy)badges.push(`<span style="font-size:9px">🌶️</span>`);
+    if(item.featured)badges.push(`<span style="font-size:9px">⭐</span>`);
+    if(item.isNew)badges.push(`<span style="background:#dbeafe;color:#2563eb;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px">NEW</span>`);
+    const discountHTML=item.discountPrice?`<span style="font-size:11px;text-decoration:line-through;color:var(--text3)">€${item.price.toFixed(2)}</span> <span style="color:var(--accent);font-weight:800">€${item.discountPrice.toFixed(2)}</span>`:`€${(item.price||0).toFixed(2)}`;
+    return`<div class="menu-card">
       <div class="menu-card-emoji">${item.emoji||'🍴'}</div>
       <div class="menu-card-name">${item.name}</div>
       <div class="menu-card-desc">${item.description||''}</div>
+      ${badges.length?'<div style="display:flex;gap:3px;flex-wrap:wrap;margin:4px 0">'+badges.join('')+'</div>':''}
       <div class="menu-card-footer">
-        <div class="menu-card-price">€${(item.price||0).toFixed(2)}</div>
+        <div class="menu-card-price">${discountHTML}</div>
         <div class="menu-card-actions">
           <button class="menu-avail ${item.available?'available':'unavailable'}" onclick="toggleItemAvail('${k}')"><span class="material-icons-round">${item.available?'visibility':'visibility_off'}</span>${item.available?'Διαθέσιμο':'Κλειστό'}</button>
           <div class="icon-btn" onclick="openEditItemModal('${k}')" style="width:30px;height:30px;border-radius:8px"><span class="material-icons-round" style="font-size:15px">edit</span></div>
           <div class="icon-btn" onclick="deleteItem('${k}')" style="width:30px;height:30px;border-radius:8px;color:var(--red)"><span class="material-icons-round" style="font-size:15px">delete_outline</span></div>
         </div>
       </div>
-    </div>
-  `).join('')+`<div class="add-item-card" onclick="openAddItemModal()"><span class="material-icons-round">add_circle_outline</span><div class="add-item-label">Προσθήκη Προϊόντος</div></div>`;
+    </div>`;
+  }).join('')+`<div class="add-item-card" onclick="openAddItemModal()"><span class="material-icons-round">add_circle_outline</span><div class="add-item-label">Προσθήκη Προϊόντος</div></div>`;
 }
 
-function openAddItemModal(){editingItemId=null;document.getElementById('itemModalTitle').textContent='Νέο Προϊόν';['iEmoji','iName','iDesc','iPrice'].forEach(id=>document.getElementById(id).value='');document.getElementById('iEmoji').value='🍴';document.getElementById('itemOverlay').classList.add('open');}
-function openEditItemModal(key){const item=myMenu[key];if(!item)return;editingItemId=key;document.getElementById('itemModalTitle').textContent='Επεξεργασία';document.getElementById('iEmoji').value=item.emoji||'🍴';document.getElementById('iName').value=item.name||'';document.getElementById('iDesc').value=item.description||'';document.getElementById('iPrice').value=item.price||'';document.getElementById('itemOverlay').classList.add('open');}
+// ══ AUTO-SUGGEST DATABASE ══
+const PRODUCT_SUGGESTIONS = {
+  pizza: {
+    emoji:'🍕', variations:['Μικρή|0','Μεσαία|2','Μεγάλη|4','Family|7'],
+    extras:[
+      {group:'Βάση',type:'single',required:true,options:['Κλασική|0','Λεπτή|0','Φυσούνα|1','Ολικής|1']},
+      {group:'Τυριά',type:'multi',options:['Extra Μοτσαρέλα|1.50','Παρμεζάνα|1.50','Γκούντα|1','Φέτα|1','Cheddar|1.50']},
+      {group:'Κρέατα',type:'multi',options:['Ζαμπόν|1','Πεπερόνι|1.50','Μπέικον|1.50','Κοτόπουλο|2','Προσούτο|2','Λουκάνικο|1.50']},
+      {group:'Λαχανικά',type:'multi',options:['Μανιτάρια|0.80','Ελιές|0.80','Πιπεριές|0.80','Κρεμμύδι|0.50','Ντομάτα|0.50','Ρόκα|0.80']},
+      {group:'Σάλτσα',type:'single',options:['Ντομάτα|0','Κρέμα|0','BBQ|0.50','Pesto|1']}
+    ]
+  },
+  burger: {
+    emoji:'🍔', variations:['Single|0','Double|3','Triple|5'],
+    extras:[
+      {group:'Ψωμάκι',type:'single',required:true,options:['Brioche|0','Σουσάμι|0','Ολικής|0.50','Χωρίς γλουτένη|1.50']},
+      {group:'Τυρί',type:'single',options:['Cheddar|0','Gouda|0','Blue Cheese|1','Brie|1.50','Χωρίς|0']},
+      {group:'Extras',type:'multi',options:['Μπέικον|1.50','Αυγό|1','Μανιτάρια|1','Καραμ. Κρεμμύδι|1','Jalapeños|0.80','Extra Μπιφτέκι|3']},
+      {group:'Σάλτσα',type:'multi',options:['Κέτσαπ|0','Μαγιονέζα|0','Μουστάρδα|0','BBQ|0.50','Σως Burger|0','Truffle Mayo|1']}
+    ]
+  },
+  souvlaki: {
+    emoji:'🌯', variations:['Πίτα|0','Μερίδα|2','Σκεπαστή|1'],
+    extras:[
+      {group:'Κρέας',type:'single',required:true,options:['Χοιρινό|0','Κοτόπουλο|0','Γύρος Χοιρινός|0.50','Γύρος Κοτόπουλο|0.50','Λουκάνικο|0','Μπιφτέκι|0.50']},
+      {group:'Υλικά',type:'multi',options:['Ντομάτα|0','Κρεμμύδι|0','Πατάτες|0','Τζατζίκι|0','Μουστάρδα|0','Κέτσαπ|0','Πίκλες|0']},
+      {group:'Extra',type:'multi',options:['Extra Πίτα|0.50','Φέτα|1','Τυρί|1','Μπέικον|1.50','Σως BBQ|0.50']}
+    ]
+  },
+  pasta: {
+    emoji:'🍝', variations:['Κανονική|0','Μεγάλη|2'],
+    extras:[
+      {group:'Ζυμαρικό',type:'single',required:true,options:['Σπαγγέτι|0','Πέννες|0','Λιγκουίνι|0','Ταλιατέλες|0.50','Ολικής|0.50']},
+      {group:'Σάλτσα',type:'single',required:true,options:['Ναπολιτάνα|0','Κρέμα|0','Pesto|1','Carbonara|0','Bolognese|0']},
+      {group:'Extra',type:'multi',options:['Παρμεζάνα|1','Κοτόπουλο|2','Γαρίδες|3','Μανιτάρια|1','Μπέικον|1.50']}
+    ]
+  },
+  salad: {
+    emoji:'🥗', variations:['Μικρή|0','Μεγάλη|2'],
+    extras:[
+      {group:'Πρωτεΐνη',type:'single',options:['Κοτόπουλο|2','Γαρίδες|3','Τόνος|2','Χαλούμι|2','Χωρίς|0']},
+      {group:'Dressing',type:'single',options:['Βινεγκρέτ|0','Caesar|0','Balsamic|0','Λεμονολάδο|0']},
+      {group:'Extra',type:'multi',options:['Κρουτόν|0.50','Αβοκάντο|1.50','Καρύδια|0.80','Σύκα|1']}
+    ]
+  },
+  sandwich: {
+    emoji:'🥪', variations:['Κανονικό|0','Club|2'],
+    extras:[
+      {group:'Ψωμί',type:'single',required:true,options:['Λευκό|0','Σίκαλης|0','Ολικής|0.50','Ciabatta|0.50','Baguette|0.50']},
+      {group:'Extra',type:'multi',options:['Extra Τυρί|1','Αυγό|1','Μπέικον|1.50','Αβοκάντο|1.50','Πατάτες|1']}
+    ]
+  },
+  coffee: {
+    emoji:'☕', variations:['Μονός|0','Διπλός|0.80','Triple|1.50'],
+    extras:[
+      {group:'Γάλα',type:'single',options:['Κανονικό|0','Αμυγδάλου|0.50','Βρώμης|0.50','Καρύδας|0.50','Σόγιας|0.50','Χωρίς|0']},
+      {group:'Σιρόπι',type:'single',options:['Βανίλια|0.50','Καραμέλα|0.50','Φουντούκι|0.50','Σοκολάτα|0.50']},
+      {group:'Extra',type:'multi',options:['Extra Shot|0.80','Whipped Cream|0.50','Ice|0']}
+    ]
+  },
+  dessert: {
+    emoji:'🍰', variations:[],
+    extras:[
+      {group:'Σιρόπι/Topping',type:'multi',options:['Σοκολάτα|0.50','Καραμέλα|0.50','Φράουλα|0.50','Μέλι|0.50','Σαντιγί|0.50']},
+      {group:'Extra',type:'multi',options:['Παγωτό|1.50','Φρούτα|1','Μπισκότο|0.80']}
+    ]
+  },
+  drink: {emoji:'🥤', variations:['330ml|0','500ml|0.80','1L|1.50'], extras:[]},
+  sushi: {
+    emoji:'🍣', variations:['8τμχ|0','12τμχ|4','16τμχ|7'],
+    extras:[
+      {group:'Σάλτσα',type:'multi',options:['Σόγια|0','Wasabi|0','Ginger|0','Spicy Mayo|0.50','Teriyaki|0.50']},
+      {group:'Extra',type:'multi',options:['Αβοκάντο|1','Extra Σολομός|2','Φιλαδέλφια|1','Tempura|1.50']}
+    ]
+  }
+};
+
+let itemVariations=[], itemExtraGroups=[], extraGroupCounter=0;
+
+function openAddItemModal(){
+  editingItemId=null;
+  document.getElementById('itemModalTitle').textContent='Νέο Προϊόν';
+  ['iEmoji','iName','iDesc','iPrice','iDiscountPrice','iAllergens','iWeight','iCalories','newVarName','newVarPrice'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('iEmoji').value='🍴';
+  document.getElementById('iPrepTime').value='15';
+  document.getElementById('iCategory').value='';
+  document.getElementById('iHasVariations').checked=false;
+  document.getElementById('variationsArea').style.display='none';
+  ['iVegetarian','iVegan','iGlutenFree','iFasting','iSpicy','iFeatured','iNew'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  document.getElementById('iAvailable').checked=true;
+  document.getElementById('iMaxQty').value='';
+  document.getElementById('iDailyLimit').value='';
+  itemVariations=[];itemExtraGroups=[];extraGroupCounter=0;
+  renderVariations();renderExtraGroups();
+  document.getElementById('extraSuggestions').innerHTML='';
+  document.getElementById('varSuggestions').innerHTML='';
+  document.getElementById('itemOverlay').classList.add('open');
+}
+
+function openEditItemModal(key){
+  const item=myMenu[key];if(!item)return;
+  editingItemId=key;
+  document.getElementById('itemModalTitle').textContent='Επεξεργασία';
+  document.getElementById('iEmoji').value=item.emoji||'🍴';
+  document.getElementById('iName').value=item.name||'';
+  document.getElementById('iDesc').value=item.description||'';
+  document.getElementById('iPrice').value=item.price||'';
+  document.getElementById('iDiscountPrice').value=item.discountPrice||'';
+  document.getElementById('iCategory').value=item.category||'';
+  document.getElementById('iPrepTime').value=item.prepTime||15;
+  document.getElementById('iAllergens').value=item.allergens||'';
+  document.getElementById('iWeight').value=item.weight||'';
+  document.getElementById('iCalories').value=item.calories||'';
+  document.getElementById('iVegetarian').checked=!!item.vegetarian;
+  document.getElementById('iVegan').checked=!!item.vegan;
+  document.getElementById('iGlutenFree').checked=!!item.glutenFree;
+  document.getElementById('iFasting').checked=!!item.fasting;
+  document.getElementById('iSpicy').checked=!!item.spicy;
+  document.getElementById('iAvailable').checked=item.available!==false;
+  document.getElementById('iFeatured').checked=!!item.featured;
+  document.getElementById('iNew').checked=!!item.isNew;
+  document.getElementById('iMaxQty').value=item.maxQty||'';
+  document.getElementById('iDailyLimit').value=item.dailyLimit||'';
+  
+  // Load variations
+  itemVariations=(item.variations||[]).map(v=>({name:v.name,price:v.price||0}));
+  document.getElementById('iHasVariations').checked=itemVariations.length>0;
+  document.getElementById('variationsArea').style.display=itemVariations.length>0?'block':'none';
+  renderVariations();
+  
+  // Load extra groups
+  itemExtraGroups=(item.extraGroups||[]).map(g=>({
+    name:g.name,type:g.type||'multi',required:!!g.required,
+    options:(g.options||[]).map(o=>({name:o.name,price:o.price||0}))
+  }));
+  extraGroupCounter=itemExtraGroups.length;
+  renderExtraGroups();
+  
+  document.getElementById('extraSuggestions').innerHTML='';
+  document.getElementById('itemOverlay').classList.add('open');
+}
+
 function closeItemModal(){document.getElementById('itemOverlay').classList.remove('open');}
+
+// ══ VARIATIONS ══
+function addVariation(){
+  const name=document.getElementById('newVarName').value.trim();
+  const price=parseFloat(document.getElementById('newVarPrice').value)||0;
+  if(!name)return;
+  itemVariations.push({name,price});
+  document.getElementById('newVarName').value='';document.getElementById('newVarPrice').value='';
+  renderVariations();
+}
+function removeVariation(idx){itemVariations.splice(idx,1);renderVariations();}
+function renderVariations(){
+  document.getElementById('variationsList').innerHTML=itemVariations.map((v,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="flex:1;font-size:13px;font-weight:600">${v.name}</span><span style="font-size:12px;color:var(--accent);font-weight:700">${v.price>0?'+€'+v.price.toFixed(2):'Βάση'}</span><button onclick="removeVariation(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">×</button></div>`).join('');
+}
+
+// ══ EXTRA GROUPS ══
+function addExtraGroup(name,type,required,options){
+  const g={name:name||'Νέα Ομάδα',type:type||'multi',required:!!required,options:options||[]};
+  itemExtraGroups.push(g);extraGroupCounter++;
+  renderExtraGroups();
+}
+function removeExtraGroup(idx){itemExtraGroups.splice(idx,1);renderExtraGroups();}
+function addExtraOption(gIdx){
+  const nameEl=document.getElementById('eoName_'+gIdx);
+  const priceEl=document.getElementById('eoPrice_'+gIdx);
+  if(!nameEl||!nameEl.value.trim())return;
+  itemExtraGroups[gIdx].options.push({name:nameEl.value.trim(),price:parseFloat(priceEl.value)||0});
+  nameEl.value='';priceEl.value='';
+  renderExtraGroups();
+}
+function removeExtraOption(gIdx,oIdx){itemExtraGroups[gIdx].options.splice(oIdx,1);renderExtraGroups();}
+
+function renderExtraGroups(){
+  document.getElementById('extraGroupsList').innerHTML=itemExtraGroups.map((g,gi)=>{
+    const opts=g.options.map((o,oi)=>`<div style="display:flex;align-items:center;gap:4px;padding:4px 0"><span style="flex:1;font-size:12px">${o.name}</span><span style="font-size:11px;color:var(--accent);font-weight:600">${o.price>0?'+€'+o.price.toFixed(2):'Free'}</span><button onclick="removeExtraOption(${gi},${oi})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">×</button></div>`).join('');
+    return`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <input value="${g.name}" onchange="itemExtraGroups[${gi}].name=this.value" style="flex:1;background:transparent;border:none;font-size:13px;font-weight:700;color:var(--text);outline:none">
+        <select onchange="itemExtraGroups[${gi}].type=this.value" style="font-size:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text3)"><option value="multi" ${g.type==='multi'?'selected':''}>Multi</option><option value="single" ${g.type==='single'?'selected':''}>Single</option></select>
+        <label style="font-size:10px;display:flex;align-items:center;gap:3px;color:var(--accent)"><input type="checkbox" ${g.required?'checked':''} onchange="itemExtraGroups[${gi}].required=this.checked" style="width:12px;height:12px;accent-color:var(--accent)">Υποχ.</label>
+        <button onclick="removeExtraGroup(${gi})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">×</button>
+      </div>
+      ${opts}
+      <div style="display:flex;gap:4px;margin-top:6px">
+        <input class="f-input" id="eoName_${gi}" placeholder="Επιλογή" style="flex:1;font-size:11px;padding:6px 8px">
+        <input class="f-input" id="eoPrice_${gi}" type="number" placeholder="€" style="width:55px;font-size:11px;padding:6px 8px" step="0.50">
+        <button onclick="addExtraOption(${gi})" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══ AUTO-SUGGEST ══
+let lastSuggestCat='';
+function autoSuggestExtras(name){
+  const cat=document.getElementById('iCategory').value;
+  const searchText=(name||'').toLowerCase();
+  let matchedCat=cat;
+  
+  // Auto-detect category from name
+  if(!matchedCat){
+    if(searchText.includes('πίτσα')||searchText.includes('pizza'))matchedCat='pizza';
+    else if(searchText.includes('burger')||searchText.includes('μπέργκερ'))matchedCat='burger';
+    else if(searchText.includes('σουβλάκι')||searchText.includes('γύρο')||searchText.includes('πίτα'))matchedCat='souvlaki';
+    else if(searchText.includes('pasta')||searchText.includes('μακαρόνια')||searchText.includes('σπαγγέτι'))matchedCat='pasta';
+    else if(searchText.includes('σαλάτα')||searchText.includes('salad'))matchedCat='salad';
+    else if(searchText.includes('sandwich')||searchText.includes('σάντουιτς')||searchText.includes('τοστ'))matchedCat='sandwich';
+    else if(searchText.includes('καφέ')||searchText.includes('coffee')||searchText.includes('φραπέ')||searchText.includes('espresso')||searchText.includes('latte'))matchedCat='coffee';
+    else if(searchText.includes('γλυκό')||searchText.includes('κέικ')||searchText.includes('τάρτα')||searchText.includes('παγωτό'))matchedCat='dessert';
+    else if(searchText.includes('sushi')||searchText.includes('σούσι'))matchedCat='sushi';
+    else if(searchText.includes('cola')||searchText.includes('νερό')||searchText.includes('χυμό')||searchText.includes('μπύρα'))matchedCat='drink';
+  }
+  
+  if(!matchedCat||matchedCat===lastSuggestCat)return;
+  lastSuggestCat=matchedCat;
+  
+  const sug=PRODUCT_SUGGESTIONS[matchedCat];
+  if(!sug)return;
+  
+  // Set emoji
+  if(document.getElementById('iEmoji').value==='🍴')document.getElementById('iEmoji').value=sug.emoji;
+  if(!cat)document.getElementById('iCategory').value=matchedCat;
+  
+  // Show variation suggestions
+  if(sug.variations&&sug.variations.length){
+    document.getElementById('varSuggestions').style.display='block';
+    document.getElementById('varSuggestions').innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">💡 Προτεινόμενα μεγέθη:</div><div style="display:flex;flex-wrap:wrap;gap:4px">${sug.variations.map(v=>{const[n,p]=v.split('|');return`<button onclick="itemVariations.push({name:'${n}',price:${p||0}});renderVariations();document.getElementById('iHasVariations').checked=true;document.getElementById('variationsArea').style.display='block'" style="background:var(--accent-light);color:var(--accent);border:1px solid rgba(212,35,0,.2);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">${n} ${p>0?'+€'+p:''}</button>`;}).join('')}</div>`;
+  }
+  
+  // Show extra group suggestions
+  if(sug.extras&&sug.extras.length){
+    document.getElementById('extraSuggestions').innerHTML=`<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:10px;padding:12px">
+      <div style="font-size:11px;font-weight:700;color:#3b82f6;margin-bottom:8px">💡 Προτεινόμενες ομάδες extras για ${matchedCat}:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${sug.extras.map(e=>`<button onclick="addSuggestedGroup('${matchedCat}','${e.group}')" style="background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">${e.group} (${e.options.length})</button>`).join('')}
+      <button onclick="addAllSuggestedGroups('${matchedCat}')" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">Πρόσθεσε όλα ✓</button></div>
+    </div>`;
+  }
+}
+
+function addSuggestedGroup(cat,groupName){
+  const sug=PRODUCT_SUGGESTIONS[cat];if(!sug)return;
+  const g=sug.extras.find(e=>e.group===groupName);if(!g)return;
+  // Don't add duplicate
+  if(itemExtraGroups.find(eg=>eg.name===g.group))return;
+  addExtraGroup(g.group,g.type,g.required,g.options.map(o=>{const[n,p]=o.split('|');return{name:n,price:parseFloat(p)||0};}));
+}
+
+function addAllSuggestedGroups(cat){
+  const sug=PRODUCT_SUGGESTIONS[cat];if(!sug)return;
+  sug.extras.forEach(g=>{
+    if(itemExtraGroups.find(eg=>eg.name===g.group))return;
+    addExtraGroup(g.group,g.type,g.required,g.options.map(o=>{const[n,p]=o.split('|');return{name:n,price:parseFloat(p)||0};}));
+  });
+  // Also add all variations
+  if(sug.variations){
+    sug.variations.forEach(v=>{
+      const[n,p]=v.split('|');
+      if(!itemVariations.find(iv=>iv.name===n))itemVariations.push({name:n,price:parseFloat(p)||0});
+    });
+    document.getElementById('iHasVariations').checked=true;
+    document.getElementById('variationsArea').style.display='block';
+    renderVariations();
+  }
+  document.getElementById('extraSuggestions').innerHTML='<div style="text-align:center;padding:8px;color:var(--green);font-size:12px;font-weight:700">✅ Προστέθηκαν όλα!</div>';
+  setTimeout(()=>document.getElementById('extraSuggestions').innerHTML='',2000);
+}
 
 function saveItem(){
   const name=document.getElementById('iName').value.trim(),price=parseFloat(document.getElementById('iPrice').value);
   if(!name||isNaN(price)){showToast('⚠️ Συμπλήρωσε όνομα και τιμή');return;}
-  const item={name,emoji:document.getElementById('iEmoji').value||'🍴',price,description:document.getElementById('iDesc').value.trim(),available:true};
+  const item={
+    name, price,
+    emoji:document.getElementById('iEmoji').value||'🍴',
+    description:document.getElementById('iDesc').value.trim(),
+    category:document.getElementById('iCategory').value||'',
+    discountPrice:parseFloat(document.getElementById('iDiscountPrice').value)||null,
+    prepTime:parseInt(document.getElementById('iPrepTime').value)||15,
+    available:document.getElementById('iAvailable').checked,
+    featured:document.getElementById('iFeatured').checked,
+    isNew:document.getElementById('iNew').checked,
+    vegetarian:document.getElementById('iVegetarian').checked,
+    vegan:document.getElementById('iVegan').checked,
+    glutenFree:document.getElementById('iGlutenFree').checked,
+    fasting:document.getElementById('iFasting').checked,
+    spicy:document.getElementById('iSpicy').checked,
+    allergens:document.getElementById('iAllergens').value.trim()||'',
+    weight:document.getElementById('iWeight').value.trim()||'',
+    calories:document.getElementById('iCalories').value.trim()||'',
+    maxQty:parseInt(document.getElementById('iMaxQty').value)||null,
+    dailyLimit:parseInt(document.getElementById('iDailyLimit').value)||null,
+    variations:itemVariations.length?itemVariations:null,
+    extraGroups:itemExtraGroups.length?itemExtraGroups:null
+  };
+  // Clean null values
+  Object.keys(item).forEach(k=>{if(item[k]===null||item[k]===undefined||item[k]==='')delete item[k];});
+  if(!item.available) item.available=false; else item.available=true;
+  
   const path='stores/'+storeId+'/menu/';
   if(window._db){if(editingItemId)window._update(window._ref(window._db,path+editingItemId),item);else{const nr=window._push(window._ref(window._db,path));window._set(nr,item);}}
   else{const k=editingItemId||('i_'+Date.now());myMenu[k]=item;renderMenu();}
   closeItemModal();showToast(editingItemId?'✅ Ενημερώθηκε':'✅ Προστέθηκε');
+  lastSuggestCat='';
 }
 
 function toggleItemAvail(key){
