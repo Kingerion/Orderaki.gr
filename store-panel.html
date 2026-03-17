@@ -1196,8 +1196,9 @@ function calcDeliveryDistance(){
   // For now: estimate based on admin settings (base + per km)
   const addr=document.getElementById('soAddress').value.trim();
   if(!addr||!currentStore){document.getElementById('soDistanceInfo').textContent='— χλμ';return;}
-  const base=parseFloat(window._adminSettings?.baseDeliveryFee)||2;
-  const perKm=parseFloat(window._adminSettings?.pricePerKm)||0.5;
+  const day=new Date().getDay();const isWeekend=(day===0||day===6);
+  const base=isWeekend?(parseFloat(window._adminSettings?.baseDeliveryFeeWE)||parseFloat(window._adminSettings?.baseDeliveryFee)||2):(parseFloat(window._adminSettings?.baseDeliveryFee)||2);
+  const perKm=isWeekend?(parseFloat(window._adminSettings?.pricePerKmWE)||parseFloat(window._adminSettings?.pricePerKm)||0.5):(parseFloat(window._adminSettings?.pricePerKm)||0.5);
   // Rough distance estimate: hash addresses to get pseudo-distance (1-8 km range)
   let hash=0;for(let i=0;i<addr.length;i++)hash=((hash<<5)-hash)+addr.charCodeAt(i);
   const pseudoKm=Math.max(1,Math.min(8,(Math.abs(hash)%70)/10+0.5));
@@ -1215,7 +1216,12 @@ function updateStoreOrderTotal(){
 }
 
 function selSoPay(t){soPayMethod=t;['cash','card'].forEach(x=>{const el=document.getElementById('soPay_'+x);if(el){el.style.borderColor=x===t?'var(--accent)':'var(--border)';el.style.background=x===t?'var(--accent-light)':'transparent';el.style.color=x===t?'var(--accent)':'var(--text2)';}});}
-function selSoDeliv(t){soDelivType=t;['platform','own'].forEach(x=>{const el=document.getElementById('soDeliv_'+x);if(el){el.style.borderColor=x===t?'var(--accent)':'var(--border)';el.style.background=x===t?'var(--accent-light)':'transparent';el.style.color=x===t?'var(--accent)':'var(--text2)';}});}
+function selSoDeliv(t){soDelivType=t;['platform','own'].forEach(x=>{const el=document.getElementById('soDeliv_'+x);if(el){el.style.borderColor=x===t?'var(--accent)':'var(--border)';el.style.background=x===t?'var(--accent-light)':'transparent';el.style.color=x===t?'var(--accent)':'var(--text2)';}});
+  // Own delivery = 0 delivery cost (store's own courier, no platform fee)
+  if(t==='own'){document.getElementById('soDeliveryFee').value='0.00';document.getElementById('soDistanceInfo').textContent='Δικός μας';}
+  else{calcDeliveryDistance();}
+  updateStoreOrderTotal();
+}
 
 function submitStoreOrder(){
   const phone=document.getElementById('soPhone').value.trim();

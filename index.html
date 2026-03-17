@@ -327,23 +327,75 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);fon
 </div>
 
 <div id="profileBackdrop" style="position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:240;display:none" onclick="closeProfile()"></div>
-<div id="profilePanel" style="position:fixed;top:0;right:-380px;width:360px;max-width:90vw;height:100vh;background:var(--surface);z-index:250;box-shadow:-8px 0 40px rgba(0,0,0,.12);transition:right .3s;display:flex;flex-direction:column">
-  <div style="padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-    <div id="profAvatarLg" style="width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800">?</div>
-    <div style="flex:1"><div id="profDisplayName" style="font-size:15px;font-weight:800">—</div><div id="profDisplayEmail" style="font-size:12px;color:var(--text3)">—</div></div>
-    <button onclick="closeProfile()" style="background:var(--surface2);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3)"><span class="material-icons-round" style="font-size:18px">close</span></button>
+<div id="profilePanel" style="position:fixed;top:0;right:-380px;width:360px;max-width:90vw;height:100vh;background:#1a1a1a;color:#f5f5f5;z-index:250;box-shadow:-8px 0 40px rgba(0,0,0,.3);transition:right .3s;display:flex;flex-direction:column">
+  <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:12px">
+    <button onclick="closeProfile()" style="background:none;border:none;color:#999;cursor:pointer;padding:0;display:flex"><span class="material-icons-round" style="font-size:22px">arrow_back_ios</span></button>
+    <div style="flex:1;text-align:center;font-size:16px;font-weight:800">Προφίλ</div>
+    <div style="width:22px"></div>
   </div>
-  <div style="flex:1;overflow-y:auto;padding:20px">
-    <div style="margin-bottom:24px"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px">Οι παραγγελίες μου</div><div id="profOrders"><div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Δεν υπάρχουν παραγγελίες</div></div></div>
-    <div><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px">Στοιχεία</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div class="form-group"><label class="form-label">Όνομα</label><input class="form-input" id="profName" oninput="saveProfileToFB()"></div>
-        <div class="form-group"><label class="form-label">Τηλέφωνο</label><input class="form-input" id="profPhone" oninput="saveProfileToFB()"></div>
-        <div class="form-group"><label class="form-label">Διεύθυνση</label><input class="form-input" id="profAddress" oninput="saveProfileToFB()"></div>
+  
+  <!-- Profile card -->
+  <div style="padding:20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div id="profAvatarLg" style="width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0">?</div>
+    <div style="flex:1;min-width:0"><div id="profDisplayName" style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div><div id="profDisplayEmail" style="font-size:12px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div></div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto">
+    <!-- Menu items -->
+    <div id="profMenuView">
+      <div onclick="showProfSection('orders')" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#999">receipt_long</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Παραγγελίες</span>
+        <span class="material-icons-round" style="font-size:20px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('account')" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#999">person</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Ο λογαριασμός μου</span>
+        <span class="material-icons-round" style="font-size:20px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('addresses')" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#999">location_on</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Διευθύνσεις</span>
+        <span class="material-icons-round" style="font-size:20px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('favorites')" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#999">favorite</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Αγαπημένα</span>
+        <span class="material-icons-round" style="font-size:20px;color:#555">chevron_right</span>
       </div>
     </div>
+
+    <!-- Orders section -->
+    <div id="profSectionOrders" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πίσω</div>
+      <div style="padding:14px 20px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#666">Οι παραγγελίες μου</div>
+      <div id="profOrders" style="padding:0 16px"><div style="text-align:center;padding:20px;color:#666;font-size:13px">Δεν υπάρχουν παραγγελίες</div></div>
+    </div>
+
+    <!-- Account section -->
+    <div id="profSectionAccount" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πίσω</div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+        <div class="form-group"><label class="form-label" style="color:#999">Όνομα</label><input class="form-input" id="profName" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
+        <div class="form-group"><label class="form-label" style="color:#999">Τηλέφωνο</label><input class="form-input" id="profPhone" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
+        <div class="form-group"><label class="form-label" style="color:#999">Διεύθυνση</label><input class="form-input" id="profAddress" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
+      </div>
+    </div>
+
+    <!-- Addresses section -->
+    <div id="profSectionAddresses" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πίσω</div>
+      <div style="padding:20px"><div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px"><span class="material-icons-round" style="color:var(--accent)">home</span><div><div style="font-size:13px;font-weight:700" id="profAddrDisplay">—</div><div style="font-size:11px;color:#666">Κύρια διεύθυνση</div></div></div></div>
+    </div>
+
+    <!-- Favorites section -->
+    <div id="profSectionFavorites" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πίσω</div>
+      <div style="text-align:center;padding:40px 20px;color:#666;font-size:13px"><span class="material-icons-round" style="font-size:36px;display:block;margin:0 auto 8px;opacity:.3">favorite_border</span>Δεν έχεις αγαπημένα ακόμα</div>
+    </div>
   </div>
-  <div style="padding:16px 20px;border-top:1px solid var(--border)"><button onclick="doCustomerLogout()" style="width:100%;background:var(--surface2);color:var(--accent);border:1.5px solid rgba(212,35,0,.2);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><span class="material-icons-round" style="font-size:18px">logout</span>Αποσύνδεση</button></div>
+
+  <div style="padding:16px 20px;border-top:1px solid rgba(255,255,255,.06)"><button onclick="doCustomerLogout()" style="width:100%;background:#242424;color:var(--accent);border:1.5px solid rgba(212,35,0,.2);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><span class="material-icons-round" style="font-size:18px">logout</span>Αποσύνδεση</button></div>
 </div>
 
 <div id="chatFloat" style="position:fixed;bottom:calc(var(--bot-h) + 16px);right:16px;z-index:400;display:none">
@@ -496,7 +548,7 @@ function renderModal(){
     <div class="modal-hd"><div class="modal-store-icon" style="background:${bg}">${s.emoji||'🍴'}</div><div><div class="modal-store-name">${s.name}</div><div class="modal-store-meta">⭐ ${s.rating||'4.5'} · ${s.deliveryTime||'20-30'}′ · Min €${s.minOrder||10}</div></div><button class="modal-close" onclick="closeOrderModal()"><span class="material-icons-round">close</span></button></div>
     <div class="modal-body">
       <div><div class="order-section-title">Μενού</div><div class="menu-items">${menuItems||'<div style="text-align:center;padding:20px;color:var(--text3)">Δεν υπάρχουν προϊόντα</div>'}</div></div>
-      <div><div class="order-section-title">Στοιχεία Παράδοσης</div><div style="display:flex;flex-direction:column;gap:10px"><div class="form-row"><div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Όνομα" oninput="saveProfile()"></div><div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="69..." type="tel" oninput="saveProfile()"></div></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="oEmail" placeholder="email@example.com" type="email" oninput="saveProfile()"></div><div class="form-group"><label class="form-label">Διεύθυνση *</label><input class="form-input" id="oAddress" placeholder="Πατησίων 42, Αθήνα" oninput="saveProfile()"></div><div class="form-row"><div class="form-group"><label class="form-label">Όροφος</label><input class="form-input" id="oFloor" placeholder="3ος" oninput="saveProfile()"></div><div class="form-group"><label class="form-label">Κουδούνι</label><input class="form-input" id="oDoorbell" placeholder="Παπαδόπουλος" oninput="saveProfile()"></div></div><div class="form-group"><label class="form-label">Σχόλια</label><input class="form-input" id="oNotes" placeholder="χωρίς κρεμμύδι..."></div></div></div>
+      <div><div class="order-section-title">Στοιχεία Παράδοσης</div><div style="display:flex;flex-direction:column;gap:8px"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Όνομα" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="69..." type="tel" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="oEmail" placeholder="email" type="email" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div></div><div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px"><div class="form-group"><label class="form-label">Διεύθυνση *</label><input class="form-input" id="oAddress" placeholder="Οδός, Αριθμός" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group"><label class="form-label">Όροφος</label><input class="form-input" id="oFloor" placeholder="3ος" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group"><label class="form-label">Κουδούνι</label><input class="form-input" id="oDoorbell" placeholder="Όνομα" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div></div><div class="form-group"><input class="form-input" id="oNotes" placeholder="Σχόλια (χωρίς κρεμμύδι...)" style="padding:9px 10px;font-size:13px"></div></div></div>
       <div><div class="order-section-title">Πληρωμή</div><div class="pay-options"><div class="pay-opt selected" id="pay_cash" onclick="selectPay('cash')"><span class="material-icons-round">payments</span>Μετρητά</div><div class="pay-opt" id="pay_card" onclick="selectPay('card')"><span class="material-icons-round">credit_card</span>Κάρτα</div><div class="pay-opt" id="pay_online" onclick="selectPay('online')"><span class="material-icons-round">phone_iphone</span>Online</div></div></div>
       <div class="order-summary"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Σύνοψη</div><div id="summaryLines"></div><div class="summary-row"><span>Παράδοση</span><span>€${(s.deliveryCost||2).toFixed(2)}</span></div><div class="summary-row total"><span>Σύνολο</span><span class="summary-val" id="summaryTotal">€${(s.deliveryCost||2).toFixed(2)}</span></div></div>
       <button class="btn-primary" onclick="submitOrder()"><span class="material-icons-round">rocket_launch</span>Παράγγειλε τώρα!</button>
@@ -521,7 +573,7 @@ function submitOrder(){
   if(!Object.keys(cart).length){showToast('🛒 Πρόσθεσε τουλάχιστον ένα προϊόν');return;}
   saveProfile();
   const items=Object.values(cart);const sub=items.reduce((s,{item,qty})=>s+item.price*qty,0);
-  const deliveryFee=activeStore.deliveryCost||(window._platformSettings?.baseDeliveryFee||2);
+  const deliveryFee=activeStore.deliveryCost||(function(){const ps=window._platformSettings||{};const d=new Date().getDay();const we=(d===0||d===6);return we?(ps.baseDeliveryFeeWE||ps.baseDeliveryFee||2):(ps.baseDeliveryFee||2);})();
   const isOwnDeliv=activeStore.defaultDeliveryMode==='own';
   const order={id:'#ORD'+(1000+Math.floor(Math.random()*9000)),storeId:activeStore._key,storeName:activeStore.name,storeAddress:activeStore.address||'',customerName:name,phone,email,address,deliveryAddress:address+(floor?' ('+floor+'ος)':'')+(doorbell?' κουδ. '+doorbell:''),floor,doorbell,notes:document.getElementById('oNotes')?.value||'',customerUid:window._uid||'',items:items.map(({item,qty})=>({name:item.name,emoji:item.emoji||'',price:item.price,qty})),subtotal:sub,deliveryCost:deliveryFee,total:sub+deliveryFee,payment:selectedPay,status:'new',createdAt:Date.now(),ownDelivery:isOwnDeliv,deliveryType:isOwnDeliv?'own':'platform'};
   // Geocode then save
@@ -619,8 +671,18 @@ function saveProfileToFB(){
   if(window._db&&window._uid)window._update(window._ref(window._db,'customers/'+window._uid),data);
   localStorage.setItem('orderakiProfile',JSON.stringify(data));
 }
-function openProfile(){document.getElementById('profilePanel').style.right='0';document.getElementById('profileBackdrop').style.display='block';}
+function openProfile(){document.getElementById('profilePanel').style.right='0';document.getElementById('profileBackdrop').style.display='block';backToProfMenu();}
 function closeProfile(){document.getElementById('profilePanel').style.right='-380px';document.getElementById('profileBackdrop').style.display='none';}
+function showProfSection(sec){
+  document.getElementById('profMenuView').style.display='none';
+  ['Orders','Account','Addresses','Favorites'].forEach(s=>document.getElementById('profSection'+s).style.display='none');
+  document.getElementById('profSection'+sec.charAt(0).toUpperCase()+sec.slice(1)).style.display='block';
+  if(sec==='addresses'&&customerProfile.address)document.getElementById('profAddrDisplay').textContent=customerProfile.address;
+}
+function backToProfMenu(){
+  document.getElementById('profMenuView').style.display='block';
+  ['Orders','Account','Addresses','Favorites'].forEach(s=>document.getElementById('profSection'+s).style.display='none');
+}
 function renderMyOrders(orders){
   window._myOrders=orders;
   var entries=Object.entries(orders).sort(function(a,b){return(b[1].createdAt||0)-(a[1].createdAt||0);});
