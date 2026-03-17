@@ -574,7 +574,7 @@ const allD=window._firebaseDriversAll||{};
 toAssign.forEach(([key,o])=>{
   // Check if this order should go to store courier or platform courier
   const store=stores[o.storeId];
-  const isOwnDelivery=o.ownDelivery||(store?.defaultDeliveryMode==='own');
+  const isOwnDelivery=o.ownDelivery||o.deliveryType==='own'||(store?.defaultDeliveryMode==='own');
   
   let availableDrivers;
   if(isOwnDelivery){
@@ -582,7 +582,7 @@ toAssign.forEach(([key,o])=>{
     availableDrivers=Object.entries(allD).filter(([,d])=>d.online&&d.storeCourier&&d.storeId===o.storeId&&(d.status==='approved'));
   }else{
     // Only assign to platform couriers (NOT store couriers)
-    availableDrivers=Object.entries(allDrivers).filter(([,d])=>d.online&&!d.storeCourier&&(!d.status||d.status==='approved'));
+    availableDrivers=Object.entries(allD).filter(([,d])=>d.online&&!d.storeCourier&&(!d.status||d.status==='approved'));
   }
   if(!availableDrivers.length)return;
   

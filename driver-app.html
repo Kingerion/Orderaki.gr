@@ -209,10 +209,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <div class="online-toggle on" id="onlineToggle" onclick="toggleOnline()"><div class="online-dot"></div><span class="online-label" id="onlineLabel">Online</span></div>
   </div>
   <div id="gpsIndicator" style="display:flex;align-items:center;gap:4px;justify-content:center;padding:4px 0;background:rgba(255,255,255,.05);"></div>
-  <div class="earnings-bar">
-    <div class="earn-item"><div class="earn-val" id="earnToday">€0</div><div class="earn-label">Σήμερα</div></div>
-    <div class="earn-item"><div class="earn-val" id="earnDeliveries">0</div><div class="earn-label">Παραδόσεις</div></div>
-    <div class="earn-item"><div class="earn-val" id="earnWeek">€0</div><div class="earn-label">Εβδομάδα</div></div>
+  <div class="earnings-bar" id="earningsBar">
+    <div class="earn-item"><div class="earn-val" id="earnToday">€0</div><div class="earn-label" id="earnTodayLabel">Σήμερα</div></div>
+    <div class="earn-item"><div class="earn-val" id="earnDeliveries">0</div><div class="earn-label" id="earnDeliveriesLabel">Παραδόσεις</div></div>
+    <div class="earn-item"><div class="earn-val" id="earnWeek">€0</div><div class="earn-label" id="earnWeekLabel">Εβδομάδα</div></div>
   </div>
 
   <div class="content" id="pageOrders" style="display:block">
@@ -556,6 +556,17 @@ function loadDriverApp(){
   document.getElementById('profName').textContent=n;
   document.getElementById('profEmail').textContent=driverData.email||'—';
   if(document.getElementById('profPhone')) document.getElementById('profPhone').textContent=driverData.phone||'—';
+  
+  // Show role based on driver type
+  const roleEl=document.querySelector('.top-role');
+  if(roleEl){
+    if(driverData.storeCourier){
+      roleEl.textContent='🏪 '+(driverData.storeName||'Κατάστημα');
+      roleEl.style.color='#ff9800';
+    } else {
+      roleEl.textContent='Οδηγός Delivery';
+    }
+  }
 
   if(window._db&&window._currentUser){
     window._onValue(window._ref(window._db,'drivers/'+window._currentUser.uid), snap=>{
@@ -567,7 +578,18 @@ function loadDriverApp(){
   if(window._db){
     window._onValue(window._ref(window._db,'orders'),snap=>{
       const all=snap.val()||{}; window._allOrders=all; myOrders={};
-      for(const[k,v]of Object.entries(all)){if(v.driver===driverData.uid){if(['assigned','picked','pending_acceptance'].includes(v.status))myOrders[k]={...v,_key:k};}}
+      const isStoreCourier=driverData&&driverData.storeCourier;
+      
+      for(const[k,v]of Object.entries(all)){
+        // Orders directly assigned to this driver
+        if(v.driver===driverData.uid){
+          if(['assigned','picked','pending_acceptance'].includes(v.status))myOrders[k]={...v,_key:k};
+        }
+        // For store couriers: also show "ready" orders from their store that need a driver
+        else if(isStoreCourier && v.storeId===driverData.storeId && v.status==='ready' && !v.driver && (v.ownDelivery || v.deliveryType==='own')){
+          myOrders[k]={...v,_key:k,status:'pending_acceptance'};
+        }
+      }
       renderOrders();
     });
     window._onValue(window._ref(window._db,'chat/drivers/'+window._currentUser.uid),snap=>{
@@ -631,7 +653,7 @@ function renderOrders(){
       
       <div style="display:flex;gap:12px;margin:8px 0">
         <div style="flex:1;background:rgba(255,69,0,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#ff4500;font-weight:700;">ΑΝΤΙΚΑΤΑΒΟΛΗ</div><div style="font-size:16px;font-weight:800;color:#fff">${o.payment==='cash'?fmtCur(o.total):'Πληρωμένο'}</div></div>
-        <div style="flex:1;background:rgba(34,197,94,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#22c55e;font-weight:700;">ΚΕΡΔΟΣ</div><div style="font-size:16px;font-weight:800;color:#22c55e">${fmtCur(earnings)}</div></div>
+        ${!(driverData&&driverData.storeCourier)?`<div style="flex:1;background:rgba(34,197,94,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#22c55e;font-weight:700;">ΚΕΡΔΟΣ</div><div style="font-size:16px;font-weight:800;color:#22c55e">${fmtCur(earnings)}</div></div>`:`<div style="flex:1;background:rgba(34,197,94,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#22c55e;font-weight:700;">ΒΑΡΔΙΑ</div><div style="font-size:16px;font-weight:800;color:#22c55e">Ωρομίσθιο</div></div>`}
       </div>
       
       <div class="order-btns">
@@ -684,16 +706,58 @@ function closeCustomerChat(){document.getElementById('customerChatSheet').classL
 
 function updateEarningsUI(total, today, deliveries, cash) {
   const el=id=>document.getElementById(id);
-  el('earnBigMonth').textContent=fmtCur(total); el('earnStatToday').textContent=fmtCur(today); el('earnStatDeliveries').textContent=deliveries;
-  el('earnStatWeek').textContent=fmtCur(total); el('earnStatAvg').textContent=fmtCur(deliveries>0?(total/deliveries):0);
-  el('earnToday').textContent=fmtCur(today); el('earnDeliveries').textContent=deliveries; el('earnWeek').textContent=fmtCur(total);
-  el('cashToHandOver').textContent=fmtCur(cash);
+  const isStoreCourier=driverData&&driverData.storeCourier;
+  
+  if(isStoreCourier){
+    // Store courier: show hours & hourly rate, NOT per-delivery
+    const hourlyRate=parseFloat(driverData.hourlyRate)||parseFloat(driverData.storePayAmount)||5;
+    const hoursToday=parseFloat(driverData.hoursToday)||0;
+    const hoursWeek=parseFloat(driverData.hoursWeek)||0;
+    const earnToday=hoursToday*hourlyRate;
+    const earnWeek=hoursWeek*hourlyRate;
+    
+    el('earnToday').textContent=hoursToday.toFixed(1)+'ω';
+    el('earnTodayLabel').textContent='Ώρες σήμερα';
+    el('earnDeliveries').textContent=deliveries||0;
+    el('earnDeliveriesLabel').textContent='Παραδόσεις';
+    el('earnWeek').textContent='€'+earnWeek.toFixed(0);
+    el('earnWeekLabel').textContent='Εβδομάδα';
+    
+    // Earnings page - store courier view
+    el('earnBigMonth').textContent='€'+earnWeek.toFixed(2);
+    el('earnStatToday').textContent='€'+earnToday.toFixed(2);
+    el('earnStatDeliveries').textContent=deliveries;
+    el('earnStatWeek').textContent='€'+earnWeek.toFixed(2);
+    el('earnStatAvg').textContent='€'+hourlyRate.toFixed(2)+'/ώρα';
+    el('cashToHandOver').textContent=fmtCur(cash);
+    
+    // Update earnings bar color for store couriers
+    const bar=document.getElementById('earningsBar');
+    if(bar)bar.style.background='#16a34a';
+  } else {
+    // Platform courier: normal per-delivery view
+    el('earnBigMonth').textContent=fmtCur(total); el('earnStatToday').textContent=fmtCur(today); el('earnStatDeliveries').textContent=deliveries;
+    el('earnStatWeek').textContent=fmtCur(total); el('earnStatAvg').textContent=fmtCur(deliveries>0?(total/deliveries):0);
+    el('earnToday').textContent=fmtCur(today); el('earnDeliveries').textContent=deliveries; el('earnWeek').textContent=fmtCur(total);
+    el('earnTodayLabel').textContent='Σήμερα';
+    el('earnDeliveriesLabel').textContent='Παραδόσεις';
+    el('earnWeekLabel').textContent='Εβδομάδα';
+    el('cashToHandOver').textContent=fmtCur(cash);
+  }
 }
 function calcDriverEarnings(order) { return parseFloat(order.deliveryCost) || 2.00; }
 
 function acceptOrder(k) { 
-  stopAlarms(); 
-  if(window._db)window._update(window._ref(window._db,'orders/'+k),{driverAccepted: true, status: 'assigned'}); 
+  stopAlarms();
+  const updateData = {driverAccepted: true, status: 'assigned'};
+  // If this is a store courier self-assigning, set driver fields too
+  if(driverData && !myOrders[k]?.driver){
+    updateData.driver = driverData.uid;
+    updateData.driverName = driverData.name;
+    updateData.ownDelivery = true;
+    updateData.deliveryType = 'own';
+  }
+  if(window._db)window._update(window._ref(window._db,'orders/'+k), updateData); 
   showToast('✅ Αποδέχτηκες'); 
 }
 function pickupOrder(k) { 
@@ -702,12 +766,32 @@ function pickupOrder(k) {
   showToast('📦 Παρέλαβες'); 
 }
 function deliverOrder(k){
-  stopAlarms(); const o=myOrders[k]; if(!o)return; const earned=calcDriverEarnings(o); const isCash=o.payment==='cash'; const cashCollected=isCash?(parseFloat(o.total)||0):0; const uid=window._currentUser.uid;
+  stopAlarms(); const o=myOrders[k]; if(!o)return; const isCash=o.payment==='cash'; const cashCollected=isCash?(parseFloat(o.total)||0):0; const uid=window._currentUser.uid;
+  const isStoreCourier=driverData&&driverData.storeCourier;
+  
   if(window._db){
     window._update(window._ref(window._db,'orders/'+k), {status:'delivered', deliveredAt:Date.now()});
-    window._set(window._ref(window._db,'deliveries/'+uid+'/'+k), {earned, orderId:k, time:Date.now()});
-    window._update(window._ref(window._db,'drivers/'+uid), {earnings:(parseFloat(driverData.earnings)||0)+earned, earningsToday:(parseFloat(driverData.earningsToday)||0)+earned, orders:(parseInt(driverData.orders)||0)+1, cashToday:(parseFloat(driverData.cashToday)||0)+cashCollected});
-    showToast('✅ +€'+earned.toFixed(2)+' !');
+    
+    if(isStoreCourier){
+      // Store courier: count delivery but DON'T add per-delivery earnings
+      window._set(window._ref(window._db,'deliveries/'+uid+'/'+k), {orderId:k, time:Date.now(), type:'store_courier'});
+      window._update(window._ref(window._db,'drivers/'+uid), {
+        orders:(parseInt(driverData.orders)||0)+1,
+        cashToday:(parseFloat(driverData.cashToday)||0)+cashCollected
+      });
+      showToast('✅ Παραδόθηκε!');
+    } else {
+      // Platform courier: normal per-delivery earnings
+      const earned=calcDriverEarnings(o);
+      window._set(window._ref(window._db,'deliveries/'+uid+'/'+k), {earned, orderId:k, time:Date.now()});
+      window._update(window._ref(window._db,'drivers/'+uid), {
+        earnings:(parseFloat(driverData.earnings)||0)+earned,
+        earningsToday:(parseFloat(driverData.earningsToday)||0)+earned,
+        orders:(parseInt(driverData.orders)||0)+1,
+        cashToday:(parseFloat(driverData.cashToday)||0)+cashCollected
+      });
+      showToast('✅ +€'+earned.toFixed(2)+' !');
+    }
   }
 }
 function openReject(k){rejectingKey=k;document.getElementById('rejectSheet').classList.add('open'); stopAlarms(); }
@@ -742,9 +826,11 @@ function loadDeliveryHistory(){
   const container=document.getElementById('deliveryHistory');if(!container)return;
   const delivered=Object.entries(window._allOrders||{}).filter(([,o])=>o.driver===driverData?.uid&&o.status==='delivered').sort((a,b)=>(b[1].deliveredAt||b[1].createdAt||0)-(a[1].deliveredAt||a[1].createdAt||0));
   if(!delivered.length){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Δεν υπάρχει ιστορικό ακόμα</div>';return;}
+  const isStoreCourier=driverData&&driverData.storeCourier;
   container.innerHTML=delivered.slice(0,30).map(([k,o])=>{
     const earned=parseFloat(o.deliveryCost)||2;const isCash=o.payment==='cash';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer" onclick="showOrderDetail('${k}')"><div style="flex-shrink:0;width:32px;height:32px;border-radius:10px;background:rgba(34,197,94,.12);display:flex;align-items:center;justify-content:center"><span class="material-icons-round" style="font-size:16px;color:var(--green)">check_circle</span></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.storeName||'—'} → ${o.customerName||'—'}</div><div style="font-size:10px;color:var(--text3)">${new Date(o.deliveredAt||o.createdAt).toLocaleDateString('el-GR')} ${fmtTime(o.deliveredAt||o.createdAt)} ${isCash?'💵':'💳'}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--green)">+${fmtCur(earned)}</div><span class="material-icons-round" style="font-size:14px;color:var(--text3)">chevron_right</span></div></div>`;
+    const earnDisplay=isStoreCourier?'':'<div style="font-size:13px;font-weight:800;color:var(--green)">+'+fmtCur(earned)+'</div>';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer" onclick="showOrderDetail('${k}')"><div style="flex-shrink:0;width:32px;height:32px;border-radius:10px;background:rgba(34,197,94,.12);display:flex;align-items:center;justify-content:center"><span class="material-icons-round" style="font-size:16px;color:var(--green)">check_circle</span></div><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.storeName||'—'} → ${o.customerName||'—'}</div><div style="font-size:10px;color:var(--text3)">${new Date(o.deliveredAt||o.createdAt).toLocaleDateString('el-GR')} ${fmtTime(o.deliveredAt||o.createdAt)} ${isCash?'💵':'💳'}</div></div><div style="text-align:right">${earnDisplay}<span class="material-icons-round" style="font-size:14px;color:var(--text3)">chevron_right</span></div></div>`;
   }).join('');
 }
 
