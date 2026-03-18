@@ -145,6 +145,41 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .reject-opt{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;text-align:center}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--surface3);color:var(--text);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:var(--shadow);pointer-events:none}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* NAV BUTTON */
+.btn-navigate{display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,#4285f4,#1a73e8);color:#fff;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;width:100%;box-shadow:0 4px 16px rgba(66,133,244,.4);margin-top:8px}
+.btn-navigate:active{transform:scale(.98)}
+
+/* MINI MAP */
+.order-mini-map{width:100%;height:120px;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin:8px 0}
+
+/* LEADERBOARD */
+.lb-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.lb-rank{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;flex-shrink:0}
+.lb-rank.gold{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#fff}
+.lb-rank.silver{background:linear-gradient(135deg,#d1d5db,#9ca3af);color:#fff}
+.lb-rank.bronze{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
+.lb-rank.normal{background:var(--surface2);color:var(--text3)}
+.lb-name{font-size:14px;font-weight:700;flex:1}
+.lb-stats{text-align:right}
+.lb-stat-val{font-size:16px;font-weight:900;color:var(--green)}
+.lb-stat-label{font-size:10px;color:var(--text3)}
+
+/* TIPS */
+.tip-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(245,158,11,.15);color:var(--yellow);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
+
+/* BATCH INDICATOR */
+.batch-badge{display:flex;align-items:center;gap:4px;background:rgba(139,92,246,.12);color:#a78bfa;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;margin:6px 0}
+
+/* LIGHT MODE */
+body.light-mode{--bg:#f5f5f5;--surface:#ffffff;--surface2:#f0f0f0;--surface3:#e5e5e5;--border:rgba(0,0,0,.1);--text:#1a1a1a;--text2:#555;--text3:#999;--shadow:0 2px 12px rgba(0,0,0,.08)}
+body.light-mode .topbar{background:#fff}
+body.light-mode .bottom-nav{background:#fff}
+body.light-mode .earnings-bar{background:var(--accent)}
+body.light-mode .order-card{border-color:rgba(0,0,0,.08)}
+body.light-mode .auth-wrap{background:radial-gradient(ellipse at 50% 0%,rgba(255,69,0,.08),transparent 60%)}
+
+.theme-toggle{width:36px;height:36px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:18px}
 ::-webkit-scrollbar{width:0}
 </style>
 </head>
@@ -206,7 +241,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <div class="top-driver-info">
       <div class="top-avatar" id="topAvatar">?</div><div><div class="top-name" id="topName">Οδηγός</div><div class="top-role">Οδηγός Delivery</div></div>
     </div>
-    <div class="online-toggle on" id="onlineToggle" onclick="toggleOnline()"><div class="online-dot"></div><span class="online-label" id="onlineLabel">Online</span></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="theme-toggle" onclick="toggleTheme()" title="Dark/Light mode"><span class="material-icons-round" id="themeIcon">light_mode</span></div>
+      <div class="online-toggle on" id="onlineToggle" onclick="toggleOnline()"><div class="online-dot"></div><span class="online-label" id="onlineLabel">Online</span></div>
+    </div>
   </div>
   <div id="gpsIndicator" style="display:flex;align-items:center;gap:4px;justify-content:center;padding:4px 0;background:rgba(255,255,255,.05);"></div>
   <div class="earnings-bar" id="earningsBar">
@@ -216,6 +254,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
   </div>
 
   <div class="content" id="pageOrders" style="display:block">
+    <div id="routeOptBar" style="display:none;padding:0 16px 8px">
+      <button onclick="showOptimizedRoute()" style="width:100%;background:linear-gradient(135deg,#4285f4,#1a73e8);color:#fff;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(66,133,244,.3);font-family:'Outfit',sans-serif">
+        <span class="material-icons-round" style="font-size:18px">route</span>Βέλτιστη Διαδρομή
+      </button>
+    </div>
     <div id="ordersList"><div class="empty-orders"><span class="material-icons-round">delivery_dining</span><span>Δεν υπάρχουν παραγγελίες</span></div></div>
   </div>
 
@@ -244,6 +287,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
       <div style="font-size:14px; font-weight:800; margin-bottom:8px; color:var(--text); border-top:1px solid var(--border); padding-top:16px;">Ταμείο Καταστήματος (Μετρητά)</div>
       <div class="earn-big-card" style="background:linear-gradient(135deg, #16a34a, #22c55e);">
         <div class="earn-big-val" id="cashToHandOver">€0.00</div><div class="earn-big-label">Μετρητά που εισέπραξες σήμερα</div>
+      </div>
+      <div style="font-size:14px; font-weight:800; margin-bottom:8px; color:var(--text); border-top:1px solid var(--border); padding-top:16px;">💰 Tips</div>
+      <div class="earn-big-card" style="background:linear-gradient(135deg, #d97706, #f59e0b);">
+        <div class="earn-big-val" id="tipsTotal">€0.00</div><div class="earn-big-label">Φιλοδωρήματα</div>
       </div>
     </div>
   </div>
@@ -304,8 +351,23 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     </div>
   </div>
 
+  <div class="content" id="pageLeaderboard" style="display:none;padding:16px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:36px">🏆</div>
+      <div style="font-size:18px;font-weight:900;letter-spacing:-.5px">Leaderboard</div>
+      <div style="font-size:12px;color:var(--text3)">Κατάταξη οδηγών αυτή την εβδομάδα</div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button class="lb-filter active" id="lbWeek" onclick="loadLeaderboard('week')" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer">Εβδομάδα</button>
+      <button class="lb-filter" id="lbMonth" onclick="loadLeaderboard('month')" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-size:12px;font-weight:700;cursor:pointer">Μήνας</button>
+      <button class="lb-filter" id="lbAll" onclick="loadLeaderboard('all')" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-size:12px;font-weight:700;cursor:pointer">Συνολικά</button>
+    </div>
+    <div id="leaderboardList"><div style="text-align:center;padding:40px;color:var(--text3)">Φόρτωση...</div></div>
+  </div>
+
   <div class="bottom-nav">
     <div class="nav-item active" id="nav-orders" onclick="goPage('orders')"><span class="material-icons-round">receipt_long</span><span class="nav-label">Παραγγελίες</span><div class="nav-badge" id="navBadge" style="display:none">0</div></div>
+    <div class="nav-item" id="nav-leaderboard" onclick="goPage('leaderboard')"><span class="material-icons-round">emoji_events</span><span class="nav-label">Ranking</span></div>
     <div class="nav-item" id="nav-chat" onclick="goPage('chat')"><span class="material-icons-round">chat</span><span class="nav-label">Chat</span><div class="nav-badge" id="chatBadge" style="display:none">!</div></div>
     <div class="nav-item" id="nav-earnings" onclick="goPage('earnings')"><span class="material-icons-round">account_balance_wallet</span><span class="nav-label">Κέρδη</span></div>
     <div class="nav-item" id="nav-profile" onclick="goPage('profile')"><span class="material-icons-round">person</span><span class="nav-label">Προφίλ</span></div>
@@ -334,6 +396,22 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
     <div class="reject-opt" onclick="rejectOrder('Δεν μπορώ να παραδώσω')">Δεν μπορώ να παραδώσω</div>
     <div class="reject-opt" onclick="rejectOrder('Πρόβλημα οχήματος')">Πρόβλημα οχήματος</div>
     <div class="reject-opt" style="color:var(--text3)" onclick="closeSheet()">Ακύρωση</div>
+  </div>
+</div>
+
+<!-- ROUTE OPTIMIZATION POPUP -->
+<div class="sheet-overlay" id="routeSheet" style="z-index:260">
+  <div class="sheet" style="max-height:85dvh;display:flex;flex-direction:column;padding:0">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <span class="material-icons-round" style="color:#4285f4">route</span>
+      <div style="flex:1;font-size:16px;font-weight:800">Βέλτιστη Διαδρομή</div>
+      <button onclick="document.getElementById('routeSheet').classList.remove('open')" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer">×</button>
+    </div>
+    <div id="routeMapContainer" style="height:250px;flex-shrink:0"></div>
+    <div style="flex:1;overflow-y:auto;padding:16px" id="routeStepsList"></div>
+    <div style="padding:12px 16px;border-top:1px solid var(--border)">
+      <button onclick="startOptimizedNavigation()" class="btn-navigate" style="margin:0"><span class="material-icons-round">navigation</span>Ξεκίνα Πλοήγηση</button>
+    </div>
   </div>
 </div>
 
@@ -546,6 +624,8 @@ function getStoreAddress(storeId,storeName){const s=window._storesCache[storeId]
 
 function loadDriverApp(){
   showScreen('app'); setTimeout(function(){startHeartbeat();if(driverData&&driverData.storeCourier&&isOnline)startShiftTimer();},1000); loadStoresCache();
+  // Load all drivers for leaderboard
+  if(window._db)window._onValue(window._ref(window._db,'drivers'),snap=>{window._firebaseDriversAll=snap.val()||{};});
   
   // ΠΡΟΣΘΗΚΗ ΠΡΟΦΙΛ (ΟΝΟΜΑ/ΤΗΛΕΦΩΝΟ)
   const n = driverData.name || 'Οδηγός';
@@ -651,6 +731,9 @@ function renderOrders(){
     return`<div class="order-card ${needsAcceptance?'new-order':''}">
       <div class="order-card-hd"><div><span class="order-id">${o.id||k}</span><div class="order-store">${o.storeName||'—'}</div></div><span class="status-pill ${needsAcceptance?'st-new':isAccepted?'st-assigned':'st-picked'}">${needsAcceptance?'Νέα!':isAccepted?'Ανατέθηκε':'Παρελήφθη'}</span></div>
       
+      ${o.tip?`<div class="tip-badge">💰 Tip: €${parseFloat(o.tip).toFixed(2)}</div>`:''}
+      ${checkBatchEligible(k)?`<div class="batch-badge"><span class="material-icons-round" style="font-size:14px">layers</span>Batch: Κοντινή παραγγελία διαθέσιμη!</div>`:''}
+      
       <div class="order-info-grid">
         <div class="order-info-item" style="grid-column: span 2; display:flex; justify-content:space-between; align-items:center;">
           <div><div class="order-info-label">Πελάτης</div><div class="order-info-val">${o.customerName||'—'}</div></div>
@@ -661,6 +744,9 @@ function renderOrders(){
           <a href="tel:${o.phone||''}" style="background:rgba(34,197,94,.15); color:var(--green); border-radius:10px; padding:8px 14px; font-weight:700; text-decoration:none; display:flex; align-items:center; gap:6px;"><span class="material-icons-round" style="font-size:16px">call</span>Κλήση</a>
         </div>
       </div>
+
+      <!-- Mini Map -->
+      <div class="order-mini-map" id="minimap_${k}"></div>
 
       <div class="order-addr" style="background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);display:flex;align-items:center;gap:8px">
         <span class="material-icons-round" style="color:#ff9800;">storefront</span>
@@ -674,9 +760,12 @@ function renderOrders(){
         <a href="${mapsCust}" target="_blank" style="width:40px;height:40px;border-radius:10px;background:var(--surface);border:1px solid rgba(34,197,94,.3);color:#22c55e;display:flex;align-items:center;justify-content:center;"><span class="material-icons-round">map</span></a>
       </div>
       
+      <!-- ONE-TAP NAVIGATION -->
+      ${(isAccepted||isPicked)?`<button class="btn-navigate" onclick="navigateTo('${isPicked?encodeURIComponent(custAddr):encodeURIComponent(storeAddr)}')"><span class="material-icons-round">navigation</span>${isPicked?'Πλοήγηση → Πελάτη':'Πλοήγηση → Κατάστημα'}</button>`:''}
+      
       <div style="display:flex;gap:12px;margin:8px 0">
         <div style="flex:1;background:rgba(255,69,0,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#ff4500;font-weight:700;">ΑΝΤΙΚΑΤΑΒΟΛΗ</div><div style="font-size:16px;font-weight:800;color:#fff">${o.payment==='cash'?fmtCur(o.total):'Πληρωμένο'}</div></div>
-        ${!(driverData&&driverData.storeCourier)?`<div style="flex:1;background:rgba(34,197,94,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#22c55e;font-weight:700;">ΚΕΡΔΟΣ</div><div style="font-size:16px;font-weight:800;color:#22c55e">${fmtCur(earnings)}</div></div>`:`<div style="flex:1;background:rgba(34,197,94,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#22c55e;font-weight:700;">ΒΑΡΔΙΑ</div><div style="font-size:16px;font-weight:800;color:#22c55e">Ωρομίσθιο</div></div>`}
+        ${!(driverData&&driverData.storeCourier)?`<div style="flex:1;background:rgba(34,197,94,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#22c55e;font-weight:700;">ΚΕΡΔΟΣ</div><div style="font-size:16px;font-weight:800;color:#22c55e">${fmtCur(earnings)}${o.tip?'<span style="font-size:11px;color:var(--yellow)"> +€'+parseFloat(o.tip).toFixed(2)+' tip</span>':''}</div></div>`:`<div style="flex:1;background:rgba(34,197,94,.1);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:#22c55e;font-weight:700;">ΒΑΡΔΙΑ</div><div style="font-size:16px;font-weight:800;color:#22c55e">Ωρομίσθιο</div></div>`}
       </div>
       
       <div class="order-btns">
@@ -691,6 +780,8 @@ function renderOrders(){
       </div>
     </div>`;
   }).join('');
+  setTimeout(()=>renderMiniMaps(),300);
+  updateRouteBar();
 }
 
 let activeCustomerOrderKey=null, customerChatMsgs=[], custChatListener=null; 
@@ -757,6 +848,7 @@ function updateEarningsUI(total, today, deliveries, cash) {
     // Update earnings bar color for store couriers
     const bar=document.getElementById('earningsBar');
     if(bar)bar.style.background='#16a34a';
+    const tips1=getTotalTips();const tipsEl1=document.getElementById('tipsTotal');if(tipsEl1)tipsEl1.textContent=fmtCur(tips1);
   } else {
     // Platform courier: normal per-delivery view
     el('earnBigMonth').textContent=fmtCur(total); el('earnStatToday').textContent=fmtCur(today); el('earnStatDeliveries').textContent=deliveries;
@@ -766,6 +858,7 @@ function updateEarningsUI(total, today, deliveries, cash) {
     el('earnDeliveriesLabel').textContent='Παραδόσεις';
     el('earnWeekLabel').textContent='Εβδομάδα';
     el('cashToHandOver').textContent=fmtCur(cash);
+    const tips2=getTotalTips();const tipsEl2=document.getElementById('tipsTotal');if(tipsEl2)tipsEl2.textContent=fmtCur(tips2);
   }
 }
 function calcDriverEarnings(order) { return parseFloat(order.deliveryCost) || 2.00; }
@@ -886,7 +979,7 @@ function updateShiftHours(){
 }
 function renderChat(){const area=document.getElementById('chatMsgs'); area.innerHTML=myChat.map(m=>`<div class="msg ${m.from==='driver'?'me':'them'}">${m.text}<span class="msg-time">${fmtTime(m.time)}</span></div>`).join(''); setTimeout(()=>area.scrollTop=area.scrollHeight,50);}
 function sendMsg(){const inp=document.getElementById('chatInput'),text=inp.value.trim(); if(!text)return; inp.value=''; if(window._db)window._set(window._push(window._ref(window._db,'chat/drivers/'+window._currentUser.uid)),{from:'driver',text,time:Date.now(),read:false});}
-function goPage(p){['orders','chat','earnings','profile'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none'; document.getElementById('nav-'+x).classList.toggle('active',x===p);}); if(p==='chat'){myChat.forEach(m=>{m.read=true;}); document.getElementById('chatBadge').style.display='none';renderChat(); stopAlarms();}if(p==='profile'){loadDriverProfileFields();loadDeliveryHistory();loadAdminInfo();}}
+function goPage(p){['orders','chat','earnings','profile','leaderboard'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===p?'block':'none'; document.getElementById('nav-'+x).classList.toggle('active',x===p);}); if(p==='chat'){myChat.forEach(m=>{m.read=true;}); document.getElementById('chatBadge').style.display='none';renderChat(); stopAlarms();}if(p==='profile'){loadDriverProfileFields();loadDeliveryHistory();loadAdminInfo();}if(p==='leaderboard'){loadLeaderboard('week');}}
 
 // ══ PROFILE SAVE/LOAD ══
 function saveDriverProfile(){
@@ -1040,6 +1133,273 @@ function getDistance(lat1,lng1,lat2,lng2){
 }
 
 let toastT; function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
+
+// ══ ONE-TAP NAVIGATION ══
+function navigateTo(address){
+  // Try Google Maps app first, fallback to browser
+  const gMaps='https://www.google.com/maps/dir/?api=1&destination='+address+'&travelmode=driving';
+  window.open(gMaps,'_blank');
+}
+
+// ══ MINI MAPS ══
+let miniMaps={};
+function renderMiniMaps(){
+  Object.entries(myOrders).forEach(([k,o])=>{
+    const container=document.getElementById('minimap_'+k);
+    if(!container||miniMaps[k])return;
+    try{
+      const store=window._storesCache?.[o.storeId];
+      const sLat=store?.lat||37.9429;const sLng=store?.lng||23.6439;
+      const cLat=o.customerLat||o.deliveryLat;const cLng=o.customerLng||o.deliveryLng;
+      const m=L.map(container,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false}).setView([sLat,sLng],13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+      const si=L.divIcon({className:'',html:'<div style="background:#ff6d00;color:#fff;width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)">🏪</div>',iconSize:[24,24],iconAnchor:[12,12]});
+      L.marker([sLat,sLng],{icon:si}).addTo(m);
+      if(cLat&&cLng){
+        const ci=L.divIcon({className:'',html:'<div style="background:#22c55e;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[24,24],iconAnchor:[12,12]});
+        L.marker([cLat,cLng],{icon:ci}).addTo(m);
+        m.fitBounds([[sLat,sLng],[cLat,cLng]],{padding:[20,20]});
+      }
+      miniMaps[k]=m;
+      setTimeout(()=>m.invalidateSize(),200);
+    }catch(e){}
+  });
+  // Clean up removed orders
+  Object.keys(miniMaps).forEach(k=>{if(!myOrders[k]){miniMaps[k].remove();delete miniMaps[k];}});
+}
+
+// ══ SMART BATCHING ══
+function checkBatchEligible(orderKey){
+  const o=myOrders[orderKey];if(!o||!o.customerLat)return false;
+  const keys=Object.keys(myOrders).filter(k=>k!==orderKey);
+  for(const k of keys){
+    const other=myOrders[k];if(!other||!other.customerLat)continue;
+    const dist=getDistance(o.customerLat,o.customerLng,other.customerLat,other.customerLng);
+    if(dist<800)return true; // Within 800m = batchable
+  }
+  return false;
+}
+
+// ══ ROUTE OPTIMIZATION (TSP) ══
+let routeMapInstance=null, optimizedRoute=[];
+
+function updateRouteBar(){
+  const bar=document.getElementById('routeOptBar');
+  const activeOrders=Object.values(myOrders).filter(o=>o.driverAccepted||o.status==='picked');
+  if(bar)bar.style.display=activeOrders.length>=2?'block':'none';
+}
+
+function showOptimizedRoute(){
+  const orders=Object.entries(myOrders).filter(([,o])=>o.driverAccepted||o.status==='picked').map(([k,o])=>({key:k,...o}));
+  if(orders.length<2){showToast('Χρειάζονται 2+ παραγγελίες');return;}
+  
+  // Build waypoints: for each order we need pickup (store) then delivery (customer)
+  const waypoints=[];
+  orders.forEach(o=>{
+    const store=window._storesCache?.[o.storeId];
+    const sLat=store?.lat;const sLng=store?.lng;
+    const cLat=o.customerLat||o.deliveryLat;const cLng=o.customerLng||o.deliveryLng;
+    // Only add pickup if not already picked up
+    if(o.status!=='picked'&&sLat&&sLng){
+      waypoints.push({type:'pickup',lat:sLat,lng:sLng,label:'🏪 '+o.storeName,orderId:o.id||o.key,address:store?.address||o.storeName});
+    }
+    if(cLat&&cLng){
+      waypoints.push({type:'delivery',lat:cLat,lng:cLng,label:'📍 '+o.customerName,orderId:o.id||o.key,address:o.address||o.deliveryAddress||''});
+    }
+  });
+  
+  if(waypoints.length<2){showToast('Δεν υπάρχουν αρκετά σημεία');return;}
+  
+  // Get driver's current position as start
+  let startLat=null,startLng=null;
+  if(driverData&&driverData.lat)startLat=driverData.lat;
+  if(driverData&&driverData.lng)startLng=driverData.lng;
+  
+  // TSP: Nearest Neighbor heuristic
+  optimizedRoute=solveTSP(waypoints,startLat,startLng);
+  
+  // Render
+  document.getElementById('routeSheet').classList.add('open');
+  setTimeout(()=>renderRouteMap(optimizedRoute,startLat,startLng),200);
+  renderRouteSteps(optimizedRoute);
+}
+
+function solveTSP(points,startLat,startLng){
+  // Nearest Neighbor algorithm with constraint: pickup before delivery for same order
+  const result=[];
+  const remaining=[...points];
+  const delivered=new Set(); // Track which orders have been picked up
+  
+  let curLat=startLat||remaining[0].lat;
+  let curLng=startLng||remaining[0].lng;
+  
+  while(remaining.length>0){
+    let bestIdx=-1,bestDist=Infinity;
+    
+    for(let i=0;i<remaining.length;i++){
+      const p=remaining[i];
+      // Constraint: can't deliver before pickup of same order
+      if(p.type==='delivery'){
+        const hasPickup=remaining.some(r=>r.type==='pickup'&&r.orderId===p.orderId);
+        if(hasPickup)continue; // Skip delivery until pickup is done
+      }
+      const d=haversineDist(curLat,curLng,p.lat,p.lng);
+      if(d<bestDist){bestDist=d;bestIdx=i;}
+    }
+    
+    if(bestIdx===-1){
+      // Fallback: just take first remaining
+      bestIdx=0;
+    }
+    
+    const next=remaining.splice(bestIdx,1)[0];
+    next.distance=bestDist;
+    result.push(next);
+    curLat=next.lat;curLng=next.lng;
+  }
+  
+  return result;
+}
+
+function haversineDist(lat1,lng1,lat2,lng2){
+  if(!lat1||!lng1||!lat2||!lng2)return 9999;
+  const R=6371;const p=Math.PI/180;
+  const a=Math.sin((lat2-lat1)*p/2)**2+Math.cos(lat1*p)*Math.cos(lat2*p)*Math.sin((lng2-lng1)*p/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function renderRouteMap(route,startLat,startLng){
+  const container=document.getElementById('routeMapContainer');
+  if(routeMapInstance){routeMapInstance.remove();routeMapInstance=null;}
+  
+  const center=startLat?[startLat,startLng]:[route[0].lat,route[0].lng];
+  routeMapInstance=L.map(container,{zoomControl:false}).setView(center,13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(routeMapInstance);
+  
+  const bounds=[];
+  const linePoints=[];
+  
+  // Driver position
+  if(startLat&&startLng){
+    const dIcon=L.divIcon({className:'',html:'<div style="background:#ff4500;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.4)">🏍</div>',iconSize:[28,28],iconAnchor:[14,14]});
+    L.marker([startLat,startLng],{icon:dIcon,zIndexOffset:400}).addTo(routeMapInstance);
+    bounds.push([startLat,startLng]);
+    linePoints.push([startLat,startLng]);
+  }
+  
+  // Route points with numbered markers
+  route.forEach((p,i)=>{
+    const color=p.type==='pickup'?'#ff9800':'#22c55e';
+    const icon=L.divIcon({className:'',html:`<div style="background:${color};color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3)">${i+1}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+    L.marker([p.lat,p.lng],{icon}).addTo(routeMapInstance).bindPopup(`<b>${i+1}. ${p.label}</b><br>${p.address}`);
+    bounds.push([p.lat,p.lng]);
+    linePoints.push([p.lat,p.lng]);
+  });
+  
+  // Draw route line
+  if(linePoints.length>1){
+    L.polyline(linePoints,{color:'#4285f4',weight:3,opacity:0.7,dashArray:'8,8'}).addTo(routeMapInstance);
+  }
+  
+  if(bounds.length>1)routeMapInstance.fitBounds(bounds,{padding:[30,30]});
+  setTimeout(()=>routeMapInstance.invalidateSize(),300);
+}
+
+function renderRouteSteps(route){
+  const totalDist=route.reduce((s,p)=>s+(p.distance||0),0);
+  const el=document.getElementById('routeStepsList');
+  el.innerHTML=`<div style="text-align:center;margin-bottom:12px;font-size:12px;color:var(--text3)">Συνολική απόσταση: <b style="color:var(--accent)">${totalDist.toFixed(1)} km</b> · ${route.length} στάσεις</div>`+
+    route.map((p,i)=>{
+      const color=p.type==='pickup'?'#ff9800':'#22c55e';
+      const typeLabel=p.type==='pickup'?'ΠΑΡΑΛΑΒΗ':'ΠΑΡΑΔΟΣΗ';
+      return`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;${i<route.length-1?'border-bottom:1px solid var(--border)':''}">
+        <div style="width:28px;height:28px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0">${i+1}</div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:800;color:${color};text-transform:uppercase;letter-spacing:.5px">${typeLabel}</div>
+          <div style="font-size:13px;font-weight:700">${p.label}</div>
+          <div style="font-size:11px;color:var(--text3)">${p.address}</div>
+        </div>
+        ${p.distance&&p.distance<100?`<div style="font-size:11px;color:var(--text3);font-weight:700">${p.distance<1?(Math.round(p.distance*1000)+'m'):(p.distance.toFixed(1)+'km')}</div>`:''}
+      </div>`;
+    }).join('');
+}
+
+function startOptimizedNavigation(){
+  if(!optimizedRoute.length)return;
+  // Build Google Maps multi-stop navigation URL
+  const stops=optimizedRoute.map(p=>p.lat+','+p.lng);
+  const dest=stops.pop();
+  const waypoints=stops.join('|');
+  const url='https://www.google.com/maps/dir/?api=1&destination='+dest+(waypoints?'&waypoints='+waypoints:'')+'&travelmode=driving';
+  window.open(url,'_blank');
+  document.getElementById('routeSheet').classList.remove('open');
+}
+
+// ══ LEADERBOARD ══
+function loadLeaderboard(period){
+  // Update filter buttons
+  ['Week','Month','All'].forEach(p=>{const btn=document.getElementById('lb'+p);if(btn){btn.style.background=p.toLowerCase()===period?'var(--accent)':'var(--surface2)';btn.style.color=p.toLowerCase()===period?'#fff':'var(--text3)';}});
+  
+  const allD=window._firebaseDriversAll||{};
+  const allO=window._allOrders||{};
+  const now=new Date();
+  const weekStart=new Date(now);weekStart.setDate(weekStart.getDate()-weekStart.getDay());weekStart.setHours(0,0,0,0);
+  const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  
+  // Build driver stats
+  const stats={};
+  Object.entries(allD).forEach(([uid,d])=>{
+    if(d.status==='pending'||d.status==='suspended')return;
+    stats[uid]={name:d.name||'—',deliveries:0,earnings:0,tips:0,avatar:(d.name||'?').charAt(0).toUpperCase()};
+  });
+  
+  Object.values(allO).forEach(o=>{
+    if(o.status!=='delivered'||!o.driver||!stats[o.driver])return;
+    const t=o.deliveredAt||o.createdAt||0;
+    if(period==='week'&&t<weekStart.getTime())return;
+    if(period==='month'&&t<monthStart.getTime())return;
+    stats[o.driver].deliveries++;
+    stats[o.driver].earnings+=parseFloat(o.deliveryCost)||2;
+    stats[o.driver].tips+=parseFloat(o.tip)||0;
+  });
+  
+  // Sort by deliveries
+  const sorted=Object.entries(stats).sort((a,b)=>b[1].deliveries-a[1].deliveries).slice(0,20);
+  const myUid=window._currentUser?.uid;
+  
+  const el=document.getElementById('leaderboardList');
+  if(!sorted.length||!sorted[0][1].deliveries){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px">Δεν υπάρχουν δεδομένα ακόμα</div>';return;}
+  
+  el.innerHTML=sorted.map(([uid,s],i)=>{
+    const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'normal';
+    const isMe=uid===myUid;
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    return`<div class="lb-card" style="${isMe?'border:2px solid var(--accent);box-shadow:0 0 0 3px rgba(255,69,0,.1)':''}">
+      <div class="lb-rank ${rankClass}">${medal}</div>
+      <div style="width:36px;height:36px;border-radius:50%;background:${isMe?'var(--accent)':'var(--surface2)'};color:${isMe?'#fff':'var(--text3)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0">${s.avatar}</div>
+      <div class="lb-name">${s.name}${isMe?' <span style="font-size:10px;color:var(--accent)">(Εσύ)</span>':''}</div>
+      <div class="lb-stats">
+        <div class="lb-stat-val">${s.deliveries}</div>
+        <div class="lb-stat-label">${s.tips>0?'€'+s.earnings.toFixed(0)+' + 💰'+s.tips.toFixed(0):s.deliveries+' del'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══ DARK/LIGHT THEME ══
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light-mode');
+  document.getElementById('themeIcon').textContent=isLight?'dark_mode':'light_mode';
+  localStorage.setItem('driverTheme',isLight?'light':'dark');
+}
+// Restore theme on load
+(function(){const t=localStorage.getItem('driverTheme');if(t==='light'){document.body.classList.add('light-mode');const ic=document.getElementById('themeIcon');if(ic)ic.textContent='dark_mode';}})();
+
+// ══ TIPS IN EARNINGS ══
+function getTotalTips(){
+  const allO=window._allOrders||{};const uid=driverData?.uid;if(!uid)return 0;
+  return Object.values(allO).filter(o=>o.driver===uid&&o.status==='delivered'&&o.tip).reduce((s,o)=>s+parseFloat(o.tip||0),0);
+}
 document.addEventListener('click', e => { if(e.target.classList.contains('sheet-overlay')) e.target.classList.remove('open'); });
 </script>
 <script>

@@ -576,16 +576,13 @@ const toAssign=Object.entries(orders||{}).filter(([,o])=>(o.status==='ready'&&(!
 if(!toAssign.length)return;
 const allD=window._firebaseDriversAll||{};
 toAssign.forEach(([key,o])=>{
-  // Check if this order should go to store courier or platform courier
   const store=stores[o.storeId];
   const isOwnDelivery=o.ownDelivery||o.deliveryType==='own'||(store?.defaultDeliveryMode==='own');
   
   let availableDrivers;
   if(isOwnDelivery){
-    // Only assign to store's own couriers
     availableDrivers=Object.entries(allD).filter(([,d])=>d.online&&d.storeCourier&&d.storeId===o.storeId&&(d.status==='approved'));
   }else{
-    // Only assign to platform couriers (NOT store couriers)
     availableDrivers=Object.entries(allD).filter(([,d])=>d.online&&!d.storeCourier&&(!d.status||d.status==='approved'));
   }
   if(!availableDrivers.length)return;
@@ -593,14 +590,47 @@ toAssign.forEach(([key,o])=>{
   const rej=o.rejectedBy||{};
   const avail=availableDrivers.filter(([uid])=>!rej[uid]);
   if(!avail.length)return;
+  
+  // Count active orders per driver (load balancing)
   const loads={};avail.forEach(([uid])=>{loads[uid]=0});
   Object.values(allOrders).forEach(ord=>{if((ord.status==='assigned'||ord.status==='picked')&&ord.driver&&loads[ord.driver]!==undefined)loads[ord.driver]++});
-  const[bUid,bDr]=avail.reduce((a,b)=>(loads[a[0]]||0)<=(loads[b[0]]||0)?a:b);
-  // Mark ownDelivery on the order if store uses own delivery
-  const updateData={driver:bUid,driverName:bDr.name,status:'assigned',driverAccepted:false,rejectionReason:''};
+  
+  // ROUTE OPTIMIZATION: Assign to nearest driver with lowest load
+  // Get store or customer location as target
+  const targetLat=store?.lat||(o.customerLat||o.deliveryLat);
+  const targetLng=store?.lng||(o.customerLng||o.deliveryLng);
+  
+  let bestDriver=null,bestScore=Infinity;
+  avail.forEach(([uid,d])=>{
+    const load=loads[uid]||0;
+    let dist=9999;
+    // If driver has GPS, calculate actual distance to store
+    if(targetLat&&targetLng&&d.lat&&d.lng){
+      dist=haversineKm(d.lat,d.lng,targetLat,targetLng);
+    }
+    // Score = distance + (load * 2km penalty per active order)
+    const score=dist+(load*2);
+    if(score<bestScore){bestScore=score;bestDriver=[uid,d];}
+  });
+  
+  if(!bestDriver){
+    // Fallback: pick least loaded
+    bestDriver=avail.reduce((a,b)=>(loads[a[0]]||0)<=(loads[b[0]]||0)?a:b);
+  }
+  
+  const[bUid,bDr]=bestDriver;
+  const updateData={driver:bUid,driverName:bDr.name,status:'assigned',driverAccepted:false,rejectionReason:'',
+    assignedDistance:bestScore<9999?Math.round(bestScore*10)/10:null};
   if(isOwnDelivery)updateData.ownDelivery=true;
   setTimeout(()=>{if(window._db)window._update(window._ref(window._db,'orders/'+key),updateData)},1000);
 })};
+
+// Haversine distance in km
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R=6371;const p=Math.PI/180;
+  const a=Math.sin((lat2-lat1)*p/2)**2+Math.cos(lat1*p)*Math.cos(lat2*p)*Math.sin((lng2-lng1)*p/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
 
 // ══ ORDERS ══
 window.renderOrdersFromFirebase=d=>{try{allOrders=d||{};renderTable();window.updateStats(allOrders);if(window.updateStoreMarkers)window.updateStoreMarkers()}catch(e){console.error(e)}};
