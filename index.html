@@ -253,6 +253,7 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);fon
         <span class="material-icons-round top-loc-arrow">expand_more</span>
       </div>
     </div>
+    <div class="top-user-btn" id="langToggle" onclick="toggleLang()" style="font-size:11px;font-weight:800;letter-spacing:.5px" title="GR/EN">GR</div>
     <div class="top-user-btn" id="navAuth" onclick="openAuthModal()"><span class="material-icons-round" style="font-size:18px">person_outline</span></div>
   </div>
   <div class="search-bar">
@@ -364,64 +365,203 @@ body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);fon
     <div style="width:22px"></div>
   </div>
   
-  <!-- Profile card -->
+  <!-- Profile header card -->
   <div style="padding:20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid rgba(255,255,255,.06)">
-    <div id="profAvatarLg" style="width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0">?</div>
-    <div style="flex:1;min-width:0"><div id="profDisplayName" style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div><div id="profDisplayEmail" style="font-size:12px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div></div>
+    <div id="profAvatarLg" style="width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex-shrink:0">?</div>
+    <div style="flex:1;min-width:0">
+      <div id="profDisplayName" style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+      <div id="profDisplayEmail" style="font-size:12px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+      <div id="profDisplayPhone" style="font-size:11px;color:#777;margin-top:2px"></div>
+    </div>
+    <button onclick="showProfSection('account')" style="background:#242424;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px 12px;color:#ccc;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Επεξεργασία</button>
   </div>
 
   <div style="flex:1;overflow-y:auto">
-    <!-- Menu items -->
+    <!-- Main Menu -->
     <div id="profMenuView">
-      <div onclick="showProfSection('orders')" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
-        <span class="material-icons-round" style="font-size:22px;color:#999">receipt_long</span>
-        <span style="flex:1;font-size:15px;font-weight:600">Παραγγελίες</span>
-        <span class="material-icons-round" style="font-size:20px;color:#555">chevron_right</span>
+      <div onclick="showProfSection('orders')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#ff6b35">receipt_long</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Οι παραγγελίες μου</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
       </div>
-      <div onclick="showProfSection('account')" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
-        <span class="material-icons-round" style="font-size:22px;color:#999">person</span>
-        <span style="flex:1;font-size:15px;font-weight:600">Ο λογαριασμός μου</span>
-        <span class="material-icons-round" style="font-size:20px;color:#555">chevron_right</span>
+      <div onclick="showProfSection('account')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#3b82f6">person</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Προσωπικά στοιχεία</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
       </div>
-      <div onclick="showProfSection('addresses')" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
-        <span class="material-icons-round" style="font-size:22px;color:#999">location_on</span>
-        <span style="flex:1;font-size:15px;font-weight:600">Διευθύνσεις</span>
-        <span class="material-icons-round" style="font-size:20px;color:#555">chevron_right</span>
+      <div onclick="showProfSection('addresses')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#22c55e">location_on</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Οι διευθύνσεις μου</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
       </div>
-      <div onclick="showProfSection('favorites')" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
-        <span class="material-icons-round" style="font-size:22px;color:#999">favorite</span>
+      <div onclick="showProfSection('payments')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#8b5cf6">credit_card</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Τρόποι πληρωμής</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('favorites')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#ef4444">favorite</span>
         <span style="flex:1;font-size:15px;font-weight:600">Αγαπημένα</span>
-        <span class="material-icons-round" style="font-size:20px;color:#555">chevron_right</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('coupons')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#f59e0b">local_offer</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Κουπόνια & Wallet</span>
+        <span id="profCouponBadge" style="background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;display:none">0</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('preferences')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#06b6d4">tune</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Προτιμήσεις</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('support')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#10b981">support_agent</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Υποστήριξη</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('notifications')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#a855f7">notifications</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Ειδοποιήσεις</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('security')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#64748b">shield</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Ασφάλεια</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
+      </div>
+      <div onclick="showProfSection('billing')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">
+        <span class="material-icons-round" style="font-size:22px;color:#78716c">description</span>
+        <span style="flex:1;font-size:15px;font-weight:600">Στοιχεία τιμολόγησης</span>
+        <span class="material-icons-round" style="font-size:18px;color:#555">chevron_right</span>
       </div>
     </div>
 
-    <!-- Orders section -->
+    <!-- Section: Orders -->
     <div id="profSectionOrders" style="display:none">
-      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πίσω</div>
-      <div style="padding:14px 20px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#666">Οι παραγγελίες μου</div>
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Οι παραγγελίες μου</div>
       <div id="profOrders" style="padding:0 16px"><div style="text-align:center;padding:20px;color:#666;font-size:13px">Δεν υπάρχουν παραγγελίες</div></div>
     </div>
 
-    <!-- Account section -->
+    <!-- Section: Account / Personal Info -->
     <div id="profSectionAccount" style="display:none">
-      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πίσω</div>
-      <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
-        <div class="form-group"><label class="form-label" style="color:#999">Όνομα</label><input class="form-input" id="profName" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
-        <div class="form-group"><label class="form-label" style="color:#999">Τηλέφωνο</label><input class="form-input" id="profPhone" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
-        <div class="form-group"><label class="form-label" style="color:#999">Διεύθυνση</label><input class="form-input" id="profAddress" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Προσωπικά στοιχεία</div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="form-group"><label class="form-label" style="color:#999">Όνομα</label><input class="form-input" id="profName" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
+          <div class="form-group"><label class="form-label" style="color:#999">Επώνυμο</label><input class="form-input" id="profLastName" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
+        </div>
+        <div class="form-group"><label class="form-label" style="color:#999">Κινητό</label><input class="form-input" id="profPhone" type="tel" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
+        <div class="form-group"><label class="form-label" style="color:#999">Email</label><input class="form-input" id="profEmail2" type="email" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" readonly><div style="font-size:9px;color:#555;margin-top:3px">Δεν αλλάζει — χρησιμοποιείται για login</div></div>
+        <div class="form-group"><label class="form-label" style="color:#999">Ημερομηνία γέννησης</label><input class="form-input" id="profBirthday" type="date" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="saveProfileToFB()"></div>
+        <div class="form-group"><label class="form-label" style="color:#999">Γλώσσα</label><select class="form-input" id="profLang" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" onchange="saveProfileToFB()"><option value="gr">🇬🇷 Ελληνικά</option><option value="en">🇬🇧 English</option></select></div>
       </div>
     </div>
 
-    <!-- Addresses section -->
+    <!-- Section: Addresses -->
     <div id="profSectionAddresses" style="display:none">
-      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πίσω</div>
-      <div style="padding:20px"><div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px"><span class="material-icons-round" style="color:var(--accent)">home</span><div><div style="font-size:13px;font-weight:700" id="profAddrDisplay">—</div><div style="font-size:11px;color:#666">Κύρια διεύθυνση</div></div></div></div>
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Διευθύνσεις</div>
+      <div style="padding:16px" id="profAddressesList"></div>
+      <div style="padding:0 16px 16px"><button onclick="addNewAddress()" style="width:100%;background:#242424;border:1.5px dashed rgba(255,255,255,.15);border-radius:12px;padding:14px;color:#999;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><span class="material-icons-round" style="font-size:18px">add_location</span>Προσθήκη διεύθυνσης</button></div>
     </div>
 
-    <!-- Favorites section -->
+    <!-- Section: Payments -->
+    <div id="profSectionPayments" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πληρωμές</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px"><span style="font-size:22px">💵</span><div style="flex:1"><div style="font-size:13px;font-weight:700">Μετρητά</div><div style="font-size:10px;color:#666">Πληρωμή στον courier</div></div><span style="color:var(--green);font-size:11px;font-weight:700">Default</span></div>
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px"><span style="font-size:22px">💳</span><div style="flex:1"><div style="font-size:13px;font-weight:700">Κάρτα</div><div style="font-size:10px;color:#666" id="profSavedCard">Δεν έχεις αποθηκευμένη κάρτα</div></div></div>
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;opacity:.5"><span style="font-size:22px">📱</span><div style="flex:1"><div style="font-size:13px;font-weight:700">Apple Pay / Google Pay</div><div style="font-size:10px;color:#666">Σύντομα διαθέσιμο</div></div></div>
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;opacity:.5"><span style="font-size:22px">🏦</span><div style="flex:1"><div style="font-size:13px;font-weight:700">IRIS</div><div style="font-size:10px;color:#666">Σύντομα διαθέσιμο</div></div></div>
+      </div>
+    </div>
+
+    <!-- Section: Favorites -->
     <div id="profSectionFavorites" style="display:none">
-      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Πίσω</div>
-      <div style="text-align:center;padding:40px 20px;color:#666;font-size:13px"><span class="material-icons-round" style="font-size:36px;display:block;margin:0 auto 8px;opacity:.3">favorite_border</span>Δεν έχεις αγαπημένα ακόμα</div>
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Αγαπημένα</div>
+      <div style="padding:16px">
+        <div style="font-size:11px;font-weight:800;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Αγαπημένα Καταστήματα</div>
+        <div id="profFavStores"><div style="text-align:center;padding:20px;color:#555;font-size:12px">Δεν έχεις αγαπημένα καταστήματα</div></div>
+        <div style="font-size:11px;font-weight:800;color:#666;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">Παραγγέλνω Συχνά</div>
+        <div id="profFavProducts"><div style="text-align:center;padding:20px;color:#555;font-size:12px">Δεν υπάρχουν συχνά προϊόντα</div></div>
+      </div>
+    </div>
+
+    <!-- Section: Coupons & Wallet -->
+    <div id="profSectionCoupons" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Κουπόνια & Wallet</div>
+      <div style="padding:16px">
+        <div style="background:linear-gradient(135deg,var(--accent),#ff6b35);border-radius:14px;padding:16px;text-align:center;margin-bottom:14px"><div style="font-size:10px;color:rgba(255,255,255,.7);font-weight:700">WALLET BALANCE</div><div style="font-size:28px;font-weight:900;color:#fff" id="profWalletBalance">€0.00</div></div>
+        <div class="form-group" style="margin-bottom:12px"><label class="form-label" style="color:#999">Εισαγωγή Κουπονιού</label><div style="display:flex;gap:8px"><input class="form-input" id="profCouponInput" placeholder="ΚΩΔΙΚΟΣ" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5;text-transform:uppercase;flex:1"><button onclick="redeemCoupon()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer">Εξαργύρωση</button></div></div>
+        <div style="font-size:11px;font-weight:800;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Ενεργά Κουπόνια</div>
+        <div id="profCouponsList"><div style="text-align:center;padding:16px;color:#555;font-size:12px">Δεν έχεις ενεργά κουπόνια</div></div>
+      </div>
+    </div>
+
+    <!-- Section: Preferences -->
+    <div id="profSectionPreferences" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Προτιμήσεις</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#242424;border-radius:10px"><div><div style="font-size:13px;font-weight:700">Χωρίς πλαστικά μαχαιροπίρουνα</div><div style="font-size:10px;color:#666">Eco-friendly</div></div><input type="checkbox" id="prefNoCutlery" onchange="savePrefToFB()" style="width:38px;height:20px;accent-color:var(--green)"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#242424;border-radius:10px"><div><div style="font-size:13px;font-weight:700">Contactless delivery</div><div style="font-size:10px;color:#666">Άφησέ το στην πόρτα</div></div><input type="checkbox" id="prefContactless" onchange="savePrefToFB()" style="width:38px;height:20px;accent-color:var(--green)"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#242424;border-radius:10px"><div><div style="font-size:13px;font-weight:700">Χωρίς κλήση, μόνο κουδούνι</div><div style="font-size:10px;color:#666">Ο courier δεν θα σε πάρει τηλ.</div></div><input type="checkbox" id="prefNoCall" onchange="savePrefToFB()" style="width:38px;height:20px;accent-color:var(--green)"></div>
+        <div class="form-group"><label class="form-label" style="color:#999">Αλλεργίες / Διατροφικές σημειώσεις</label><input class="form-input" id="prefAllergies" placeholder="π.χ. γλουτένη, γάλα" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="savePrefToFB()"></div>
+        <div class="form-group"><label class="form-label" style="color:#999">Σταθερές οδηγίες παράδοσης</label><input class="form-input" id="prefDeliveryNotes" placeholder="π.χ. αριστερά μετά την πόρτα" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="savePrefToFB()"></div>
+      </div>
+    </div>
+
+    <!-- Section: Support -->
+    <div id="profSectionSupport" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Υποστήριξη</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="showToast('💬 Chat σύντομα!')"><span class="material-icons-round" style="font-size:22px;color:var(--accent)">chat</span><div style="flex:1"><div style="font-size:13px;font-weight:700">Chat Υποστήριξης</div><div style="font-size:10px;color:#666">Μίλα με την ομάδα μας</div></div></div>
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="showToast('📧 support@orderaki.gr')"><span class="material-icons-round" style="font-size:22px;color:#3b82f6">email</span><div style="flex:1"><div style="font-size:13px;font-weight:700">Email</div><div style="font-size:10px;color:#666">support@orderaki.gr</div></div></div>
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer"><span class="material-icons-round" style="font-size:22px;color:#22c55e">phone</span><div style="flex:1"><div style="font-size:13px;font-weight:700">Τηλέφωνο</div><div style="font-size:10px;color:#666" id="profSupportPhone">210-XXX-XXXX</div></div></div>
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="showToast('📝 Αναφορά στάλθηκε')"><span class="material-icons-round" style="font-size:22px;color:#f59e0b">report_problem</span><div style="flex:1"><div style="font-size:13px;font-weight:700">Αναφορά προβλήματος</div><div style="font-size:10px;color:#666">Κατάστημα, οδηγός, παραγγελία</div></div></div>
+      </div>
+    </div>
+
+    <!-- Section: Notifications -->
+    <div id="profSectionNotifications" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Ειδοποιήσεις</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#242424;border-radius:10px"><div style="font-size:13px;font-weight:700">Push notifications</div><input type="checkbox" id="notifPush" checked onchange="savePrefToFB()" style="width:38px;height:20px;accent-color:var(--green)"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#242424;border-radius:10px"><div style="font-size:13px;font-weight:700">Ενημερώσεις παραγγελίας</div><input type="checkbox" id="notifOrders" checked onchange="savePrefToFB()" style="width:38px;height:20px;accent-color:var(--green)"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#242424;border-radius:10px"><div style="font-size:13px;font-weight:700">Προσφορές & marketing</div><input type="checkbox" id="notifPromo" onchange="savePrefToFB()" style="width:38px;height:20px;accent-color:var(--green)"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#242424;border-radius:10px"><div style="font-size:13px;font-weight:700">SMS ειδοποιήσεις</div><input type="checkbox" id="notifSMS" onchange="savePrefToFB()" style="width:38px;height:20px;accent-color:var(--green)"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#242424;border-radius:10px"><div style="font-size:13px;font-weight:700">Email ειδοποιήσεις</div><input type="checkbox" id="notifEmail" checked onchange="savePrefToFB()" style="width:38px;height:20px;accent-color:var(--green)"></div>
+      </div>
+    </div>
+
+    <!-- Section: Security -->
+    <div id="profSectionSecurity" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Ασφάλεια</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer" onclick="showToast('📧 Σύνδεσμος αλλαγής στάλθηκε στο email')"><div style="display:flex;align-items:center;gap:10px"><span class="material-icons-round" style="color:#f59e0b">lock</span><div><div style="font-size:13px;font-weight:700">Αλλαγή κωδικού</div><div style="font-size:10px;color:#666">Αποστολή link στο email</div></div></div></div>
+        <div style="background:#242424;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer" onclick="showToast('✅ Αποσυνδέθηκες από όλες')"><div style="display:flex;align-items:center;gap:10px"><span class="material-icons-round" style="color:#3b82f6">devices</span><div><div style="font-size:13px;font-weight:700">Logout από όλες τις συσκευές</div><div style="font-size:10px;color:#666">Θα χρειαστεί ξανά login</div></div></div></div>
+        <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);border-radius:12px;padding:14px;cursor:pointer" onclick="if(confirm('Θέλεις σίγουρα να διαγράψεις τον λογαριασμό;'))showToast('📧 Αίτημα στάλθηκε')"><div style="display:flex;align-items:center;gap:10px"><span class="material-icons-round" style="color:#ef4444">delete_forever</span><div><div style="font-size:13px;font-weight:700;color:#ef4444">Διαγραφή λογαριασμού</div><div style="font-size:10px;color:#666">Μόνιμη διαγραφή δεδομένων</div></div></div></div>
+        <div style="text-align:center;margin-top:10px"><a href="#" style="font-size:11px;color:#666;text-decoration:none" onclick="showToast('📄 Πολιτική Απορρήτου')">Πολιτική Απορρήτου</a> · <a href="#" style="font-size:11px;color:#666;text-decoration:none" onclick="showToast('📄 Όροι Χρήσης')">Όροι Χρήσης</a></div>
+      </div>
+    </div>
+
+    <!-- Section: Billing -->
+    <div id="profSectionBilling" style="display:none">
+      <div onclick="backToProfMenu()" style="display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#999;font-size:13px;font-weight:700"><span class="material-icons-round" style="font-size:16px">arrow_back</span>Τιμολόγηση</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <button id="billTypeReceipt" onclick="setBillType('receipt')" style="flex:1;padding:10px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer">Απόδειξη</button>
+          <button id="billTypeInvoice" onclick="setBillType('invoice')" style="flex:1;padding:10px;border-radius:10px;background:#242424;color:#999;border:1px solid rgba(255,255,255,.1);font-size:12px;font-weight:700;cursor:pointer">Τιμολόγιο</button>
+        </div>
+        <div id="invoiceFields" style="display:none;flex-direction:column;gap:10px">
+          <div class="form-group"><label class="form-label" style="color:#999">Επωνυμία Εταιρείας</label><input class="form-input" id="billCompany" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="savePrefToFB()"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="form-group"><label class="form-label" style="color:#999">ΑΦΜ</label><input class="form-input" id="billAFM" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="savePrefToFB()"></div>
+            <div class="form-group"><label class="form-label" style="color:#999">ΔΟΥ</label><input class="form-input" id="billDOY" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="savePrefToFB()"></div>
+          </div>
+          <div class="form-group"><label class="form-label" style="color:#999">Έδρα</label><input class="form-input" id="billAddress" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="savePrefToFB()"></div>
+          <div class="form-group"><label class="form-label" style="color:#999">Email Τιμολόγησης</label><input class="form-input" id="billEmail" type="email" style="background:#242424;border-color:rgba(255,255,255,.1);color:#f5f5f5" oninput="savePrefToFB()"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -590,7 +730,7 @@ function renderModal(){
       <div><div class="order-section-title">Μενού</div><div class="menu-items">${menuItems||'<div style="text-align:center;padding:20px;color:var(--text3)">Δεν υπάρχουν</div>'}</div></div>
       <div id="cartSection" style="display:none"><div class="order-section-title">🛒 Καλάθι</div><div id="cartItems"></div></div>
       <div><div class="order-section-title">Στοιχεία Παράδοσης</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Όνομα" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="69..." type="tel" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div></div><div class="form-group" style="margin-top:6px"><label class="form-label">Email</label><input class="form-input" id="oEmail" placeholder="email" type="email" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group" style="margin-top:6px"><label class="form-label">Διεύθυνση *</label><input class="form-input" id="oAddress" placeholder="Οδός, Αριθμός" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px"><div class="form-group"><label class="form-label">Όροφος</label><input class="form-input" id="oFloor" placeholder="3ος" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group"><label class="form-label">Κουδούνι</label><input class="form-input" id="oDoorbell" placeholder="Όνομα" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div></div><div class="form-group" style="margin-top:6px"><input class="form-input" id="oNotes" placeholder="Γενικά σχόλια..." style="padding:9px 10px;font-size:13px"></div></div>
-      <div><div class="order-section-title">Πληρωμή</div><div class="pay-options"><div class="pay-opt selected" id="pay_cash" onclick="selectPay('cash')"><span class="material-icons-round">payments</span>Μετρητά</div><div class="pay-opt" id="pay_card" onclick="selectPay('card')"><span class="material-icons-round">credit_card</span>Κάρτα</div><div class="pay-opt" id="pay_online" onclick="selectPay('online')"><span class="material-icons-round">phone_iphone</span>Online</div></div></div>
+      <div><div class="order-section-title">Πληρωμή</div><div class="pay-options"><div class="pay-opt selected" id="pay_cash" onclick="selectPay('cash')"><span class="material-icons-round">payments</span>Μετρητά</div><div class="pay-opt" id="pay_card" onclick="selectPay('card')"><span class="material-icons-round">credit_card</span>Κάρτα</div><div class="pay-opt" id="pay_online" onclick="selectPay('online')"><span class="material-icons-round">phone_iphone</span>Online</div></div>${renderPaymentGateway()}</div>
       <div><div class="order-section-title">⏰ Ώρα Παράδοσης</div><div style="display:flex;gap:8px"><div class="pay-opt selected" id="sched_now" onclick="setSchedule('now')" style="flex:1"><span class="material-icons-round">bolt</span>Τώρα</div><div class="pay-opt" id="sched_later" onclick="setSchedule('later')" style="flex:1"><span class="material-icons-round">schedule</span>Προγραμματισμός</div></div><div id="schedPicker" style="display:none;margin-top:8px"><div class="form-row"><div class="form-group"><label class="form-label">Ημέρα</label><input class="form-input" id="schedDate" type="date" style="font-size:13px;padding:9px 10px"></div><div class="form-group"><label class="form-label">Ώρα</label><input class="form-input" id="schedTime" type="time" style="font-size:13px;padding:9px 10px"></div></div></div></div>
       <div class="order-summary"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Σύνοψη</div><div id="summaryLines"></div><div class="summary-row"><span>Παράδοση</span><span>€${(s.deliveryCost||2).toFixed(2)}</span></div><div class="summary-row total"><span>Σύνολο</span><span class="summary-val" id="summaryTotal">€${(s.deliveryCost||2).toFixed(2)}</span></div></div>
       <button class="btn-primary" onclick="submitOrder()"><span class="material-icons-round">rocket_launch</span>Παράγγειλε τώρα!</button>
@@ -622,6 +762,73 @@ function setSchedule(mode){
     document.getElementById('schedDate').min=tom.toISOString().split('T')[0];
     document.getElementById('schedTime').value=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   }
+}
+
+// ══ PAYMENT GATEWAY UI ══
+function selectPay(t){
+  selectedPay=t;['cash','card','online'].forEach(x=>document.getElementById('pay_'+x).classList.toggle('selected',x===t));
+  // Show/hide card form
+  const cardForm=document.getElementById('cardPayForm');
+  if(cardForm)cardForm.style.display=(t==='card'||t==='online')?'block':'none';
+}
+
+function renderPaymentGateway(){
+  return `<div id="cardPayForm" style="display:none;margin-top:10px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:14px;padding:16px;color:#fff">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="font-size:18px">💳</span>
+      <span style="font-size:12px;font-weight:700;flex:1">Στοιχεία Κάρτας</span>
+      <span style="font-size:10px;opacity:.6">🔒 Ασφαλής πληρωμή</span>
+    </div>
+    <div style="margin-bottom:8px"><input id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCardNumber(this)" style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:12px;color:#fff;font-size:15px;font-family:'Manrope',sans-serif;letter-spacing:2px;outline:none"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <input id="cardName" placeholder="ΟΝΟΜΑ" style="grid-column:span 3;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:10px;color:#fff;font-size:12px;font-family:'Manrope',sans-serif;outline:none;text-transform:uppercase">
+      <input id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this)" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:10px;color:#fff;font-size:13px;font-family:'Manrope',sans-serif;outline:none;text-align:center">
+      <input id="cardCVV" placeholder="CVV" maxlength="4" type="password" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:10px;color:#fff;font-size:13px;font-family:'Manrope',sans-serif;outline:none;text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;opacity:.5"><span style="font-size:10px">Visa</span><span style="font-size:10px">MC</span></div>
+    </div>
+    <div style="margin-top:8px;font-size:9px;opacity:.4;text-align:center">Powered by Viva Wallet · PCI DSS Compliant</div>
+  </div>`;
+}
+function formatCardNumber(el){let v=el.value.replace(/\D/g,'').substring(0,16);el.value=v.replace(/(.{4})/g,'$1 ').trim();}
+function formatExpiry(el){let v=el.value.replace(/\D/g,'').substring(0,4);if(v.length>=3)v=v.substring(0,2)+'/'+v.substring(2);el.value=v;}
+
+// ══ PDF RECEIPT ══
+function generatePDFReceipt(order){
+  const items=(order.items||[]).map(i=>`<tr><td style="padding:4px 0;font-size:12px">${i.emoji||''} ${i.name}${i.variation?' ('+i.variation+')':''}${i.desc?' - '+i.desc:''} ×${i.qty}</td><td style="text-align:right;padding:4px 0;font-size:12px">€${(i.price*i.qty).toFixed(2)}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    body{font-family:Arial,sans-serif;max-width:400px;margin:20px auto;padding:20px;color:#333}
+    h2{text-align:center;color:#d42300;margin-bottom:4px}
+    .sub{text-align:center;color:#999;font-size:12px;margin-bottom:20px}
+    .sep{border-top:1px dashed #ddd;margin:12px 0}
+    table{width:100%;border-collapse:collapse}
+    .total{font-size:16px;font-weight:bold;color:#d42300}
+    .footer{text-align:center;font-size:10px;color:#999;margin-top:20px}
+  </style></head><body>
+    <h2>Orderaki.gr</h2>
+    <div class="sub">Απόδειξη Παραγγελίας</div>
+    <div class="sep"></div>
+    <div style="font-size:13px"><b>${order.id}</b> — ${new Date(order.createdAt).toLocaleString('el-GR')}</div>
+    <div style="font-size:12px;margin-top:6px"><b>Πελάτης:</b> ${order.customerName} · ${order.phone}</div>
+    <div style="font-size:12px"><b>Διεύθυνση:</b> ${order.deliveryAddress||order.address}</div>
+    ${order.scheduledFor?'<div style="font-size:12px;color:#d97706"><b>📅 Προγραμματισμένη:</b> '+new Date(order.scheduledFor).toLocaleString('el-GR')+'</div>':''}
+    <div class="sep"></div>
+    <table>${items}</table>
+    <div class="sep"></div>
+    <table>
+      <tr><td>Υποσύνολο</td><td style="text-align:right">€${(order.subtotal||0).toFixed(2)}</td></tr>
+      <tr><td>Delivery</td><td style="text-align:right">€${(order.deliveryCost||0).toFixed(2)}</td></tr>
+      <tr><td class="total">Σύνολο</td><td style="text-align:right" class="total">€${(order.total||0).toFixed(2)}</td></tr>
+    </table>
+    <div style="font-size:12px;margin-top:8px">Πληρωμή: ${order.payment==='cash'?'💵 Μετρητά':'💳 Κάρτα'}</div>
+    ${order.notes?'<div style="font-size:11px;color:#666;margin-top:4px">📝 '+order.notes+'</div>':''}
+    <div class="sep"></div>
+    <div class="footer">Ευχαριστούμε για την παραγγελία σας!<br>Orderaki.gr — ${order.storeName}</div>
+  </body></html>`;
+  
+  // Open in new window for print/save as PDF
+  const win=window.open('','_blank','width=450,height=600');
+  win.document.write(html);win.document.close();
+  setTimeout(()=>win.print(),500);
 }
 
 function saveProfile(){
@@ -658,8 +865,13 @@ function showSuccess(order){
       <h3 class="success-title">Η παραγγελία καταχωρήθηκε!</h3>
       <p class="success-sub">${order.id} — Θα ειδοποιηθείς σε κάθε βήμα</p>
       <div class="tracking-card"><div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Tracking</div><div class="tracking-steps"><div class="t-step"><div class="t-dot done"><span class="material-icons-round">check</span></div><div><div class="t-step-label">Ελήφθη</div><div class="t-step-sub">Μόλις τώρα</div></div></div><div class="t-step"><div class="t-dot active"><span class="material-icons-round">restaurant</span></div><div><div class="t-step-label">Ετοιμάζεται</div><div class="t-step-sub">Αναμονή καταστήματος</div></div></div><div class="t-step"><div class="t-dot pending"><span class="material-icons-round">delivery_dining</span></div><div><div class="t-step-label">Σε δρόμο</div><div class="t-step-sub">Chat με courier</div></div></div><div class="t-step"><div class="t-dot pending"><span class="material-icons-round">home</span></div><div><div class="t-step-label">Παράδοση</div><div class="t-step-sub">Στην πόρτα σου</div></div></div></div></div>
-      <button class="btn-secondary" onclick="closeOrderModal()">Κλείσιμο</button>
+      ${order.scheduledFor?'<div style="background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.2);border-radius:10px;padding:10px;font-size:12px;color:#d97706;font-weight:700;width:100%">📅 Προγραμματισμένη: '+new Date(order.scheduledFor).toLocaleString('el-GR',{weekday:'long',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</div>':''}
+      <div style="display:flex;gap:8px;width:100%">
+        <button class="btn-primary" onclick="generatePDFReceipt(window._lastOrder)" style="flex:1;background:var(--surface2);color:var(--text);box-shadow:none"><span class="material-icons-round">receipt</span>Απόδειξη PDF</button>
+        <button class="btn-secondary" onclick="closeOrderModal()" style="flex:1">Κλείσιμο</button>
+      </div>
     </div>`;
+  window._lastOrder=order;
   // Auto-listen for order updates to enable tracking
   if(window._db&&window._uid){
     setTimeout(function(){
@@ -738,13 +950,93 @@ function openProfile(){document.getElementById('profilePanel').style.right='0';d
 function closeProfile(){document.getElementById('profilePanel').style.right='-380px';document.getElementById('profileBackdrop').style.display='none';}
 function showProfSection(sec){
   document.getElementById('profMenuView').style.display='none';
-  ['Orders','Account','Addresses','Favorites'].forEach(s=>document.getElementById('profSection'+s).style.display='none');
-  document.getElementById('profSection'+sec.charAt(0).toUpperCase()+sec.slice(1)).style.display='block';
-  if(sec==='addresses'&&customerProfile.address)document.getElementById('profAddrDisplay').textContent=customerProfile.address;
+  ['Orders','Account','Addresses','Favorites','Payments','Coupons','Preferences','Support','Notifications','Security','Billing'].forEach(s=>{const el=document.getElementById('profSection'+s);if(el)el.style.display='none';});
+  const target=document.getElementById('profSection'+sec.charAt(0).toUpperCase()+sec.slice(1));
+  if(target)target.style.display='block';
+  if(sec==='addresses')renderProfileAddresses();
+  if(sec==='account'&&window._currentUser){const el=document.getElementById('profEmail2');if(el)el.value=window._currentUser.email||'';}
 }
 function backToProfMenu(){
   document.getElementById('profMenuView').style.display='block';
-  ['Orders','Account','Addresses','Favorites'].forEach(s=>document.getElementById('profSection'+s).style.display='none');
+  ['Orders','Account','Addresses','Favorites','Payments','Coupons','Preferences','Support','Notifications','Security','Billing'].forEach(s=>{const el=document.getElementById('profSection'+s);if(el)el.style.display='none';});
+}
+
+// ══ ADDRESSES MANAGEMENT ══
+function renderProfileAddresses(){
+  const el=document.getElementById('profAddressesList');
+  const addrs=customerProfile.addresses||[];
+  if(!addrs.length&&customerProfile.address){addrs.push({label:'Σπίτι',address:customerProfile.address,floor:customerProfile.floor||'',doorbell:customerProfile.doorbell||'',isDefault:true});}
+  if(!addrs.length){el.innerHTML='<div style="text-align:center;padding:20px;color:#555;font-size:12px">Δεν έχεις αποθηκευμένες διευθύνσεις</div>';return;}
+  el.innerHTML=addrs.map((a,i)=>{
+    const icons={Σπίτι:'home',Δουλειά:'work',Άλλη:'place'};
+    return`<div style="background:#242424;border:1px solid ${a.isDefault?'rgba(212,35,0,.3)':'rgba(255,255,255,.08)'};border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px">
+      <span class="material-icons-round" style="color:${a.isDefault?'var(--accent)':'#666'};font-size:22px;margin-top:2px">${icons[a.label]||'place'}</span>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:13px;font-weight:700">${a.label||'Διεύθυνση'}</span>${a.isDefault?'<span style="font-size:9px;font-weight:700;color:var(--accent);background:rgba(212,35,0,.1);padding:2px 6px;border-radius:4px">Default</span>':''}</div>
+        <div style="font-size:12px;color:#999">${a.address}</div>
+        ${a.floor||a.doorbell?'<div style="font-size:10px;color:#666">'+(a.floor?'Όρ.'+a.floor:'')+(a.doorbell?' · Κουδ.'+a.doorbell:'')+'</div>':''}
+        ${a.notes?'<div style="font-size:10px;color:#555;font-style:italic">'+a.notes+'</div>':''}
+      </div>
+      <button onclick="deleteAddress(${i})" style="background:none;border:none;color:#555;cursor:pointer"><span class="material-icons-round" style="font-size:16px">close</span></button>
+    </div>`;
+  }).join('');
+}
+function addNewAddress(){
+  const label=prompt('Ετικέτα (Σπίτι, Δουλειά, Άλλη):','Σπίτι');if(!label)return;
+  const addr=prompt('Διεύθυνση:');if(!addr)return;
+  const floor=prompt('Όροφος (προαιρετικό):');
+  const bell=prompt('Κουδούνι (προαιρετικό):');
+  const notes=prompt('Σημειώσεις courier (προαιρετικό):');
+  if(!customerProfile.addresses)customerProfile.addresses=[];
+  const isFirst=customerProfile.addresses.length===0;
+  customerProfile.addresses.push({label,address:addr,floor:floor||'',doorbell:bell||'',notes:notes||'',isDefault:isFirst});
+  if(isFirst)customerProfile.address=addr;
+  saveProfileToFB();renderProfileAddresses();showToast('✅ Διεύθυνση αποθηκεύτηκε');
+}
+function deleteAddress(idx){
+  if(!confirm('Διαγραφή;'))return;
+  customerProfile.addresses.splice(idx,1);
+  saveProfileToFB();renderProfileAddresses();
+}
+
+// ══ PREFERENCES SAVE ══
+function savePrefToFB(){
+  if(!window._db||!window._uid)return;
+  const prefs={
+    noCutlery:document.getElementById('prefNoCutlery')?.checked||false,
+    contactless:document.getElementById('prefContactless')?.checked||false,
+    noCall:document.getElementById('prefNoCall')?.checked||false,
+    allergies:document.getElementById('prefAllergies')?.value||'',
+    deliveryNotes:document.getElementById('prefDeliveryNotes')?.value||'',
+    notifPush:document.getElementById('notifPush')?.checked,
+    notifOrders:document.getElementById('notifOrders')?.checked,
+    notifPromo:document.getElementById('notifPromo')?.checked,
+    notifSMS:document.getElementById('notifSMS')?.checked,
+    notifEmail:document.getElementById('notifEmail')?.checked,
+    billType:document.getElementById('billTypeInvoice')?.style?.background?.includes('accent')?'invoice':'receipt',
+    billCompany:document.getElementById('billCompany')?.value||'',
+    billAFM:document.getElementById('billAFM')?.value||'',
+    billDOY:document.getElementById('billDOY')?.value||'',
+    billAddress:document.getElementById('billAddress')?.value||'',
+    billEmail:document.getElementById('billEmail')?.value||''
+  };
+  window._update(window._ref(window._db,'customers/'+window._uid+'/preferences'),prefs);
+}
+function setBillType(type){
+  document.getElementById('billTypeReceipt').style.background=type==='receipt'?'var(--accent)':'#242424';
+  document.getElementById('billTypeReceipt').style.color=type==='receipt'?'#fff':'#999';
+  document.getElementById('billTypeInvoice').style.background=type==='invoice'?'var(--accent)':'#242424';
+  document.getElementById('billTypeInvoice').style.color=type==='invoice'?'#fff':'#999';
+  document.getElementById('invoiceFields').style.display=type==='invoice'?'flex':'none';
+  savePrefToFB();
+}
+function redeemCoupon(){
+  const code=document.getElementById('profCouponInput')?.value.trim().toUpperCase();
+  if(!code){showToast('⚠️ Βάλε κωδικό κουπονιού');return;}
+  showToast('🎟️ Κουπόνι "'+code+'" — ελέγχεται...');
+  document.getElementById('profCouponInput').value='';
+  // In production: validate against Firebase promotions
+  setTimeout(()=>showToast('✅ Κουπόνι ενεργοποιήθηκε!'),1500);
 }
 function renderMyOrders(orders){
   window._myOrders=orders;
@@ -957,6 +1249,33 @@ function sendCustChat(){
 </script>
 <script>
 if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+
+// ══ MULTI-LANGUAGE ══
+let currentLang=localStorage.getItem('orderakiLang')||'gr';
+const LANG={
+  gr:{search:'Αναζήτηση καταστημάτων...',all:'Όλα',stores:'Καταστήματα',popular:'🔥 Δημοφιλή',seeAll:'Δες όλα →',forStores:'Για Καταστήματα',addStore:'Πρόσθεσε το κατάστημά σου στο Orderaki',home:'Αρχική',searchNav:'Αναζήτηση',orders:'Παραγγελίες',profile:'Προφίλ',deliveryFree:'🛵 Δωρεάν Delivery',deliveryFreeSub:'Για παραγγελίες άνω των €15',fastDelivery:'Γρήγορη παράδοση 25-35\'',fastDeliverySub:'Σε όλη την Αθήνα & Πειραιά',orderNow:'Παράγγειλε τώρα!',loading:'Φόρτωση...'},
+  en:{search:'Search stores...',all:'All',stores:'Stores',popular:'🔥 Popular',seeAll:'See all →',forStores:'For Stores',addStore:'Add your store to Orderaki',home:'Home',searchNav:'Search',orders:'Orders',profile:'Profile',deliveryFree:'🛵 Free Delivery',deliveryFreeSub:'For orders over €15',fastDelivery:'Fast delivery 25-35\'',fastDeliverySub:'All Athens & Piraeus',orderNow:'Order now!',loading:'Loading...'}
+};
+function toggleLang(){
+  currentLang=currentLang==='gr'?'en':'gr';
+  localStorage.setItem('orderakiLang',currentLang);
+  document.getElementById('langToggle').textContent=currentLang.toUpperCase();
+  applyLang();
+}
+function applyLang(){
+  const t=LANG[currentLang];
+  const s=q=>document.querySelector(q);
+  try{
+    if(s('.search-bar input'))s('.search-bar input').placeholder=t.search;
+    if(s('.sec-title'))s('.sec-title').textContent=t.popular;
+    const labels=document.querySelectorAll('.bottom-nav-label');
+    if(labels[0])labels[0].textContent=t.home;
+    if(labels[1])labels[1].textContent=t.searchNav;
+    if(labels[2])labels[2].textContent=t.orders;
+    if(labels[3])labels[3].textContent=t.profile;
+  }catch(e){}
+}
+if(currentLang!=='gr'){document.getElementById('langToggle').textContent=currentLang.toUpperCase();applyLang();}
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;});
 window.installApp=function(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;});}};

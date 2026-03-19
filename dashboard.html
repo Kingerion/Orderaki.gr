@@ -412,15 +412,17 @@ body{flex-direction:column;overflow-y:auto}
               <button onclick="clearAllPins()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;color:var(--red)">✕</button>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
             <div class="fgroup"><label class="flabel">Χρέωση €</label><input class="finput" id="zBaseFee" type="number" value="2" min="0" step="0.1" style="font-size:12px;padding:7px"></div>
             <div class="fgroup"><label class="flabel">€/km</label><input class="finput" id="zPerKm" type="number" value="0.50" min="0" step="0.1" style="font-size:12px;padding:7px"></div>
             <div class="fgroup"><label class="flabel">Min €</label><input class="finput" id="zMinOrder" type="number" value="5" min="0" step="0.5" style="font-size:12px;padding:7px"></div>
-            <div class="fgroup"><label class="flabel">Courier €</label><input class="finput" id="zCourierFee" type="number" value="3" min="0" step="0.1" style="font-size:12px;padding:7px"></div>
-            <div class="fgroup"><label class="flabel">Χρόνος</label><input class="finput" id="zEstTime" type="number" value="25" min="5" step="5" style="font-size:12px;padding:7px"></div>
+            <div class="fgroup"><label class="flabel">Χρόνος (λ)</label><input class="finput" id="zEstTime" type="number" value="25" min="5" step="5" style="font-size:12px;padding:7px"></div>
             <div class="fgroup"><label class="flabel">ΣΚ +€</label><input class="finput" id="zWeekendSurcharge" type="number" value="0" min="0" step="0.1" style="font-size:12px;padding:7px"></div>
             <div class="fgroup"><label class="flabel">Νύχτα +€</label><input class="finput" id="zNightSurcharge" type="number" value="0" min="0" step="0.1" style="font-size:12px;padding:7px"></div>
-            <div class="fgroup"><label style="font-size:10px;font-weight:700;display:flex;align-items:center;gap:3px;margin-top:14px;cursor:pointer"><input type="checkbox" id="zActive" checked style="accent-color:var(--green)"> Ενεργή</label></div>
+          </div>
+          <div style="background:rgba(59,130,246,.06);border-radius:6px;padding:6px 8px;font-size:9px;color:var(--blue);line-height:1.4">💡 <b>ΣΚ +€</b>: Πχ χρέωση €2.50, ΣΚ +€0.50 → Σα/Κυ = <b>€3.00</b>. Προστίθεται στη βασική χρέωση αυτόματα. <b>Νύχτα +€</b>: Ίδια λογική, 23:00-07:00.</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+            <label style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="zActive" checked style="accent-color:var(--green)"> Ενεργή</label>
           </div>
           <div style="display:flex;gap:8px">
             <button onclick="saveZone()" class="btn btn-primary" style="flex:1;justify-content:center;padding:10px"><span class="material-icons-round">save</span> Αποθήκευση</button>
@@ -707,7 +709,7 @@ toAssign.forEach(([key,o])=>{
   // Apply zone-based pricing if customer has coordinates
   if(o.customerLat&&o.customerLng){
     const zp=getZonePricing(o.customerLat,o.customerLng);
-    if(zp){updateData.zoneName=zp.zone;updateData.zoneFee=zp.fee;updateData.zoneCourierFee=zp.courierFee;}
+    if(zp){updateData.zoneName=zp.zone;updateData.zoneFee=zp.fee;}
   }
   setTimeout(()=>{if(window._db)window._update(window._ref(window._db,'orders/'+key),updateData)},1000);
 })};
@@ -914,7 +916,7 @@ function drawAllZones(){
       weight:z.active!==false?2.5:1,
       dashArray:z.active!==false?'':'6,6'
     }).addTo(zonesMap);
-    poly.bindPopup(`<b>${z.name}</b><br>Χρέωση: €${(z.baseFee||2).toFixed(2)} + €${(z.perKm||0.5).toFixed(2)}/km<br>Min: €${(z.minOrder||5).toFixed(2)}<br>Courier: €${(z.courierFee||3).toFixed(2)}<br>📍 ${z.pins.length} σημεία`);
+    poly.bindPopup(`<b>${z.name}</b><br>Χρέωση: €${(z.baseFee||2).toFixed(2)} + €${(z.perKm||0.5).toFixed(2)}/km<br>Min: €${(z.minOrder||5).toFixed(2)}<br>📍 ${z.pins.length} σημεία`);
     poly.on('click',function(){editZone(id);});
     
     // Center label
@@ -950,7 +952,7 @@ function renderZonesList(){
         <div><span style="color:var(--muted)">€/km:</span> <b>€${(z.perKm||0.5).toFixed(2)}</b></div>
         <div><span style="color:var(--muted)">Min:</span> <b>€${(z.minOrder||5).toFixed(2)}</b></div>
         <div><span style="color:var(--muted)">📍</span> <b>${(z.pins||[]).length} σημεία</b></div>
-        <div><span style="color:var(--muted)">Courier:</span> <b>€${(z.courierFee||3).toFixed(2)}</b></div>
+        
         <div><span style="color:var(--muted)">Χρόνος:</span> <b>${z.estTime||25}'</b></div>
       </div>
     </div>`;
@@ -986,7 +988,7 @@ function openZoneEditor(){
   document.getElementById('zName').value='';
   document.getElementById('zColor').value='#3b82f6';
   document.getElementById('zBaseFee').value='2';document.getElementById('zPerKm').value='0.50';
-  document.getElementById('zMinOrder').value='5';document.getElementById('zCourierFee').value='3';
+  document.getElementById('zMinOrder').value='5';
   document.getElementById('zEstTime').value='25';
   document.getElementById('zWeekendSurcharge').value='0';document.getElementById('zNightSurcharge').value='0';
   document.getElementById('zActive').checked=true;
@@ -1004,7 +1006,7 @@ function editZone(id){
   document.getElementById('zName').value=z.name||'';
   document.getElementById('zColor').value=z.color||'#3b82f6';
   document.getElementById('zBaseFee').value=z.baseFee||2;document.getElementById('zPerKm').value=z.perKm||0.5;
-  document.getElementById('zMinOrder').value=z.minOrder||5;document.getElementById('zCourierFee').value=z.courierFee||3;
+  document.getElementById('zMinOrder').value=z.minOrder||5;
   document.getElementById('zEstTime').value=z.estTime||25;
   document.getElementById('zWeekendSurcharge').value=z.weekendSurcharge||0;document.getElementById('zNightSurcharge').value=z.nightSurcharge||0;
   document.getElementById('zActive').checked=z.active!==false;
@@ -1038,8 +1040,7 @@ function saveZone(){
     baseFee:parseFloat(document.getElementById('zBaseFee').value)||2,
     perKm:parseFloat(document.getElementById('zPerKm').value)||0.5,
     minOrder:parseFloat(document.getElementById('zMinOrder').value)||5,
-    courierFee:parseFloat(document.getElementById('zCourierFee').value)||3,
-    estTime:parseInt(document.getElementById('zEstTime').value)||25,
+        estTime:parseInt(document.getElementById('zEstTime').value)||25,
     weekendSurcharge:parseFloat(document.getElementById('zWeekendSurcharge').value)||0,
     nightSurcharge:parseFloat(document.getElementById('zNightSurcharge').value)||0,
     active:document.getElementById('zActive').checked,
@@ -1104,7 +1105,7 @@ function getZonePricing(customerLat,customerLng){
       let fee=(z.baseFee||2)+(z.perKm||0.5)*dist;
       if(isWeekend)fee+=(z.weekendSurcharge||0);
       if(isNight)fee+=(z.nightSurcharge||0);
-      return{zone:z.name,fee:Math.round(fee*100)/100,courierFee:z.courierFee||3,minOrder:z.minOrder||5,estTime:z.estTime||25};
+      return{zone:z.name,fee:Math.round(fee*100)/100,minOrder:z.minOrder||5,estTime:z.estTime||25};
     }
   }
   return null;
