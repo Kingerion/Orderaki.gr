@@ -425,6 +425,16 @@ body{flex-direction:column;overflow-y:auto}
         <div class="fgroup" style="flex:2"><label class="flabel">Όνομα Ζώνης *</label><input class="finput" id="zName" placeholder="π.χ. Πειραιάς Κέντρο"></div>
         <div class="fgroup"><label class="flabel">Χρώμα</label><input class="finput" id="zColor" type="color" value="#3b82f6" style="height:38px;padding:2px"></div>
       </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:800;color:var(--accent)">📍 Πινέζες Ζώνης (<span id="zPinCount">0</span>)</span>
+          <div style="display:flex;gap:4px">
+            <button onclick="undoLastPin()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;color:var(--muted)">↩ Αναίρεση</button>
+            <button onclick="clearAllPins()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;color:var(--red)">✕ Καθαρισμός</button>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted)">💡 Πάτα στον χάρτη για να βάλεις 📍 πινέζες. Χρειάζονται τουλάχιστον 3 σημεία. Τα σημεία ενώνονται αυτόματα σε πολύγωνο.</div>
+      </div>
       <div class="frow" style="margin-bottom:10px">
         <div class="fgroup"><label class="flabel">Βασική Χρέωση (€)</label><input class="finput" id="zBaseFee" type="number" value="2" min="0" step="0.1"></div>
         <div class="fgroup"><label class="flabel">€/Χλμ</label><input class="finput" id="zPerKm" type="number" value="0.50" min="0" step="0.1"></div>
@@ -434,22 +444,12 @@ body{flex-direction:column;overflow-y:auto}
         <div class="fgroup"><label class="flabel">Αμοιβή Courier (€)</label><input class="finput" id="zCourierFee" type="number" value="3" min="0" step="0.1"></div>
       </div>
       <div class="frow" style="margin-bottom:10px">
-        <div class="fgroup"><label class="flabel">Ακτίνα (χλμ)</label><input class="finput" id="zRadius" type="number" value="3" min="0.5" max="30" step="0.5">
-          <div style="font-size:9px;color:var(--muted);margin-top:3px">Κύκλος γύρω από το κέντρο</div></div>
         <div class="fgroup"><label class="flabel">Εκτιμ. Χρόνος (λεπτά)</label><input class="finput" id="zEstTime" type="number" value="25" min="5" step="5"></div>
-      </div>
-      <div class="frow" style="margin-bottom:10px">
-        <div class="fgroup"><label class="flabel">Κέντρο — Lat</label><input class="finput" id="zLat" type="number" step="0.0001" placeholder="37.9429"></div>
-        <div class="fgroup"><label class="flabel">Κέντρο — Lng</label><input class="finput" id="zLng" type="number" step="0.0001" placeholder="23.6439"></div>
-      </div>
-      <div style="font-size:10px;color:var(--muted);margin-bottom:10px;background:var(--surface2);padding:8px;border-radius:8px">💡 Πάτα στο χάρτη για να ορίσεις το κέντρο, ή γράψε τις συντεταγμένες χειροκίνητα.</div>
-      <div class="frow" style="margin-bottom:12px">
         <div class="fgroup"><label class="flabel">Surcharge Σ/Κ (€)</label><input class="finput" id="zWeekendSurcharge" type="number" value="0" min="0" step="0.1"></div>
-        <div class="fgroup"><label class="flabel">Νυχτερινή +€</label><input class="finput" id="zNightSurcharge" type="number" value="0" min="0" step="0.1">
-          <div style="font-size:9px;color:var(--muted);margin-top:3px">23:00 - 07:00</div></div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <label style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="zActive" checked style="width:16px;height:16px;accent-color:var(--green)"> Ενεργή</label>
+      <div class="frow" style="margin-bottom:12px">
+        <div class="fgroup"><label class="flabel">Νυχτερινή +€</label><input class="finput" id="zNightSurcharge" type="number" value="0" min="0" step="0.1"><div style="font-size:9px;color:var(--muted);margin-top:3px">23:00 - 07:00</div></div>
+        <div class="fgroup"><label style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:18px"><input type="checkbox" id="zActive" checked style="width:16px;height:16px;accent-color:var(--green)"> Ενεργή</label></div>
       </div>
       <div class="modal-ft">
         <button class="btn btn-outline" onclick="closeZoneModal()">Ακύρωση</button>
@@ -724,6 +724,11 @@ toAssign.forEach(([key,o])=>{
   const updateData={driver:bUid,driverName:bDr.name,status:'assigned',driverAccepted:false,rejectionReason:'',
     assignedDistance:bestScore<9999?Math.round(bestScore*10)/10:null};
   if(isOwnDelivery)updateData.ownDelivery=true;
+  // Apply zone-based pricing if customer has coordinates
+  if(o.customerLat&&o.customerLng){
+    const zp=getZonePricing(o.customerLat,o.customerLng);
+    if(zp){updateData.zoneName=zp.zone;updateData.zoneFee=zp.fee;updateData.zoneCourierFee=zp.courierFee;}
+  }
   setTimeout(()=>{if(window._db)window._update(window._ref(window._db,'orders/'+key),updateData)},1000);
 })};
 
@@ -844,8 +849,9 @@ function renderAnalytics(period,tabEl){
     <div style="text-align:center;margin-top:8px;font-size:12px;font-weight:700;color:var(--muted)">${trend} · Σήμερα: ${fmtCur(last7days[6])} vs Μ.Ο.: ${fmtCur(avg7)}</div>`;
 }
 
-// ══ ZONES MANAGEMENT ══
-let zonesMap=null, zoneCircles={}, editingZoneId=null, zoneClickMode=false, allZones={};
+// ══ ZONES MANAGEMENT (POLYGON PIN-BASED) ══
+let zonesMap=null, zonePolygons={}, editingZoneId=null, allZones={};
+let currentPins=[], currentPinMarkers=[], currentPreviewPolygon=null, isDrawingZone=false;
 
 function initZonesMap(){
   if(zonesMap){zonesMap.invalidateSize();drawAllZones();return;}
@@ -853,61 +859,95 @@ function initZonesMap(){
   zonesMap=L.map(el,{zoomControl:true}).setView([37.9429,23.6439],11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(zonesMap);
   
-  // Click on map to set zone center
+  // Click to add pin
   zonesMap.on('click',function(e){
-    document.getElementById('zLat').value=e.latlng.lat.toFixed(5);
-    document.getElementById('zLng').value=e.latlng.lng.toFixed(5);
-    // Show preview circle
-    const radius=parseFloat(document.getElementById('zRadius')?.value||3)*1000;
-    if(window._previewCircle)zonesMap.removeLayer(window._previewCircle);
-    window._previewCircle=L.circle([e.latlng.lat,e.latlng.lng],{radius,color:'#ff3d00',fillColor:'#ff3d00',fillOpacity:0.15,weight:2,dashArray:'6,6'}).addTo(zonesMap);
-    document.getElementById('zoneMapInfo').textContent='📍 '+e.latlng.lat.toFixed(4)+', '+e.latlng.lng.toFixed(4);
+    if(!isDrawingZone)return;
+    addPin(e.latlng.lat,e.latlng.lng);
   });
   
   // Load zones from Firebase
   if(window._db){
     window._onValue(window._ref(window._db,'zones'),function(snap){
       allZones=snap.val()||{};
-      renderZonesList();
-      drawAllZones();
-      renderZoneStats();
+      renderZonesList();drawAllZones();renderZoneStats();
     });
   }
   setTimeout(()=>zonesMap.invalidateSize(),300);
 }
 
+function addPin(lat,lng){
+  currentPins.push([lat,lng]);
+  // Add pin marker 📍
+  const idx=currentPins.length;
+  const marker=L.marker([lat,lng],{
+    icon:L.divIcon({className:'',html:`<div style="font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));cursor:grab" title="Σημείο ${idx}">📍</div>`,iconSize:[24,24],iconAnchor:[12,22]}),
+    draggable:true
+  }).addTo(zonesMap);
+  marker.on('drag',function(ev){
+    currentPins[idx-1]=[ev.latlng.lat,ev.latlng.lng];
+    updatePreviewPolygon();
+  });
+  currentPinMarkers.push(marker);
+  updatePreviewPolygon();
+  document.getElementById('zPinCount').textContent=currentPins.length;
+  document.getElementById('zoneMapInfo').textContent='📍 '+currentPins.length+' σημεία — '+(currentPins.length>=3?'✅ Έτοιμο':'χρειάζονται '+(3-currentPins.length)+' ακόμα');
+}
+
+function undoLastPin(){
+  if(!currentPins.length)return;
+  currentPins.pop();
+  const m=currentPinMarkers.pop();
+  if(m)zonesMap.removeLayer(m);
+  updatePreviewPolygon();
+  document.getElementById('zPinCount').textContent=currentPins.length;
+  document.getElementById('zoneMapInfo').textContent=currentPins.length?'📍 '+currentPins.length+' σημεία':'Πάτα στο χάρτη για πινέζες';
+}
+
+function clearAllPins(){
+  currentPins=[];
+  currentPinMarkers.forEach(m=>zonesMap.removeLayer(m));
+  currentPinMarkers=[];
+  if(currentPreviewPolygon){zonesMap.removeLayer(currentPreviewPolygon);currentPreviewPolygon=null;}
+  document.getElementById('zPinCount').textContent='0';
+  document.getElementById('zoneMapInfo').textContent='Πάτα στο χάρτη για πινέζες';
+}
+
+function updatePreviewPolygon(){
+  if(currentPreviewPolygon){zonesMap.removeLayer(currentPreviewPolygon);currentPreviewPolygon=null;}
+  if(currentPins.length>=3){
+    const color=document.getElementById('zColor')?.value||'#ff3d00';
+    currentPreviewPolygon=L.polygon(currentPins,{color:color,fillColor:color,fillOpacity:0.2,weight:2,dashArray:'8,4'}).addTo(zonesMap);
+  }
+}
+
 function drawAllZones(){
   if(!zonesMap)return;
-  // Clear existing
-  Object.values(zoneCircles).forEach(c=>zonesMap.removeLayer(c));
-  zoneCircles={};
+  Object.values(zonePolygons).forEach(p=>{if(p.poly)zonesMap.removeLayer(p.poly);if(p.label)zonesMap.removeLayer(p.label);});
+  zonePolygons={};
   
   Object.entries(allZones).forEach(([id,z])=>{
-    if(!z.lat||!z.lng)return;
+    if(!z.pins||z.pins.length<3)return;
     const color=z.color||'#3b82f6';
-    const circle=L.circle([z.lat,z.lng],{
-      radius:(z.radius||3)*1000,
-      color:color,
-      fillColor:color,
-      fillOpacity:z.active!==false?0.12:0.04,
-      weight:z.active!==false?2:1,
+    const poly=L.polygon(z.pins,{
+      color:color,fillColor:color,
+      fillOpacity:z.active!==false?0.15:0.04,
+      weight:z.active!==false?2.5:1,
       dashArray:z.active!==false?'':'6,6'
     }).addTo(zonesMap);
-    circle.bindPopup(`<b>${z.name}</b><br>Χρέωση: €${(z.baseFee||2).toFixed(2)} + €${(z.perKm||0.5).toFixed(2)}/km<br>Min: €${(z.minOrder||5).toFixed(2)}<br>Ακτίνα: ${z.radius||3}km<br>Courier: €${(z.courierFee||3).toFixed(2)}`);
-    circle.on('click',function(){editZone(id);});
+    poly.bindPopup(`<b>${z.name}</b><br>Χρέωση: €${(z.baseFee||2).toFixed(2)} + €${(z.perKm||0.5).toFixed(2)}/km<br>Min: €${(z.minOrder||5).toFixed(2)}<br>Courier: €${(z.courierFee||3).toFixed(2)}<br>📍 ${z.pins.length} σημεία`);
+    poly.on('click',function(){editZone(id);});
     
-    // Add label
-    L.marker([z.lat,z.lng],{
+    // Center label
+    const center=poly.getBounds().getCenter();
+    const label=L.marker(center,{
       icon:L.divIcon({className:'',html:`<div style="background:${color};color:#fff;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2)">${z.name}</div>`,iconAnchor:[30,10]})
     }).addTo(zonesMap).on('click',function(){editZone(id);});
     
-    zoneCircles[id]=circle;
+    zonePolygons[id]={poly,label};
   });
   
-  // Fit bounds
-  const bounds=Object.values(allZones).filter(z=>z.lat&&z.lng).map(z=>[z.lat,z.lng]);
-  if(bounds.length>1)zonesMap.fitBounds(bounds,{padding:[40,40]});
-  else if(bounds.length===1)zonesMap.setView(bounds[0],12);
+  const allPins=Object.values(allZones).filter(z=>z.pins&&z.pins.length).flatMap(z=>z.pins);
+  if(allPins.length>1)zonesMap.fitBounds(allPins,{padding:[40,40]});
 }
 
 function renderZonesList(){
@@ -915,25 +955,24 @@ function renderZonesList(){
   const zones=Object.entries(allZones);
   document.getElementById('zoneCount').textContent=zones.length;
   
-  if(!zones.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px"><span class="material-icons-round" style="font-size:28px;opacity:.3;display:block;margin-bottom:6px">map</span>Δεν υπάρχουν ζώνες.<br>Πάτα "+ Νέα Ζώνη" για να ξεκινήσεις.</div>';return;}
+  if(!zones.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px"><span class="material-icons-round" style="font-size:28px;opacity:.3;display:block;margin-bottom:6px">map</span>Δεν υπάρχουν ζώνες.<br>Πάτα "+ Νέα Ζώνη".</div>';return;}
   
   el.innerHTML=zones.map(([id,z])=>{
     const color=z.color||'#3b82f6';
     return`<div style="background:var(--surface2);border:1.5px solid ${z.active!==false?color+'30':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s" onclick="editZone('${id}')" onmouseover="highlightZone('${id}')" onmouseout="unhighlightZone('${id}')">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0;${z.active===false?'opacity:.3':''}"></div>
+        <div style="width:12px;height:12px;border-radius:3px;background:${color};flex-shrink:0;${z.active===false?'opacity:.3':''}"></div>
         <div style="font-size:13px;font-weight:800;flex:1">${z.name||'—'}</div>
-        <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;${z.active!==false?'background:rgba(0,179,126,.1);color:var(--green)':'background:rgba(239,68,68,.1);color:var(--red)'}">${z.active!==false?'Ενεργή':'Ανενεργή'}</span>
+        <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;${z.active!==false?'background:rgba(0,179,126,.1);color:var(--green)':'background:rgba(239,68,68,.1);color:var(--red)'}">${z.active!==false?'Ενεργή':'Off'}</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:10px">
         <div><span style="color:var(--muted)">Χρέωση:</span> <b>€${(z.baseFee||2).toFixed(2)}</b></div>
         <div><span style="color:var(--muted)">€/km:</span> <b>€${(z.perKm||0.5).toFixed(2)}</b></div>
         <div><span style="color:var(--muted)">Min:</span> <b>€${(z.minOrder||5).toFixed(2)}</b></div>
-        <div><span style="color:var(--muted)">Ακτίνα:</span> <b>${z.radius||3}km</b></div>
+        <div><span style="color:var(--muted)">📍</span> <b>${(z.pins||[]).length} σημεία</b></div>
         <div><span style="color:var(--muted)">Courier:</span> <b>€${(z.courierFee||3).toFixed(2)}</b></div>
         <div><span style="color:var(--muted)">Χρόνος:</span> <b>${z.estTime||25}'</b></div>
       </div>
-      ${z.weekendSurcharge>0||z.nightSurcharge>0?`<div style="margin-top:4px;font-size:9px;color:var(--muted)">${z.weekendSurcharge>0?'ΣΚ +€'+z.weekendSurcharge.toFixed(2):''}${z.weekendSurcharge>0&&z.nightSurcharge>0?' · ':''}${z.nightSurcharge>0?'Νυχτ. +€'+z.nightSurcharge.toFixed(2):''}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -942,107 +981,81 @@ function renderZoneStats(){
   const orders=Object.values(allOrders||{}).filter(o=>o.status==='delivered');
   const zones=Object.entries(allZones);
   if(!zones.length){document.getElementById('zoneStats').innerHTML='Δεν υπάρχουν ζώνες';return;}
-  
-  // Count orders per zone (by checking if customer is within zone radius)
   const zoneOrders={};
   zones.forEach(([id,z])=>{zoneOrders[id]={name:z.name,count:0,revenue:0,color:z.color||'#3b82f6'};});
-  
   orders.forEach(o=>{
     if(!o.customerLat||!o.customerLng)return;
     zones.forEach(([id,z])=>{
-      if(!z.lat||!z.lng)return;
-      const dist=haversineKm(o.customerLat,o.customerLng,z.lat,z.lng);
-      if(dist<=(z.radius||3)){zoneOrders[id].count++;zoneOrders[id].revenue+=parseFloat(o.subtotal)||0;}
+      if(!z.pins||z.pins.length<3)return;
+      if(pointInPolygon(o.customerLat,o.customerLng,z.pins)){zoneOrders[id].count++;zoneOrders[id].revenue+=parseFloat(o.subtotal)||0;}
     });
   });
-  
   const sorted=Object.values(zoneOrders).sort((a,b)=>b.count-a.count);
   document.getElementById('zoneStats').innerHTML=sorted.map(z=>
-    `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px;border-bottom:1px solid var(--border)">
-      <div style="width:8px;height:8px;border-radius:50%;background:${z.color};flex-shrink:0"></div>
-      <span style="flex:1;font-weight:700">${z.name}</span>
-      <span style="font-weight:800">${z.count}</span>
-      <span style="color:var(--green);font-weight:700">${fmtCur(z.revenue)}</span>
-    </div>`
+    `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px;border-bottom:1px solid var(--border)"><div style="width:8px;height:8px;border-radius:2px;background:${z.color};flex-shrink:0"></div><span style="flex:1;font-weight:700">${z.name}</span><span style="font-weight:800">${z.count}</span><span style="color:var(--green);font-weight:700">${fmtCur(z.revenue)}</span></div>`
   ).join('');
 }
 
-function highlightZone(id){
-  if(zoneCircles[id]){zoneCircles[id].setStyle({fillOpacity:0.3,weight:3});}
-}
-function unhighlightZone(id){
-  const z=allZones[id];
-  if(zoneCircles[id]){zoneCircles[id].setStyle({fillOpacity:z?.active!==false?0.12:0.04,weight:z?.active!==false?2:1});}
-}
+function highlightZone(id){if(zonePolygons[id]?.poly)zonePolygons[id].poly.setStyle({fillOpacity:0.35,weight:3});}
+function unhighlightZone(id){const z=allZones[id];if(zonePolygons[id]?.poly)zonePolygons[id].poly.setStyle({fillOpacity:z?.active!==false?0.15:0.04,weight:z?.active!==false?2.5:1});}
 
 function openZoneModal(){
-  editingZoneId=null;
+  editingZoneId=null;isDrawingZone=true;
   document.getElementById('zoneModalTitle').textContent='Νέα Ζώνη';
   document.getElementById('zDeleteBtn').style.display='none';
-  ['zName','zLat','zLng'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('zName').value='';
   document.getElementById('zColor').value='#3b82f6';
-  document.getElementById('zBaseFee').value='2';
-  document.getElementById('zPerKm').value='0.50';
-  document.getElementById('zMinOrder').value='5';
-  document.getElementById('zCourierFee').value='3';
-  document.getElementById('zRadius').value='3';
+  document.getElementById('zBaseFee').value='2';document.getElementById('zPerKm').value='0.50';
+  document.getElementById('zMinOrder').value='5';document.getElementById('zCourierFee').value='3';
   document.getElementById('zEstTime').value='25';
-  document.getElementById('zWeekendSurcharge').value='0';
-  document.getElementById('zNightSurcharge').value='0';
+  document.getElementById('zWeekendSurcharge').value='0';document.getElementById('zNightSurcharge').value='0';
   document.getElementById('zActive').checked=true;
-  if(window._previewCircle&&zonesMap){zonesMap.removeLayer(window._previewCircle);window._previewCircle=null;}
+  clearAllPins();
   document.getElementById('zoneOverlay').classList.add('open');
+  document.getElementById('zoneMapInfo').textContent='📍 Πάτα στον χάρτη για πινέζες';
 }
 
 function editZone(id){
   const z=allZones[id];if(!z)return;
-  editingZoneId=id;
+  editingZoneId=id;isDrawingZone=true;
   document.getElementById('zoneModalTitle').textContent='Επεξεργασία: '+z.name;
   document.getElementById('zDeleteBtn').style.display='flex';
   document.getElementById('zName').value=z.name||'';
   document.getElementById('zColor').value=z.color||'#3b82f6';
-  document.getElementById('zBaseFee').value=z.baseFee||2;
-  document.getElementById('zPerKm').value=z.perKm||0.5;
-  document.getElementById('zMinOrder').value=z.minOrder||5;
-  document.getElementById('zCourierFee').value=z.courierFee||3;
-  document.getElementById('zRadius').value=z.radius||3;
+  document.getElementById('zBaseFee').value=z.baseFee||2;document.getElementById('zPerKm').value=z.perKm||0.5;
+  document.getElementById('zMinOrder').value=z.minOrder||5;document.getElementById('zCourierFee').value=z.courierFee||3;
   document.getElementById('zEstTime').value=z.estTime||25;
-  document.getElementById('zLat').value=z.lat||'';
-  document.getElementById('zLng').value=z.lng||'';
-  document.getElementById('zWeekendSurcharge').value=z.weekendSurcharge||0;
-  document.getElementById('zNightSurcharge').value=z.nightSurcharge||0;
+  document.getElementById('zWeekendSurcharge').value=z.weekendSurcharge||0;document.getElementById('zNightSurcharge').value=z.nightSurcharge||0;
   document.getElementById('zActive').checked=z.active!==false;
   
-  // Show preview on map
-  if(zonesMap&&z.lat&&z.lng){
-    zonesMap.setView([z.lat,z.lng],13);
-    if(window._previewCircle)zonesMap.removeLayer(window._previewCircle);
-    window._previewCircle=L.circle([z.lat,z.lng],{radius:(z.radius||3)*1000,color:'#ff3d00',fillColor:'#ff3d00',fillOpacity:0.15,weight:2,dashArray:'6,6'}).addTo(zonesMap);
+  // Load existing pins
+  clearAllPins();
+  if(z.pins&&z.pins.length){
+    z.pins.forEach(p=>addPin(p[0],p[1]));
+    zonesMap.fitBounds(z.pins,{padding:[40,40]});
   }
   document.getElementById('zoneOverlay').classList.add('open');
 }
 
 function closeZoneModal(){
   document.getElementById('zoneOverlay').classList.remove('open');
-  editingZoneId=null;
-  if(window._previewCircle&&zonesMap){zonesMap.removeLayer(window._previewCircle);window._previewCircle=null;}
+  editingZoneId=null;isDrawingZone=false;
+  clearAllPins();
 }
 
 function saveZone(){
   const name=document.getElementById('zName').value.trim();
-  const lat=parseFloat(document.getElementById('zLat').value);
-  const lng=parseFloat(document.getElementById('zLng').value);
   if(!name){showToast('⚠️ Βάλε όνομα ζώνης');return;}
-  if(isNaN(lat)||isNaN(lng)){showToast('⚠️ Πάτα στο χάρτη για να ορίσεις κέντρο');return;}
+  if(currentPins.length<3){showToast('⚠️ Χρειάζονται τουλάχιστον 3 📍 πινέζες');return;}
   
   const zone={
-    name,lat,lng,
+    name,
+    pins:currentPins.map(p=>[Math.round(p[0]*100000)/100000,Math.round(p[1]*100000)/100000]),
     color:document.getElementById('zColor').value||'#3b82f6',
     baseFee:parseFloat(document.getElementById('zBaseFee').value)||2,
     perKm:parseFloat(document.getElementById('zPerKm').value)||0.5,
     minOrder:parseFloat(document.getElementById('zMinOrder').value)||5,
     courierFee:parseFloat(document.getElementById('zCourierFee').value)||3,
-    radius:parseFloat(document.getElementById('zRadius').value)||3,
     estTime:parseInt(document.getElementById('zEstTime').value)||25,
     weekendSurcharge:parseFloat(document.getElementById('zWeekendSurcharge').value)||0,
     nightSurcharge:parseFloat(document.getElementById('zNightSurcharge').value)||0,
@@ -1051,60 +1064,59 @@ function saveZone(){
   };
   
   if(window._db){
-    if(editingZoneId){
-      window._update(window._ref(window._db,'zones/'+editingZoneId),zone);
-    }else{
-      zone.createdAt=Date.now();
-      const r=window._push(window._ref(window._db,'zones'));
-      window._set(r,zone);
-    }
+    if(editingZoneId){window._update(window._ref(window._db,'zones/'+editingZoneId),zone);}
+    else{zone.createdAt=Date.now();const r=window._push(window._ref(window._db,'zones'));window._set(r,zone);}
   }else{
-    // Local fallback
-    const id=editingZoneId||('z_'+Date.now());
-    allZones[id]=zone;
-    renderZonesList();drawAllZones();
+    const id=editingZoneId||('z_'+Date.now());allZones[id]=zone;renderZonesList();drawAllZones();
   }
-  
   closeZoneModal();
   showToast(editingZoneId?'✅ Ζώνη ενημερώθηκε':'✅ Ζώνη δημιουργήθηκε');
 }
 
 function deleteZone(){
-  if(!editingZoneId)return;
-  if(!confirm('Διαγραφή ζώνης;'))return;
-  if(window._db){
-    window._set(window._ref(window._db,'zones/'+editingZoneId),null);
-  }else{
-    delete allZones[editingZoneId];
-    renderZonesList();drawAllZones();
-  }
-  closeZoneModal();
-  showToast('🗑️ Ζώνη διαγράφηκε');
+  if(!editingZoneId||!confirm('Διαγραφή ζώνης;'))return;
+  if(window._db){window._set(window._ref(window._db,'zones/'+editingZoneId),null);}
+  else{delete allZones[editingZoneId];renderZonesList();drawAllZones();}
+  closeZoneModal();showToast('🗑️ Ζώνη διαγράφηκε');
 }
 
-// Use zone pricing in auto-dispatch
+// Point-in-polygon (ray casting algorithm)
+function pointInPolygon(lat,lng,polygon){
+  let inside=false;
+  for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
+    const yi=polygon[i][0],xi=polygon[i][1];
+    const yj=polygon[j][0],xj=polygon[j][1];
+    if(((yi>lat)!==(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+
+// Zone pricing using polygon containment
 function getZonePricing(customerLat,customerLng){
   const now=new Date();
   const isWeekend=now.getDay()===0||now.getDay()===6;
   const isNight=now.getHours()>=23||now.getHours()<7;
   
   for(const[id,z]of Object.entries(allZones)){
-    if(z.active===false||!z.lat||!z.lng)continue;
-    const dist=haversineKm(customerLat,customerLng,z.lat,z.lng);
-    if(dist<=(z.radius||3)){
+    if(z.active===false||!z.pins||z.pins.length<3)continue;
+    if(pointInPolygon(customerLat,customerLng,z.pins)){
+      // Calculate distance from center of polygon for per-km fee
+      const cLat=z.pins.reduce((s,p)=>s+p[0],0)/z.pins.length;
+      const cLng=z.pins.reduce((s,p)=>s+p[1],0)/z.pins.length;
+      const dist=haversineKm(customerLat,customerLng,cLat,cLng);
       let fee=(z.baseFee||2)+(z.perKm||0.5)*dist;
       if(isWeekend)fee+=(z.weekendSurcharge||0);
       if(isNight)fee+=(z.nightSurcharge||0);
       return{zone:z.name,fee:Math.round(fee*100)/100,courierFee:z.courierFee||3,minOrder:z.minOrder||5,estTime:z.estTime||25};
     }
   }
-  return null; // No zone matched
+  return null;
 }
 
 // ══ ORDERS ══
 window.renderOrdersFromFirebase=d=>{try{allOrders=d||{};renderTable();window.updateStats(allOrders);if(window.updateStoreMarkers)window.updateStoreMarkers()}catch(e){console.error(e)}};
-window.updateStats=function(data){const o=Object.values(data||{});if(document.getElementById('sNew'))document.getElementById('sNew').textContent=o.filter(x=>x.status==='new'||x.status==='preparing').length;if(document.getElementById('sActive'))document.getElementById('sActive').textContent=o.filter(x=>x.status==='ready'||x.status==='assigned'||x.status==='picked').length;if(document.getElementById('sDelivered'))document.getElementById('sDelivered').textContent=o.filter(x=>x.status==='delivered').length;if(document.getElementById('sTotal'))document.getElementById('sTotal').textContent=o.length;if(document.getElementById('navCount'))document.getElementById('navCount').textContent=o.filter(x=>x.status==='ready').length};
-window.renderTable=function(){try{let orders=Object.entries(allOrders).map(([k,v])=>({...v,_key:k}));if(currentFilter!=='all')orders=orders.filter(o=>o.status===currentFilter);if(searchQ)orders=orders.filter(o=>(o.customerName||'').toLowerCase().includes(searchQ)||(o.id||'').toLowerCase().includes(searchQ)||(o.deliveryAddress||'').toLowerCase().includes(searchQ)||(o.phone||'').includes(searchQ)||(o.storeName||'').toLowerCase().includes(searchQ));orders.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));if(document.getElementById('tableCount'))document.getElementById('tableCount').textContent=orders.length;if(document.getElementById('emptyState'))document.getElementById('emptyState').style.display=orders.length?'none':'flex';const dOpts=Object.entries(allDrivers).filter(([,d])=>!d.status||d.status==='approved').map(([uid,d])=>`<option value="${uid}::${d.name}">${d.name} (${d.phone||''})</option>`).join('');const sMap={new:['Νέα','s-new'],preparing:['Ετοιμ.','s-assigned'],ready:['Έτοιμη','s-ready'],assigned:['Ανατ.','s-assigned'],picked:['Παρέλ.','s-picked'],delivered:['OK','s-delivered'],failed:['Fail','s-failed'],rejected:['Reject','s-rejected']};if(document.getElementById('ordersBody'))document.getElementById('ordersBody').innerHTML=orders.map((o,i)=>{const[sl,sc]=sMap[o.status]||['—','s-new'];const c=COLORS[i%COLORS.length];let timer='';if(o.status==='preparing'&&o.prepMinutes){const st=o.acceptedAt||o.createdAt||Date.now();const rem=parseInt(o.prepMinutes)-Math.floor((Date.now()-st)/60000);timer=`<div style="font-size:9px;color:${rem>0?'var(--accent)':'var(--red)'};margin-top:2px;font-weight:700">⏱ ${rem>0?rem+'\'':'OK!'}</div>`}return`<tr class="${i===0&&o.status==='new'?'row-new':''}"><td><div style="font-size:9px;font-weight:800;color:var(--accent);margin-bottom:1px;text-transform:uppercase">${o.storeName||'—'}</div><span class="order-id">${o.id||o._key}</span></td><td><div class="cust-cell"><div class="cust-av" style="background:${c}18;color:${c}">${initials(o.customerName)}</div><div><div class="cust-name">${o.customerName||'—'}</div><div class="cust-phone">${o.phone||''}</div></div></div></td><td><div class="addr-text" title="${o.deliveryAddress||''}">${o.deliveryAddress||'—'}</div></td><td>${o.status==='rejected'?`<div style="font-size:10px;color:var(--red);font-weight:600">${o.driverName||'—'}</div><div class="rejected-reason">↳ ${o.rejectionReason||'Reject'}</div>`:`<select class="driver-sel" onchange="assignDriver('${o._key}',this.value)"><option value="">—</option>${dOpts}${o.driver?`<option selected>${o.driverName||o.driver}</option>`:''}</select>`}</td><td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)">${fmtTime(o.createdAt)}</td><td><span class="status-tag ${sc}">${sl}</span>${timer}</td><td><div style="display:flex;gap:2px"><div class="act-btn" title="OK" onclick="setStatus('${o._key}','delivered')" style="color:var(--green)"><span class="material-icons-round">check_circle</span></div>${o.status==='rejected'?`<div class="act-btn" onclick="reassignOrder('${o._key}')" style="color:var(--blue)"><span class="material-icons-round">person_add</span></div>`:''}<div class="act-btn" onclick="deleteOrder('${o._key}')" style="color:var(--red)"><span class="material-icons-round">delete_outline</span></div></div></td></tr>`}).join('')}catch(e){console.error(e)}};
+window.updateStats=function(data){const o=Object.values(data||{});if(document.getElementById('sNew'))document.getElementById('sNew').textContent=o.filter(x=>x.status==='new'||x.status==='preparing'||x.status==='scheduled').length;if(document.getElementById('sActive'))document.getElementById('sActive').textContent=o.filter(x=>x.status==='ready'||x.status==='assigned'||x.status==='picked').length;if(document.getElementById('sDelivered'))document.getElementById('sDelivered').textContent=o.filter(x=>x.status==='delivered').length;if(document.getElementById('sTotal'))document.getElementById('sTotal').textContent=o.length;if(document.getElementById('navCount'))document.getElementById('navCount').textContent=o.filter(x=>x.status==='ready').length};
+window.renderTable=function(){try{let orders=Object.entries(allOrders).map(([k,v])=>({...v,_key:k}));if(currentFilter!=='all')orders=orders.filter(o=>o.status===currentFilter);if(searchQ)orders=orders.filter(o=>(o.customerName||'').toLowerCase().includes(searchQ)||(o.id||'').toLowerCase().includes(searchQ)||(o.deliveryAddress||'').toLowerCase().includes(searchQ)||(o.phone||'').includes(searchQ)||(o.storeName||'').toLowerCase().includes(searchQ));orders.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));if(document.getElementById('tableCount'))document.getElementById('tableCount').textContent=orders.length;if(document.getElementById('emptyState'))document.getElementById('emptyState').style.display=orders.length?'none':'flex';const dOpts=Object.entries(allDrivers).filter(([,d])=>!d.status||d.status==='approved').map(([uid,d])=>`<option value="${uid}::${d.name}">${d.name} (${d.phone||''})</option>`).join('');const sMap={new:['Νέα','s-new'],scheduled:['Προγρ.','s-new'],preparing:['Ετοιμ.','s-assigned'],ready:['Έτοιμη','s-ready'],assigned:['Ανατ.','s-assigned'],picked:['Παρέλ.','s-picked'],delivered:['OK','s-delivered'],failed:['Fail','s-failed'],rejected:['Reject','s-rejected']};if(document.getElementById('ordersBody'))document.getElementById('ordersBody').innerHTML=orders.map((o,i)=>{const[sl,sc]=sMap[o.status]||['—','s-new'];const c=COLORS[i%COLORS.length];let timer='';if(o.status==='preparing'&&o.prepMinutes){const st=o.acceptedAt||o.createdAt||Date.now();const rem=parseInt(o.prepMinutes)-Math.floor((Date.now()-st)/60000);timer=`<div style="font-size:9px;color:${rem>0?'var(--accent)':'var(--red)'};margin-top:2px;font-weight:700">⏱ ${rem>0?rem+'\'':'OK!'}</div>`}return`<tr class="${i===0&&o.status==='new'?'row-new':''}"><td><div style="font-size:9px;font-weight:800;color:var(--accent);margin-bottom:1px;text-transform:uppercase">${o.storeName||'—'}</div><span class="order-id">${o.id||o._key}</span></td><td><div class="cust-cell"><div class="cust-av" style="background:${c}18;color:${c}">${initials(o.customerName)}</div><div><div class="cust-name">${o.customerName||'—'}</div><div class="cust-phone">${o.phone||''}</div></div></div></td><td><div class="addr-text" title="${o.deliveryAddress||''}">${o.deliveryAddress||'—'}</div></td><td>${o.status==='rejected'?`<div style="font-size:10px;color:var(--red);font-weight:600">${o.driverName||'—'}</div><div class="rejected-reason">↳ ${o.rejectionReason||'Reject'}</div>`:`<select class="driver-sel" onchange="assignDriver('${o._key}',this.value)"><option value="">—</option>${dOpts}${o.driver?`<option selected>${o.driverName||o.driver}</option>`:''}</select>`}</td><td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)">${fmtTime(o.createdAt)}</td><td><span class="status-tag ${sc}">${sl}</span>${timer}</td><td><div style="display:flex;gap:2px"><div class="act-btn" title="OK" onclick="setStatus('${o._key}','delivered')" style="color:var(--green)"><span class="material-icons-round">check_circle</span></div>${o.status==='rejected'?`<div class="act-btn" onclick="reassignOrder('${o._key}')" style="color:var(--blue)"><span class="material-icons-round">person_add</span></div>`:''}<div class="act-btn" onclick="deleteOrder('${o._key}')" style="color:var(--red)"><span class="material-icons-round">delete_outline</span></div></div></td></tr>`}).join('')}catch(e){console.error(e)}};
 
 // ══ DRIVERS & MAP ══
 window.renderDriversFromFirebase=d=>{try{const all=d||{};window._firebaseDriversAll=all;allDrivers={};const pending={};for(const[k,v]of Object.entries(all)){if(v.status==='pending')pending[k]=v;else allDrivers[k]=v}if(window.renderDrivers)window.renderDrivers();if(window.renderPendingDrivers)window.renderPendingDrivers(pending);if(window.renderAllChats)window.renderAllChats();if(window.updateMapMarkers)window.updateMapMarkers();if(document.getElementById('view-drivers')&&document.getElementById('view-drivers').style.display==='flex'&&window.renderAdminDriversTable)window.renderAdminDriversTable()}catch(e){console.error(e)}};
