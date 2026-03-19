@@ -387,74 +387,54 @@ body{flex-direction:column;overflow-y:auto}
     </div>
   </div>
   <div class="view-section" id="view-zones">
-    <div class="topbar"><div class="topbar-title">🗺️ Ζώνες Delivery</div><button class="btn btn-primary" onclick="openZoneModal()"><span class="material-icons-round">add</span> Νέα Ζώνη</button></div>
-    <div class="content" style="display:flex;gap:12px;padding:12px;overflow:hidden">
-      <!-- Map -->
-      <div style="flex:2;min-width:0">
-        <div class="panel" style="height:100%;display:flex;flex-direction:column;padding:0;overflow:hidden">
-          <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-            <span class="material-icons-round" style="font-size:16px;color:var(--accent)">map</span>
-            <span style="font-size:12px;font-weight:800">Χάρτης Ζωνών</span>
-            <span style="margin-left:auto;font-size:10px;color:var(--muted)" id="zoneMapInfo">Πάτα στο χάρτη για νέα ζώνη</span>
+    <div class="topbar"><div class="topbar-title">🗺️ Ζώνες Delivery</div><button class="btn btn-primary" onclick="openZoneEditor()"><span class="material-icons-round">add</span> Νέα Ζώνη</button></div>
+    <div class="content" style="display:flex;gap:0;padding:0;overflow:hidden">
+      <!-- Map (full width when not editing, shrinks when editing) -->
+      <div style="flex:2;min-width:0;position:relative">
+        <div id="zonesMap" style="height:100%;min-height:400px"></div>
+        <div id="zoneMapInfo" style="position:absolute;top:10px;left:50px;z-index:400;background:rgba(0,0,0,.7);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700">Πάτα "+ Νέα Ζώνη" για να ξεκινήσεις</div>
+      </div>
+      <!-- Zone Editor (slides in from right) -->
+      <div id="zoneEditorPanel" style="width:0;overflow:hidden;transition:width .3s;background:var(--surface);border-left:1px solid var(--border);flex-shrink:0">
+        <div style="width:320px;height:100%;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:15px;font-weight:800" id="zoneEditorTitle">Νέα Ζώνη</div>
+            <button onclick="closeZoneEditor()" style="background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)"><span class="material-icons-round" style="font-size:16px">close</span></button>
           </div>
-          <div id="zonesMap" style="flex:1;min-height:300px"></div>
-        </div>
-      </div>
-      <!-- Zone List -->
-      <div style="flex:1;min-width:280px;overflow-y:auto">
-        <div class="panel" style="margin-bottom:10px">
-          <div style="font-size:12px;font-weight:800;margin-bottom:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Ζώνες (<span id="zoneCount">0</span>)</div>
-          <div id="zonesList"></div>
-        </div>
-        <!-- Zone Stats -->
-        <div class="panel">
-          <div style="font-size:12px;font-weight:800;margin-bottom:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Στατιστικά Ζωνών</div>
-          <div id="zoneStats" style="font-size:12px;color:var(--muted);text-align:center;padding:10px">Φόρτωση...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Zone Create/Edit Modal -->
-  <div class="overlay" id="zoneOverlay" style="z-index:500">
-    <div class="modal" style="max-width:480px">
-      <div class="modal-hd">
-        <div class="modal-title" id="zoneModalTitle">Νέα Ζώνη</div>
-        <button class="icon-btn" onclick="closeZoneModal()"><span class="material-icons-round">close</span></button>
-      </div>
-      <div class="frow" style="margin-bottom:10px">
-        <div class="fgroup" style="flex:2"><label class="flabel">Όνομα Ζώνης *</label><input class="finput" id="zName" placeholder="π.χ. Πειραιάς Κέντρο"></div>
-        <div class="fgroup"><label class="flabel">Χρώμα</label><input class="finput" id="zColor" type="color" value="#3b82f6" style="height:38px;padding:2px"></div>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:11px;font-weight:800;color:var(--accent)">📍 Πινέζες Ζώνης (<span id="zPinCount">0</span>)</span>
-          <div style="display:flex;gap:4px">
-            <button onclick="undoLastPin()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;color:var(--muted)">↩ Αναίρεση</button>
-            <button onclick="clearAllPins()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;color:var(--red)">✕ Καθαρισμός</button>
+          <div class="fgroup"><label class="flabel">Όνομα *</label><input class="finput" id="zName" placeholder="π.χ. Πειραιάς"></div>
+          <div class="fgroup"><label class="flabel">Χρώμα</label><input class="finput" id="zColor" type="color" value="#3b82f6" style="height:34px;padding:2px" onchange="updatePreviewPolygon()"></div>
+          <div style="background:rgba(255,61,0,.06);border:1px solid rgba(255,61,0,.15);border-radius:10px;padding:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:12px;font-weight:800;color:var(--accent)">📍 Πινέζες: <span id="zPinCount">0</span></span>
+              <div style="display:flex;gap:4px">
+                <button onclick="undoLastPin()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;color:var(--muted)">↩</button>
+                <button onclick="clearAllPins()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;color:var(--red)">✕</button>
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--muted)">Πάτα στον χάρτη αριστερά 👈 για 📍. Min 3 σημεία.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="fgroup"><label class="flabel">Χρέωση (€)</label><input class="finput" id="zBaseFee" type="number" value="2" min="0" step="0.1"></div>
+            <div class="fgroup"><label class="flabel">€/Χλμ</label><input class="finput" id="zPerKm" type="number" value="0.50" min="0" step="0.1"></div>
+            <div class="fgroup"><label class="flabel">Min (€)</label><input class="finput" id="zMinOrder" type="number" value="5" min="0" step="0.5"></div>
+            <div class="fgroup"><label class="flabel">Courier (€)</label><input class="finput" id="zCourierFee" type="number" value="3" min="0" step="0.1"></div>
+            <div class="fgroup"><label class="flabel">Χρόνος (λ)</label><input class="finput" id="zEstTime" type="number" value="25" min="5" step="5"></div>
+            <div class="fgroup"><label class="flabel">ΣΚ +€</label><input class="finput" id="zWeekendSurcharge" type="number" value="0" min="0" step="0.1"></div>
+            <div class="fgroup"><label class="flabel">Νύχτα +€</label><input class="finput" id="zNightSurcharge" type="number" value="0" min="0" step="0.1"></div>
+            <div class="fgroup"><label style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px;margin-top:16px;cursor:pointer"><input type="checkbox" id="zActive" checked style="accent-color:var(--green)"> Ενεργή</label></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button onclick="saveZone()" class="btn btn-primary" style="flex:1;justify-content:center"><span class="material-icons-round">save</span> Αποθήκευση</button>
+            <button onclick="deleteZone()" id="zDeleteBtn" class="btn" style="background:var(--red);color:#fff;display:none"><span class="material-icons-round">delete</span></button>
           </div>
         </div>
-        <div style="font-size:10px;color:var(--muted)">💡 Πάτα στον χάρτη για να βάλεις 📍 πινέζες. Χρειάζονται τουλάχιστον 3 σημεία. Τα σημεία ενώνονται αυτόματα σε πολύγωνο.</div>
       </div>
-      <div class="frow" style="margin-bottom:10px">
-        <div class="fgroup"><label class="flabel">Βασική Χρέωση (€)</label><input class="finput" id="zBaseFee" type="number" value="2" min="0" step="0.1"></div>
-        <div class="fgroup"><label class="flabel">€/Χλμ</label><input class="finput" id="zPerKm" type="number" value="0.50" min="0" step="0.1"></div>
-      </div>
-      <div class="frow" style="margin-bottom:10px">
-        <div class="fgroup"><label class="flabel">Min Παραγγελία (€)</label><input class="finput" id="zMinOrder" type="number" value="5" min="0" step="0.5"></div>
-        <div class="fgroup"><label class="flabel">Αμοιβή Courier (€)</label><input class="finput" id="zCourierFee" type="number" value="3" min="0" step="0.1"></div>
-      </div>
-      <div class="frow" style="margin-bottom:10px">
-        <div class="fgroup"><label class="flabel">Εκτιμ. Χρόνος (λεπτά)</label><input class="finput" id="zEstTime" type="number" value="25" min="5" step="5"></div>
-        <div class="fgroup"><label class="flabel">Surcharge Σ/Κ (€)</label><input class="finput" id="zWeekendSurcharge" type="number" value="0" min="0" step="0.1"></div>
-      </div>
-      <div class="frow" style="margin-bottom:12px">
-        <div class="fgroup"><label class="flabel">Νυχτερινή +€</label><input class="finput" id="zNightSurcharge" type="number" value="0" min="0" step="0.1"><div style="font-size:9px;color:var(--muted);margin-top:3px">23:00 - 07:00</div></div>
-        <div class="fgroup"><label style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:18px"><input type="checkbox" id="zActive" checked style="width:16px;height:16px;accent-color:var(--green)"> Ενεργή</label></div>
-      </div>
-      <div class="modal-ft">
-        <button class="btn btn-outline" onclick="closeZoneModal()">Ακύρωση</button>
-        <button class="btn btn-primary" onclick="saveZone()"><span class="material-icons-round">save</span> Αποθήκευση</button>
-        <button class="btn" style="background:var(--red);color:#fff" id="zDeleteBtn" onclick="deleteZone()" style="display:none"><span class="material-icons-round">delete</span></button>
+      <!-- Zone List (below map on mobile, right side on desktop) -->
+      <div id="zonesListPanel" style="width:280px;overflow-y:auto;border-left:1px solid var(--border);padding:12px;flex-shrink:0">
+        <div style="font-size:12px;font-weight:800;margin-bottom:10px;color:var(--muted)">ΖΩΝΕΣ (<span id="zoneCount">0</span>)</div>
+        <div id="zonesList"></div>
+        <div style="margin-top:12px;font-size:12px;font-weight:800;color:var(--muted)">ΣΤΑΤΙΣΤΙΚΑ</div>
+        <div id="zoneStats" style="font-size:12px;color:var(--muted);padding:6px 0">—</div>
       </div>
     </div>
   </div>
@@ -999,9 +979,9 @@ function renderZoneStats(){
 function highlightZone(id){if(zonePolygons[id]?.poly)zonePolygons[id].poly.setStyle({fillOpacity:0.35,weight:3});}
 function unhighlightZone(id){const z=allZones[id];if(zonePolygons[id]?.poly)zonePolygons[id].poly.setStyle({fillOpacity:z?.active!==false?0.15:0.04,weight:z?.active!==false?2.5:1});}
 
-function openZoneModal(){
+function openZoneEditor(){
   editingZoneId=null;isDrawingZone=true;
-  document.getElementById('zoneModalTitle').textContent='Νέα Ζώνη';
+  document.getElementById('zoneEditorTitle').textContent='Νέα Ζώνη';
   document.getElementById('zDeleteBtn').style.display='none';
   document.getElementById('zName').value='';
   document.getElementById('zColor').value='#3b82f6';
@@ -1011,14 +991,16 @@ function openZoneModal(){
   document.getElementById('zWeekendSurcharge').value='0';document.getElementById('zNightSurcharge').value='0';
   document.getElementById('zActive').checked=true;
   clearAllPins();
-  document.getElementById('zoneOverlay').classList.add('open');
-  document.getElementById('zoneMapInfo').textContent='📍 Πάτα στον χάρτη για πινέζες';
+  // Slide panel open
+  document.getElementById('zoneEditorPanel').style.width='320px';
+  document.getElementById('zoneMapInfo').textContent='👈 Πάτα στον χάρτη για 📍 πινέζες';
+  setTimeout(()=>{if(zonesMap)zonesMap.invalidateSize();},350);
 }
 
 function editZone(id){
   const z=allZones[id];if(!z)return;
   editingZoneId=id;isDrawingZone=true;
-  document.getElementById('zoneModalTitle').textContent='Επεξεργασία: '+z.name;
+  document.getElementById('zoneEditorTitle').textContent='✏️ '+z.name;
   document.getElementById('zDeleteBtn').style.display='flex';
   document.getElementById('zName').value=z.name||'';
   document.getElementById('zColor').value=z.color||'#3b82f6';
@@ -1027,20 +1009,22 @@ function editZone(id){
   document.getElementById('zEstTime').value=z.estTime||25;
   document.getElementById('zWeekendSurcharge').value=z.weekendSurcharge||0;document.getElementById('zNightSurcharge').value=z.nightSurcharge||0;
   document.getElementById('zActive').checked=z.active!==false;
-  
-  // Load existing pins
   clearAllPins();
   if(z.pins&&z.pins.length){
     z.pins.forEach(p=>addPin(p[0],p[1]));
     zonesMap.fitBounds(z.pins,{padding:[40,40]});
   }
-  document.getElementById('zoneOverlay').classList.add('open');
+  document.getElementById('zoneEditorPanel').style.width='320px';
+  document.getElementById('zoneMapInfo').textContent='✏️ Επεξεργασία — πάτα για νέες 📍';
+  setTimeout(()=>{if(zonesMap)zonesMap.invalidateSize();},350);
 }
 
-function closeZoneModal(){
-  document.getElementById('zoneOverlay').classList.remove('open');
+function closeZoneEditor(){
+  document.getElementById('zoneEditorPanel').style.width='0';
   editingZoneId=null;isDrawingZone=false;
   clearAllPins();
+  document.getElementById('zoneMapInfo').textContent='Πάτα "+ Νέα Ζώνη" για να ξεκινήσεις';
+  setTimeout(()=>{if(zonesMap)zonesMap.invalidateSize();},350);
 }
 
 function saveZone(){
@@ -1069,7 +1053,7 @@ function saveZone(){
   }else{
     const id=editingZoneId||('z_'+Date.now());allZones[id]=zone;renderZonesList();drawAllZones();
   }
-  closeZoneModal();
+  closeZoneEditor();
   showToast(editingZoneId?'✅ Ζώνη ενημερώθηκε':'✅ Ζώνη δημιουργήθηκε');
 }
 
@@ -1077,7 +1061,7 @@ function deleteZone(){
   if(!editingZoneId||!confirm('Διαγραφή ζώνης;'))return;
   if(window._db){window._set(window._ref(window._db,'zones/'+editingZoneId),null);}
   else{delete allZones[editingZoneId];renderZonesList();drawAllZones();}
-  closeZoneModal();showToast('🗑️ Ζώνη διαγράφηκε');
+  closeZoneEditor();showToast('🗑️ Ζώνη διαγράφηκε');
 }
 
 // Point-in-polygon (ray casting algorithm)
