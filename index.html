@@ -591,6 +591,7 @@ function renderModal(){
       <div id="cartSection" style="display:none"><div class="order-section-title">🛒 Καλάθι</div><div id="cartItems"></div></div>
       <div><div class="order-section-title">Στοιχεία Παράδοσης</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="form-group"><label class="form-label">Όνομα *</label><input class="form-input" id="oName" placeholder="Όνομα" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group"><label class="form-label">Τηλέφωνο *</label><input class="form-input" id="oPhone" placeholder="69..." type="tel" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div></div><div class="form-group" style="margin-top:6px"><label class="form-label">Email</label><input class="form-input" id="oEmail" placeholder="email" type="email" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group" style="margin-top:6px"><label class="form-label">Διεύθυνση *</label><input class="form-input" id="oAddress" placeholder="Οδός, Αριθμός" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px"><div class="form-group"><label class="form-label">Όροφος</label><input class="form-input" id="oFloor" placeholder="3ος" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div><div class="form-group"><label class="form-label">Κουδούνι</label><input class="form-input" id="oDoorbell" placeholder="Όνομα" oninput="saveProfile()" style="padding:9px 10px;font-size:13px"></div></div><div class="form-group" style="margin-top:6px"><input class="form-input" id="oNotes" placeholder="Γενικά σχόλια..." style="padding:9px 10px;font-size:13px"></div></div>
       <div><div class="order-section-title">Πληρωμή</div><div class="pay-options"><div class="pay-opt selected" id="pay_cash" onclick="selectPay('cash')"><span class="material-icons-round">payments</span>Μετρητά</div><div class="pay-opt" id="pay_card" onclick="selectPay('card')"><span class="material-icons-round">credit_card</span>Κάρτα</div><div class="pay-opt" id="pay_online" onclick="selectPay('online')"><span class="material-icons-round">phone_iphone</span>Online</div></div></div>
+      <div><div class="order-section-title">⏰ Ώρα Παράδοσης</div><div style="display:flex;gap:8px"><div class="pay-opt selected" id="sched_now" onclick="setSchedule('now')" style="flex:1"><span class="material-icons-round">bolt</span>Τώρα</div><div class="pay-opt" id="sched_later" onclick="setSchedule('later')" style="flex:1"><span class="material-icons-round">schedule</span>Προγραμματισμός</div></div><div id="schedPicker" style="display:none;margin-top:8px"><div class="form-row"><div class="form-group"><label class="form-label">Ημέρα</label><input class="form-input" id="schedDate" type="date" style="font-size:13px;padding:9px 10px"></div><div class="form-group"><label class="form-label">Ώρα</label><input class="form-input" id="schedTime" type="time" style="font-size:13px;padding:9px 10px"></div></div></div></div>
       <div class="order-summary"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Σύνοψη</div><div id="summaryLines"></div><div class="summary-row"><span>Παράδοση</span><span>€${(s.deliveryCost||2).toFixed(2)}</span></div><div class="summary-row total"><span>Σύνολο</span><span class="summary-val" id="summaryTotal">€${(s.deliveryCost||2).toFixed(2)}</span></div></div>
       <button class="btn-primary" onclick="submitOrder()"><span class="material-icons-round">rocket_launch</span>Παράγγειλε τώρα!</button>
     </div>`;
@@ -610,6 +611,18 @@ function removeCartItem(cid){delete cart[cid];updateSummary();renderCartItems();
 function renderCartItems(){const items=Object.entries(cart);const sec=document.getElementById('cartSection');if(!items.length){if(sec)sec.style.display='none';return;}if(sec)sec.style.display='block';document.getElementById('cartItems').innerHTML=items.map(([cid,c])=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><span style="font-size:20px">${c.item.emoji||'🍴'}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${c.item.name} ×${c.qty}</div>${c.desc?'<div style="font-size:11px;color:var(--text3)">'+c.desc+'</div>':''}${c.note?'<div style="font-size:10px;color:var(--accent);font-style:italic">📝 '+c.note+'</div>':''}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:700;color:var(--accent)">€${(c.unitPrice*c.qty).toFixed(2)}</div><button onclick="removeCartItem('${cid}')" style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer">✕</button></div></div>`).join('');}
 function updateSummary(){const items=Object.values(cart);const sub=items.reduce((s,c)=>s+c.unitPrice*c.qty,0);const total=sub+(activeStore.deliveryCost||2);const el=document.getElementById('summaryLines');if(el)el.innerHTML=items.map(c=>`<div class="summary-row"><span>${c.item.emoji||''} ${c.item.name} ×${c.qty}${c.desc?' ('+c.desc.substring(0,30)+')':''}</span><span>€${(c.unitPrice*c.qty).toFixed(2)}</span></div>`).join('');const t=document.getElementById('summaryTotal');if(t)t.textContent='€'+total.toFixed(2);}
 function selectPay(t){selectedPay=t;['cash','card','online'].forEach(x=>document.getElementById('pay_'+x).classList.toggle('selected',x===t));}
+let scheduledMode='now';
+function setSchedule(mode){
+  scheduledMode=mode;
+  ['now','later'].forEach(x=>{const el=document.getElementById('sched_'+x);if(el){el.classList.toggle('selected',x===mode);}});
+  document.getElementById('schedPicker').style.display=mode==='later'?'block':'none';
+  if(mode==='later'){
+    const now=new Date();const tom=new Date(now);tom.setDate(tom.getDate());
+    document.getElementById('schedDate').value=tom.toISOString().split('T')[0];
+    document.getElementById('schedDate').min=tom.toISOString().split('T')[0];
+    document.getElementById('schedTime').value=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+  }
+}
 
 function saveProfile(){
   const p={name:document.getElementById('oName')?.value||'',phone:document.getElementById('oPhone')?.value||'',email:document.getElementById('oEmail')?.value||'',address:document.getElementById('oAddress')?.value||'',floor:document.getElementById('oFloor')?.value||'',doorbell:document.getElementById('oDoorbell')?.value||''};
@@ -625,7 +638,7 @@ function submitOrder(){
   const items=Object.values(cart);const sub=items.reduce((s,c)=>s+c.unitPrice*c.qty,0);
   const deliveryFee=activeStore.deliveryCost||(function(){const ps=window._platformSettings||{};const d=new Date().getDay();const we=(d===0||d===6);return we?(ps.baseDeliveryFeeWE||ps.baseDeliveryFee||2):(ps.baseDeliveryFee||2);})();
   const isOwnDeliv=activeStore.defaultDeliveryMode==='own';
-  const order={id:'#ORD'+(1000+Math.floor(Math.random()*9000)),storeId:activeStore._key,storeName:activeStore.name,storeAddress:activeStore.address||'',customerName:name,phone,email,address,deliveryAddress:address+(floor?' ('+floor+'ος)':'')+(doorbell?' κουδ. '+doorbell:''),floor,doorbell,notes:document.getElementById('oNotes')?.value||'',customerUid:window._uid||'',items:items.map(c=>({name:c.item.name,emoji:c.item.emoji||'',price:c.unitPrice,qty:c.qty,variation:c.variation?.name||null,extras:c.extras?.map(e=>e.name)||[],note:c.note||'',desc:c.desc||''})),subtotal:sub,deliveryCost:deliveryFee,total:sub+deliveryFee,payment:selectedPay,status:'new',createdAt:Date.now(),ownDelivery:isOwnDeliv,deliveryType:isOwnDeliv?'own':'platform'};
+  const order={id:'#ORD'+(1000+Math.floor(Math.random()*9000)),storeId:activeStore._key,storeName:activeStore.name,storeAddress:activeStore.address||'',customerName:name,phone,email,address,deliveryAddress:address+(floor?' ('+floor+'ος)':'')+(doorbell?' κουδ. '+doorbell:''),floor,doorbell,notes:document.getElementById('oNotes')?.value||'',customerUid:window._uid||'',items:items.map(c=>({name:c.item.name,emoji:c.item.emoji||'',price:c.unitPrice,qty:c.qty,variation:c.variation?.name||null,extras:c.extras?.map(e=>e.name)||[],note:c.note||'',desc:c.desc||''})),subtotal:sub,deliveryCost:deliveryFee,total:sub+deliveryFee,payment:selectedPay,status:scheduledMode==='later'?'scheduled':'new',createdAt:Date.now(),scheduledFor:scheduledMode==='later'?new Date(document.getElementById('schedDate').value+'T'+document.getElementById('schedTime').value).getTime():null,ownDelivery:isOwnDeliv,deliveryType:isOwnDeliv?'own':'platform'};
   // Geocode then save
   const q=encodeURIComponent(address+', Ελλάδα');
   fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1&countrycodes=gr')
@@ -740,7 +753,7 @@ function renderMyOrders(orders){
   if(!entries.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Δεν υπάρχουν παραγγελίες</div>';return;}
   var sm={new:'Νέα',preparing:'Ετοιμάζεται',ready:'Έτοιμη',assigned:'Σε δρόμο',picked:'Σε δρόμο',delivered:'Παραδόθηκε',cancelled:'Ακυρώθηκε'};
   var sc={new:'#d42300',preparing:'#d97706',ready:'#00a651',assigned:'#ff6b35',picked:'#ff6b35',delivered:'#00a651',cancelled:'#dc2626'};
-  el.innerHTML=entries.slice(0,15).map(function(e){var k=e[0],o=e[1],c=sc[o.status]||'#999';var isActive=['new','preparing','ready','assigned','picked'].indexOf(o.status)>=0;return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="openTracking(\''+k+'\')"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--accent)">'+(o.id||k)+'</span><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+c+'12;color:'+c+'">'+(sm[o.status]||o.status)+'</span></div><div style="font-size:12px;color:var(--text2)">'+(o.storeName||'—')+'</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font-family:Fraunces,serif;font-size:15px;font-weight:700">€'+(o.total||0).toFixed(2)+'</span>'+(isActive?'<span style="font-size:11px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">gps_fixed</span>Live Track</span>':'')+'</div></div>';}).join('');
+  el.innerHTML=entries.slice(0,15).map(function(e){var k=e[0],o=e[1],c=sc[o.status]||'#999';var isActive=['new','preparing','ready','assigned','picked'].indexOf(o.status)>=0;var isDone=o.status==='delivered';return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px"><div style="cursor:pointer" onclick="openTracking(\''+k+'\')"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--accent)">'+(o.id||k)+'</span><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+c+'12;color:'+c+'">'+(sm[o.status]||o.status)+(o.scheduledFor?'<br>📅 '+new Date(o.scheduledFor).toLocaleString('el-GR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span></div><div style="font-size:12px;color:var(--text2)">'+(o.storeName||'—')+'</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font-family:Fraunces,serif;font-size:15px;font-weight:700">€'+(o.total||0).toFixed(2)+'</span>'+(isActive?'<span style="font-size:11px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:4px"><span class="material-icons-round" style="font-size:14px">gps_fixed</span>Live Track</span>':'')+'</div></div>'+(isDone?'<button onclick="event.stopPropagation();reorderFromHistory(\''+k+'\')" style="width:100%;margin-top:8px;background:var(--accent-bg);color:var(--accent);border:1.5px solid rgba(212,35,0,.2);border-radius:10px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px"><span class="material-icons-round" style="font-size:16px">replay</span>Ξαναπαράγγειλε</button>':'')+'</div>';}).join('');
   // Check for driver arrived notifications
   entries.forEach(function(e){
     var k=e[0],o=e[1];
@@ -750,6 +763,36 @@ function renderMyOrders(orders){
       showDriverArrivedNotif();
     }
   });
+}
+
+// REORDER
+function reorderFromHistory(orderKey){
+  var o=(window._myOrders||{})[orderKey];if(!o||!o.storeId)return;
+  closeProfile();
+  // Open the store and pre-fill cart with previous order items
+  if(allStores[o.storeId]){
+    openOrderModal(o.storeId);
+    showToast('🔄 Φορτώνουμε την προηγούμενη παραγγελία...');
+    setTimeout(function(){
+      // Pre-fill cart with items from previous order
+      cart={};
+      (o.items||[]).forEach(function(item,idx){
+        var menuItems=activeStore.menu||{};
+        // Try to find matching menu item
+        var found=null,foundKey=null;
+        for(var mk in menuItems){
+          if(menuItems[mk].name===item.name){found=menuItems[mk];foundKey=mk;break;}
+        }
+        if(found){
+          var cid=foundKey+'_reorder_'+idx;
+          cart[cid]={item:found,qty:item.qty||1,unitPrice:item.price||found.price,variation:null,extras:[],note:item.note||'',desc:item.desc||''};
+        }
+      });
+      updateSummary();renderCartItems();
+      if(Object.keys(cart).length)showToast('✅ '+Object.keys(cart).length+' προϊόντα προστέθηκαν!');
+      else showToast('⚠️ Τα προϊόντα δεν είναι πλέον διαθέσιμα');
+    },500);
+  }else{showToast('⚠️ Το κατάστημα δεν βρέθηκε');}
 }
 
 // LIVE TRACKING
